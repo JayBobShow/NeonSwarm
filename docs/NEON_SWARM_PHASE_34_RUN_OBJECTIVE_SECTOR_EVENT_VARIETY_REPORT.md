@@ -263,3 +263,138 @@ Overload Shrine / Power Node:
 - Confirm Overload Node is easy to see and says to approach it.
 - Confirm F6/F7/F8/F9 do nothing in title/menu/Armory/Forge/reward/game-over states.
 - Confirm normal random event spawning still works when test mode is not used.
+
+## Repair 2 — Event Object Identity and Player Instruction Clarity
+
+This is still Phase 34 repair work. Phase 35 was not started.
+
+Repair 2 changes the events from bright generic markers into clearer objective props with a persistent objective instruction panel. The goal is that each event answers what it is, whether it is safe or dangerous, what to do, and what progress/time remains within two seconds.
+
+### Shared Objective Panel
+
+Added a large event objective panel near the top-center of the gameplay HUD.
+
+The panel is visible while an event is active and hidden in title/menu/Armory/Forge/pause/reward/game-over/run-complete states.
+
+It uses plain action text:
+
+- `STAND INSIDE THE RING`
+- `LEAVE THE RED RIFT ZONE`
+- `DESTROY THE MARKED TARGET`
+- `OPTIONAL: ENTER THE RING TO START CHALLENGE`
+
+### Data Cache Identity
+
+Visual identity:
+
+- Low futuristic data terminal/cache body.
+- Solid dark 3D terminal box.
+- Cyan/blue neon circuit panels.
+- Neon tube edge framing.
+- Vertical cyan data beam.
+- Large floor capture/sync ring.
+- Four visible progress segments around the object.
+- Floating label: `DATA CACHE / STAND IN RING`.
+
+Instruction text:
+
+- `DATA CACHE FOUND`
+- `STAND INSIDE THE RING TO SYNC`
+- `SYNCING: XX%`
+- `RETURN TO THE CACHE RING`
+- `CACHE COMPLETE: XP + SCORE`
+
+Player meaning:
+
+- Stand inside the ring until the sync reaches 100 percent.
+- Leaving the ring stops forward progress and asks the player to return.
+
+### Rift Surge Identity
+
+Visual identity:
+
+- Large magenta/red/purple rift danger zone.
+- Red floor warning zone ring.
+- Pulsing danger stripes around the zone.
+- Vertical cracked portal/tear shape.
+- Cyan inner prism ring and dark cracked anchor.
+- Floating label: `RIFT SURGE / LEAVE RED ZONE`.
+
+Instruction text:
+
+- `RIFT SURGE WARNING`
+- `LEAVE THE RED RIFT ZONE`
+- `SURGE IN: X.X`
+- `RIFT SURGE ACTIVE`
+- `DODGE THE PULSES`
+- `RIFT SURGE SURVIVED: BONUS XP`
+
+Player meaning:
+
+- Red/purple rift area is dangerous.
+- Leave the zone during the countdown.
+- Dodge pulse hazards during the active surge.
+
+### Elite Hunt Identity
+
+Visual identity:
+
+- Existing marked moving elite target preserved.
+- Larger/brighter gold horizontal and vertical target rings.
+- White-hot target dot.
+- Floating label: `ELITE HUNT`.
+
+Instruction text:
+
+- `ELITE HUNT`
+- `DESTROY THE MARKED TARGET`
+- `TIME LEFT: XX`
+- `ELITE DESTROYED: BONUS REWARD`
+- `ELITE ESCAPED`
+
+Player meaning:
+
+- Chase and kill the marked elite before time runs out.
+
+### Overload Node Identity
+
+Visual identity:
+
+- Tall stationary 3D power pylon/shrine.
+- Dark hex pylon body.
+- Bright yellow/orange/white core.
+- Neon pylon edge framing.
+- Large optional challenge activation radius.
+- Hex activation ring.
+- Power conduits from pylon to ring.
+- Floating label: `OVERLOAD NODE / OPTIONAL CHALLENGE`.
+
+Instruction text:
+
+- `OVERLOAD NODE`
+- `OPTIONAL: ENTER THE RING TO START CHALLENGE`
+- `OVERLOAD STARTED`
+- `SURVIVE UNTIL THE NODE DISCHARGES`
+- `PRESSURE BUILDING: XX%`
+- `OVERLOAD ACTIVE: SURVIVE`
+- `TIME LEFT: XX`
+- `OVERLOAD COMPLETE: NEON DUST CHANCE`
+- `OVERLOAD ENDED`
+
+Player meaning:
+
+- This is optional.
+- Enter the ring to start the challenge.
+- Survive until the node discharges for a reward chance.
+
+### What The User Should Test For Repair 2
+
+- Use `F6` to enable Event Test Mode during an active run.
+- Use `F7` and `F8` to force each event.
+- Confirm the objective panel is large enough to read during combat.
+- Confirm Data Cache looks like a terminal/cache and clearly says to stand inside the ring.
+- Confirm Rift Surge looks dangerous before it becomes active and clearly says to leave the red zone.
+- Confirm Overload Node looks like a tall power shrine and clearly says the challenge is optional.
+- Confirm Elite Hunt remains readable and clearly tells the player to destroy the marked target.
+- Confirm `F9` clears each event safely.
+- Confirm no event persists into title/menu/Armory/Forge/death/restart/boss/reward states.
