@@ -49,6 +49,11 @@ const PLAYER_PROJECTILE_CAP := 36
 const ENEMY_PROJECTILE_CAP := 28
 const BURST_CAP := 18
 const BEAM_EFFECT_CAP := 8
+const CHAIN_LINK_OUTER_RADIUS := 0.036
+const CHAIN_LINK_CORE_RADIUS := 0.012
+const CHAIN_LINK_TICK_RADIUS := 0.010
+const CHAIN_LINK_MAX_DURATION := 0.14
+const CHAIN_LINK_MAX_SEGMENT_LENGTH := 9.25
 const BOSS_TELEGRAPH_CAP := 8
 const MINE_CAP := 6
 const HAZARD_TRAIL_CAP := 10
@@ -1918,8 +1923,8 @@ func _create_materials() -> void:
 	_materials["sector_transition_scan"] = Kit.make_emissive_material(Color(0.82, 1.0, 1.0, 0.62), 3.2, true)
 	_materials["enemy_projectile"] = Kit.make_emissive_material(Color(1.0, 0.12, 0.04, 0.90), 6.2, true)
 	_materials["enemy_projectile_core"] = Kit.make_emissive_material(Color(1.0, 0.99, 0.76, 1.0), 8.2, false)
-	_materials["arc_beam"] = Kit.make_emissive_material(Color(0.02, 1.0, 1.0, 0.86), 7.0, true)
-	_materials["arc_beam_core"] = Kit.make_emissive_material(Color(1.0, 1.0, 0.84, 1.0), 8.6, false)
+	_materials["arc_beam"] = Kit.make_emissive_material(Color(0.02, 1.0, 1.0, 0.66), 4.0, true)
+	_materials["arc_beam_core"] = Kit.make_emissive_material(Color(1.0, 1.0, 0.84, 0.84), 5.0, false)
 	_materials["mine_body"] = Kit.make_emissive_material(Color(0.84, 0.04, 1.0, 0.90), 6.5, true)
 	_materials["mine_core"] = Kit.make_emissive_material(Color(1.0, 0.99, 0.78, 1.0), 8.4, false)
 	_materials["mine_field"] = Kit.make_emissive_material(Color(0.50, 0.02, 1.0, 0.22), 2.35, true)
@@ -1938,7 +1943,7 @@ func _create_materials() -> void:
 	_materials["hex_mortar"] = Kit.make_emissive_material(Color(0.0, 0.96, 1.0, 0.92), 7.1, true)
 	_materials["vector_spear"] = Kit.make_emissive_material(Color(0.56, 0.92, 1.0, 0.92), 7.4, true)
 	_materials["orbital_saw_array"] = Kit.make_emissive_material(Color(0.0, 1.0, 0.72, 0.88), 6.9, true)
-	_materials["prism_chain"] = Kit.make_emissive_material(Color(0.90, 0.08, 1.0, 0.90), 7.2, true)
+	_materials["prism_chain"] = Kit.make_emissive_material(Color(0.90, 0.08, 1.0, 0.68), 4.1, true)
 	_materials["gravity_well"] = Kit.make_emissive_material(Color(0.46, 0.04, 1.0, 0.86), 7.0, true)
 	_materials["nova_needle"] = Kit.make_emissive_material(Color(0.0, 1.0, 0.94, 0.92), 7.0, true)
 	_materials["fractal_bloom"] = Kit.make_emissive_material(Color(1.0, 0.34, 0.04, 0.90), 7.2, true)
@@ -4657,6 +4662,7 @@ func _enter_title_menu() -> void:
 	_pause_menu_selected_index = 0
 	_pause_options_selected_index = 0
 	_clear_weapon_reward_decision_state()
+	_clear_chain_link_effects()
 	get_tree().paused = true
 	_set_gameplay_hud_visible(false)
 	if _pause_panel:
@@ -7019,6 +7025,7 @@ func _open_weapon_reward_decision(upgrade: Dictionary, was_sector_reward: bool) 
 	_weapon_reward_was_sector_reward = was_sector_reward
 	_weapon_reward_decision_active = true
 	_weapon_reward_mode = "actions"
+	_clear_chain_link_effects()
 	_weapon_reward_action_selected_index = 0
 	_weapon_reward_slot_selected_index = clampi(_armory_equipped_selected_index, 0, maxi(0, _equipped_weapon_instances.size() - 1))
 	_weapon_reward_status_text = "CHOOSE A ROUTE FOR %s" % str(_weapon_reward_pending_instance.get("name", "WEAPON")).to_upper()
@@ -10171,23 +10178,60 @@ func _spawn_fractal_bloom_split(position: Vector3, incoming_direction: Vector3, 
 		_spawn_weapon_projectile("fractal_bloom", position + direction * 0.38, direction, "fractal_bloom", "triangle", FRACTAL_BLOOM_DAMAGE * 0.30, FRACTAL_BLOOM_SPEED * 1.18, FRACTAL_BLOOM_LIFE * 0.42, 1, 0.22, "fractal_bloom_child", {"burst_key": "fractal_bloom"})
 
 
-func _spawn_colored_beam_effect(start: Vector3, end: Vector3, duration: float, material_key: String) -> void:
-	if _beam_effects.size() >= BEAM_EFFECT_CAP:
+func _combat_overlay_active() -> bool:
+	return _title_menu_active or _manual_pause or _game_over or _run_success or _weapon_reward_decision_active or _level_up_active or _sector_reward_active
+
+
+func _chain_link_clamped_end(start: Vector3, end: Vector3) -> Vector3:
+	var flat_delta := Vector3(end.x - start.x, 0.0, end.z - start.z)
+	var length := flat_delta.length()
+	if length <= 0.001 or length <= CHAIN_LINK_MAX_SEGMENT_LENGTH:
+		return end
+	var clamped := start + flat_delta.normalized() * CHAIN_LINK_MAX_SEGMENT_LENGTH
+	return Vector3(clamped.x, end.y, clamped.z)
+
+
+func _spawn_chain_link_effect(start: Vector3, end: Vector3, duration: float, material_key: String) -> void:
+	if _beam_effects.size() >= BEAM_EFFECT_CAP or _combat_overlay_active():
 		return
 	var root := Node3D.new()
-	root.name = "%sBeamEffect" % material_key.to_pascal_case()
+	root.name = "%sReadableChainLinkEffect" % material_key.to_pascal_case()
 	root.position = Vector3.ZERO
 	_fx_root.add_child(root)
 	var material: Material = _materials[material_key] if _materials.has(material_key) else _materials["arc_beam"]
+	var clamped_end := _chain_link_clamped_end(start, end)
 	var local_start := Vector3(start.x, 1.08, start.z)
-	var local_end := Vector3(end.x, 1.08, end.z)
-	var outer := Kit.tube_between(root, "%sNeonTube" % material_key.to_pascal_case(), local_start, local_end, 0.094, material, 8)
-	var core := Kit.tube_between(root, "%sWhiteCore" % material_key.to_pascal_case(), local_start, local_end, 0.030, _materials["arc_beam_core"], 6)
-	var beam_direction := (end - start)
-	var beam_length := maxf(0.8, Vector2(beam_direction.x, beam_direction.z).length())
-	var beam_midpoint := Vector3((start.x + end.x) * 0.5, 1.06, (start.z + end.z) * 0.5)
-	_add_weapon_blender_model(root, "prism_chain" if material_key == "prism_chain" else "arc_beam", maxf(0.75, beam_length / 1.55), beam_midpoint, _yaw_for_direction(beam_direction.normalized()) + PI * 0.5, false)
-	_beam_effects.append({"node": root, "outer": outer, "core": core, "life": duration, "duration": duration})
+	var local_end := Vector3(clamped_end.x, 1.08, clamped_end.z)
+	var direction := local_end - local_start
+	direction.y = 0.0
+	var length := direction.length()
+	if length <= 0.001:
+		root.queue_free()
+		return
+	var axis := direction.normalized()
+	var perpendicular := Vector3(-axis.z, 0.0, axis.x)
+	var point_count := clampi(int(ceil(length / 2.35)), 2, 4)
+	var points: Array[Vector3] = [local_start]
+	for i in range(1, point_count):
+		var t := float(i) / float(point_count)
+		var offset := perpendicular * (0.055 if i % 2 == 0 else -0.055)
+		points.append(local_start.lerp(local_end, t) + offset)
+	points.append(local_end)
+	var outer_segments: Array = []
+	var core_segments: Array = []
+	for i in range(points.size() - 1):
+		outer_segments.append(Kit.tube_between(root, "%sSegment%02d" % [material_key.to_pascal_case(), i], points[i], points[i + 1], CHAIN_LINK_OUTER_RADIUS, material, 6))
+		core_segments.append(Kit.tube_between(root, "%sCore%02d" % [material_key.to_pascal_case(), i], points[i], points[i + 1], CHAIN_LINK_CORE_RADIUS, _materials["arc_beam_core"], 5))
+	for i in range(1, points.size() - 1):
+		var tick_start := points[i] - perpendicular * 0.105
+		var tick_end := points[i] + perpendicular * 0.105
+		Kit.tube_between(root, "%sLinkTick%02d" % [material_key.to_pascal_case(), i], tick_start, tick_end, CHAIN_LINK_TICK_RADIUS, material, 5)
+	var safe_duration := clampf(duration, 0.055, CHAIN_LINK_MAX_DURATION)
+	_beam_effects.append({"node": root, "outer": outer_segments, "core": core_segments, "life": safe_duration, "duration": safe_duration, "chain_link": true})
+
+
+func _spawn_colored_beam_effect(start: Vector3, end: Vector3, duration: float, material_key: String) -> void:
+	_spawn_chain_link_effect(start, end, duration, material_key)
 
 
 func _spawn_weapon_gravity_well(position: Vector3) -> void:
@@ -10798,21 +10842,7 @@ func _spawn_rail_skimmer_dash_telegraph(position: Vector3, direction: Vector3) -
 
 
 func _spawn_beam_effect(start: Vector3, end: Vector3, duration: float) -> void:
-	if _beam_effects.size() >= BEAM_EFFECT_CAP:
-		return
-	var root := Node3D.new()
-	root.name = "ArcBeamChainEffect"
-	root.position = Vector3.ZERO
-	_fx_root.add_child(root)
-	var local_start := Vector3(start.x, 1.08, start.z)
-	var local_end := Vector3(end.x, 1.08, end.z)
-	var outer := Kit.tube_between(root, "ArcBeamCyanTube", local_start, local_end, 0.104, _materials["arc_beam"], 8)
-	var core := Kit.tube_between(root, "ArcBeamWhiteHotCore", local_start, local_end, 0.038, _materials["arc_beam_core"], 6)
-	var beam_direction := (end - start)
-	var beam_length := maxf(0.8, Vector2(beam_direction.x, beam_direction.z).length())
-	var beam_midpoint := Vector3((start.x + end.x) * 0.5, 1.07, (start.z + end.z) * 0.5)
-	_add_weapon_blender_model(root, "arc_beam", maxf(0.75, beam_length / 1.55), beam_midpoint, _yaw_for_direction(beam_direction.normalized()) + PI * 0.5, false)
-	_beam_effects.append({"node": root, "outer": outer, "core": core, "life": duration, "duration": duration})
+	_spawn_chain_link_effect(start, end, duration, "arc_beam")
 
 
 func _spawn_nova_effect(position: Vector3) -> void:
@@ -10913,11 +10943,17 @@ func _update_beam_effects(delta: float) -> void:
 		if not is_instance_valid(node):
 			_beam_effects.remove_at(i)
 			continue
+		if bool(effect.get("chain_link", false)) and _combat_overlay_active():
+			node.queue_free()
+			_beam_effects.remove_at(i)
+			continue
 		effect["life"] = float(effect["life"]) - delta
 		var duration: float = maxf(0.001, float(effect["duration"]))
 		var phase := clampf(1.0 - float(effect["life"]) / duration, 0.0, 1.0)
 		if bool(effect.get("nova", false)):
 			node.scale = Vector3.ONE * lerpf(0.6, float(effect.get("max_radius", NOVA_RADIUS * 1.55)), phase)
+		elif bool(effect.get("chain_link", false)):
+			node.scale = Vector3.ONE * lerpf(1.0, 0.88, phase)
 		else:
 			node.scale = Vector3.ONE * (1.0 + sin(_survival_time * 42.0) * 0.025)
 		if float(effect["life"]) <= 0.0:
@@ -10925,6 +10961,17 @@ func _update_beam_effects(delta: float) -> void:
 			_beam_effects.remove_at(i)
 		else:
 			_beam_effects[i] = effect
+
+
+func _clear_chain_link_effects() -> void:
+	for i in range(_beam_effects.size() - 1, -1, -1):
+		var effect := _beam_effects[i]
+		if not bool(effect.get("chain_link", false)):
+			continue
+		var node: Node3D = effect.get("node", null)
+		if is_instance_valid(node):
+			node.queue_free()
+		_beam_effects.remove_at(i)
 
 
 func _update_mines(delta: float) -> void:
@@ -11426,6 +11473,7 @@ func _begin_sector_clear_reward() -> void:
 		return
 	var sector := _current_sector()
 	_clear_run_event_state()
+	_clear_chain_link_effects()
 	_sector_reward_active = true
 	_level_up_active = true
 	_upgrade_selected_index = 0
@@ -11673,6 +11721,7 @@ func _collect_xp(value: int) -> void:
 
 
 func _begin_level_up() -> void:
+	_clear_chain_link_effects()
 	_level_up_active = true
 	_upgrade_selected_index = 0
 	_level_nav_cooldown = 0.0
@@ -11987,6 +12036,7 @@ func _complete_run() -> void:
 	_run_success = true
 	_clear_run_event_state()
 	_clear_enemy_projectiles_and_hazards()
+	_clear_chain_link_effects()
 	_finalize_run_neon_dust(true)
 	_update_run_end_summary(true)
 	if _success_panel:
@@ -12015,6 +12065,7 @@ func _damage_player(amount: float) -> void:
 	if _player_health <= 0.0:
 		_game_over = true
 		_clear_run_event_state()
+		_clear_chain_link_effects()
 		_finalize_run_neon_dust(false)
 		_update_run_end_summary(false)
 		_game_over_panel.visible = true
@@ -12063,6 +12114,7 @@ func _toggle_pause() -> void:
 	_pause_options_visible = false
 	_pause_menu_selected_index = 0
 	_pause_nav_cooldown = 0.0
+	_clear_chain_link_effects()
 	get_tree().paused = true
 	_update_pause_menu_labels()
 	_focus_pause_menu_choice()

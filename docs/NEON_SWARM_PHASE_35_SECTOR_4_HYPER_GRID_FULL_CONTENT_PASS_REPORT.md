@@ -179,6 +179,62 @@ Quick Sector 4 test:
 9. Let Sector 4 reach Null Octagon Prime.
 10. Confirm `RUN COMPLETE` still works after boss defeat.
 
+## Phase 35 Hotfix — Chain Weapon Visual Scale / Readability Fix
+
+### Problem Fixed
+
+Chain/link weapons were visually over-scaling into huge cyan/white slabs. The root cause was shared chain/beam VFX attaching a full Blender weapon model to each link and scaling that model by link length. Long Arc Beam / Prism Chain segments could therefore become screen-filling floodlights behind enemies, XP, and level-up UI.
+
+### Weapons / VFX Systems Fixed
+
+- Arc Beam now uses the shared readable chain-link renderer.
+- Prism Chain now uses the same shared readable chain-link renderer.
+- Shared colored beam-chain rendering no longer adds length-scaled weapon models to link VFX.
+- Chain VFX are now segmented thin neon links with small cross ticks, not solid rectangles.
+
+### Chain Visual Limits / Clamps
+
+- Outer link radius: `0.036`
+- Core link radius: `0.012`
+- Segment tick radius: `0.010`
+- Max chain VFX lifetime: `0.14s`
+- Max visual segment length: `9.25`
+- Existing weapon target counts and damage behavior were preserved.
+- Arc/Prism chain emission was reduced from the previous floodlight-level values to controlled arcade-link values.
+
+### UI Overlay Safety
+
+Chain VFX are cleared or suppressed when modal combat UI appears:
+
+- Level-up panel
+- Sector reward panel
+- Generated weapon reward decision panel
+- Pause menu
+- Return to title/title menu
+- Game over
+- Run complete
+
+This prevents frozen active combat links from sitting behind upgrade/reward UI.
+
+### Validation Added
+
+Added and ran focused validation script:
+
+`godot --headless --path . --script /tmp/neon_swarm_phase35_chain_vfx_validation.gd`
+
+It validates:
+
+- forced Arc Beam and Prism Chain link VFX are tagged as chain links
+- lifetime clamp is applied
+- length-scaled Blender weapon model children are not attached to chain links
+- chain VFX clear during level-up/reward-style overlays
+- Arc Beam still creates chain VFX through its weapon update path
+- Prism Chain still creates chain VFX through its weapon update path
+
+### Manual Test Target
+
+The user should equip or obtain Arc Beam / Prism Chain and confirm links now appear as thin segmented neon electricity between targets. During level-up or reward selection, active chain VFX should be gone or heavily suppressed, not covering the panel.
+
 ## 14. Known Issues
 
 - F10 is a temporary development/test control, intentionally guarded behind Event Test Mode.
