@@ -664,6 +664,10 @@ func _handle_run_event_test_input(event: InputEvent) -> bool:
 			if not _run_event_test_enabled or not _run_event_test_input_allowed():
 				return false
 			_clear_run_event_test_spawn()
+		KEY_F10:
+			if not _run_event_test_enabled or not _run_event_test_input_allowed():
+				return false
+			_jump_to_sector4_test_state()
 		_:
 			return false
 	get_viewport().set_input_as_handled()
@@ -714,6 +718,40 @@ func _clear_run_event_test_spawn() -> void:
 	_update_run_event_test_hud()
 
 
+func _jump_to_sector4_test_state() -> void:
+	_clear_transition_combat_state()
+	for i in range(_enemies.size() - 1, -1, -1):
+		var enemy := _enemies[i]
+		var node: Node3D = enemy.get("node", null)
+		if is_instance_valid(node):
+			node.queue_free()
+		_enemies.remove_at(i)
+	_sector_index = SECTOR_COUNT - 1
+	_sector_elapsed = 0.0
+	_sector_boss_spawned = false
+	_sector_boss_active = false
+	_sector_boss_warning_played = false
+	_mini_boss_spawned = false
+	_mini_boss_active = false
+	_mini_boss_warning_played = false
+	_null_octagon_spawned = false
+	_null_octagon_active = false
+	_null_octagon_warning_played = false
+	_null_octagon_warning_start = -1.0
+	_wave_index = 0
+	_wave_name = str(_current_sector()["intro_wave"])
+	_spawn_timer = 0.35
+	_player_invuln = maxf(_player_invuln, 1.10)
+	_reset_run_event_director_for_sector()
+	_apply_sector_visual_identity()
+	_trigger_sector_transition_scan()
+	_spawn_sector_opening_wave()
+	_update_hud()
+	_set_music_state("gameplay")
+	_show_combat_notice("EVENT TEST MODE // SECTOR 4 HYPER GRID", Color(0.72, 0.96, 1.0), 1.50)
+	_update_run_event_test_hud()
+
+
 func _run_event_test_selected_type() -> String:
 	if RUN_EVENT_TEST_TYPES.is_empty():
 		return "data_cache"
@@ -730,7 +768,7 @@ func _update_run_event_test_hud() -> void:
 	var active_text := "NONE"
 	if _run_event_active:
 		active_text = "%s // %s // %.0fs" % [_run_event_display_name(_run_event_type).to_upper(), _run_event_stage.to_upper(), _run_event_timer]
-	_run_event_test_label.text = "EVENT TEST MODE  //  SELECTED: %s\nF7 CYCLE  |  F8 SPAWN  |  F9 CLEAR  //  ACTIVE: %s" % [
+	_run_event_test_label.text = "EVENT TEST MODE  //  SELECTED: %s\nF7 CYCLE  |  F8 SPAWN  |  F9 CLEAR  |  F10 S4  //  ACTIVE: %s" % [
 		_run_event_display_name(_run_event_test_selected_type()).to_upper(),
 		active_text
 	]
@@ -776,11 +814,17 @@ func _run_event_objective_text() -> String:
 
 
 func _data_cache_objective_text() -> String:
-	var progress := int(round(clampf(_run_event_progress / RUN_EVENT_CACHE_HOLD_TIME, 0.0, 1.0) * 100.0))
+	var required_hold := _data_cache_required_hold_time()
+	var progress := int(round(clampf(_run_event_progress / required_hold, 0.0, 1.0) * 100.0))
 	var near_cache := is_instance_valid(_run_event_node) and _xz_distance(_player_area.position, _run_event_node.position) <= RUN_EVENT_INTERACTION_RADIUS
+	var title := "HYPER DATA CACHE" if _sector_index >= 3 else "DATA CACHE FOUND"
 	if near_cache:
-		return "DATA CACHE FOUND\nSTAND INSIDE THE RING TO SYNC\nSYNCING: %d%%  //  FAILS IN: %.0f" % [progress, _run_event_timer]
-	return "DATA CACHE FOUND\nSTAND INSIDE THE RING TO SYNC\nRETURN TO THE CACHE RING  //  FAILS IN: %.0f" % _run_event_timer
+		return "%s\nSTAND INSIDE THE RING TO SYNC\nSYNCING: %d%%  //  FAILS IN: %.0f" % [title, progress, _run_event_timer]
+	return "%s\nSTAND INSIDE THE RING TO SYNC\nRETURN TO THE CACHE RING  //  FAILS IN: %.0f" % [title, _run_event_timer]
+
+
+func _data_cache_required_hold_time() -> float:
+	return RUN_EVENT_CACHE_HOLD_TIME * (0.82 if _sector_index >= 3 else 1.0)
 
 
 func _rift_surge_objective_text() -> String:
@@ -1924,6 +1968,10 @@ func _create_materials() -> void:
 	_materials["triad_splitter"] = Kit.make_emissive_material(Color(1.0, 0.18, 0.72, 0.88), 6.8, true)
 	_materials["triad_fragment"] = Kit.make_emissive_material(Color(1.0, 0.58, 0.02, 0.88), 6.6, true)
 	_materials["hex_pulser"] = Kit.make_emissive_material(Color(0.0, 0.96, 1.0, 0.88), 6.9, true)
+	_materials["rail_skimmer"] = Kit.make_emissive_material(Color(0.52, 0.94, 1.0, 0.92), 7.0, true)
+	_materials["rail_skimmer_warning"] = Kit.make_emissive_material(Color(1.0, 0.96, 0.18, 0.76), 6.2, true)
+	_materials["grid_splitter"] = Kit.make_emissive_material(Color(0.06, 0.72, 1.0, 0.88), 6.7, true)
+	_materials["grid_fragment"] = Kit.make_emissive_material(Color(0.58, 0.96, 1.0, 0.84), 6.1, true)
 	_materials["fractal_crown"] = Kit.make_emissive_material(Color(0.88, 0.05, 1.0, 0.90), 7.3, true)
 	_materials["fractal_orange"] = Kit.make_emissive_material(Color(1.0, 0.42, 0.02, 0.88), 7.1, true)
 	_materials["elite_overcharged"] = Kit.make_emissive_material(Color(0.0, 0.98, 1.0, 0.88), 6.2, true)
@@ -1931,6 +1979,9 @@ func _create_materials() -> void:
 	_materials["elite_shielded"] = Kit.make_emissive_material(Color(0.18, 0.66, 1.0, 0.88), 5.8, true)
 	_materials["elite_volatile"] = Kit.make_emissive_material(Color(1.0, 0.28, 0.04, 0.90), 6.4, true)
 	_materials["elite_splitter"] = Kit.make_emissive_material(Color(1.0, 0.12, 0.86, 0.90), 6.1, true)
+	_materials["elite_hypercharged"] = Kit.make_emissive_material(Color(0.58, 0.96, 1.0, 0.92), 6.8, true)
+	_materials["elite_rail_armored"] = Kit.make_emissive_material(Color(0.92, 0.98, 1.0, 0.90), 6.3, true)
+	_materials["elite_overclocked_splitter"] = Kit.make_emissive_material(Color(1.0, 0.74, 0.10, 0.92), 6.5, true)
 	_materials["burst"] = Kit.make_emissive_material(Color(1.0, 0.62, 0.02, 0.92), 7.0, true)
 	_materials["burst_cyan"] = Kit.make_emissive_material(Color(0.0, 0.96, 1.0, 0.92), 7.0, true)
 	_materials["burst_green"] = Kit.make_emissive_material(Color(0.05, 1.0, 0.34, 0.92), 6.8, true)
@@ -2360,6 +2411,12 @@ func _enemy_blender_scale(asset_id: String) -> float:
 			return 1.86
 		"fractal_crown":
 			return 1.66
+		"rail_skimmer":
+			return 1.10
+		"grid_splitter":
+			return 1.18
+		"grid_fragment":
+			return 0.86
 		"triad_fragment":
 			return 0.82
 		"tank", "shield_node", "hex_pulser", "prism_leech":
@@ -2392,7 +2449,7 @@ func _apply_enemy_blender_model(root: Node3D, enemy_type: String) -> void:
 func _enemy_visual_scale_for_gameplay(enemy_type: String, base_scale: float) -> float:
 	if _is_boss_type(enemy_type) or enemy_type == "mini_boss":
 		return base_scale
-	if enemy_type == "triad_fragment":
+	if enemy_type == "triad_fragment" or enemy_type == "grid_fragment":
 		return maxf(base_scale, 0.68)
 	return maxf(base_scale, 0.88)
 
@@ -3510,7 +3567,7 @@ func _create_hud() -> void:
 	_game_over_panel.visible = false
 	_hud_design_root.add_child(_game_over_panel)
 	_game_over_summary_label = _game_over_panel.find_child("RunEconomySummaryLabel", true, false) as Label
-	_success_panel = _make_center_panel("RUN COMPLETE\nNULL ZONE CLEARED\nA / START: RESTART\nENTER / SPACE: RESTART", true)
+	_success_panel = _make_center_panel("RUN COMPLETE\nHYPER GRID CLEARED\nA / START: RESTART\nENTER / SPACE: RESTART", true)
 	_success_panel.visible = false
 	_hud_design_root.add_child(_success_panel)
 	_success_summary_label = _success_panel.find_child("RunEconomySummaryLabel", true, false) as Label
@@ -7971,10 +8028,11 @@ func _update_wave_director(delta: float) -> void:
 			_null_octagon_warning_played = true
 			_null_octagon_warning_start = _survival_time
 		_set_music_state("boss")
+		_show_combat_notice("FINAL SECTOR // NULL OCTAGON PRIME INBOUND" if _sector_index >= 3 else "%s WARNING" % _boss_name_for_type(boss_type), _boss_notice_color(boss_type), 1.65)
 		_play_sfx("boss_warning", 0.40)
-		_trigger_presentation_flash(Color(1.0, 0.08, 0.86), 0.10, 0.24)
-		_trigger_sector_background_reaction(0.70, 0.78)
-		_add_screen_shake(0.055, 0.16)
+		_trigger_presentation_flash(Color(0.72, 0.96, 1.0) if _sector_index >= 3 else Color(1.0, 0.08, 0.86), 0.12 if _sector_index >= 3 else 0.10, 0.26 if _sector_index >= 3 else 0.24)
+		_trigger_sector_background_reaction(0.86 if _sector_index >= 3 else 0.70, 0.90 if _sector_index >= 3 else 0.78)
+		_add_screen_shake(0.070 if _sector_index >= 3 else 0.055, 0.18 if _sector_index >= 3 else 0.16)
 	if not _sector_boss_spawned and _sector_elapsed >= float(sector["boss_time"]):
 		_spawn_sector_boss()
 
@@ -8113,7 +8171,7 @@ func _elite_variant_for_spawn(enemy_type: String) -> String:
 
 
 func _can_spawn_elite(enemy_type: String) -> bool:
-	if _is_boss_type(enemy_type) or enemy_type == "triad_fragment":
+	if _is_boss_type(enemy_type) or enemy_type == "triad_fragment" or enemy_type == "grid_fragment":
 		return false
 	if _sector_boss_active:
 		return false
@@ -8127,6 +8185,29 @@ func _can_spawn_elite(enemy_type: String) -> bool:
 
 
 func _elite_variant_pool(enemy_type: String) -> Array[Dictionary]:
+	if _sector_index >= 3:
+		match enemy_type:
+			"rail_skimmer":
+				return [
+					{"variant": "hypercharged", "weight": 0.54},
+					{"variant": "rail_armored", "weight": 0.30},
+					{"variant": "volatile", "weight": 0.16}
+				]
+			"grid_splitter":
+				return [
+					{"variant": "overclocked_splitter", "weight": 0.48},
+					{"variant": "rail_armored", "weight": 0.24},
+					{"variant": "shielded", "weight": 0.16},
+					{"variant": "volatile", "weight": 0.12}
+				]
+			"hex_slicer", "spiral_drifter", "hex_pulser":
+				return [
+					{"variant": "hypercharged", "weight": 0.38},
+					{"variant": "rail_armored", "weight": 0.24},
+					{"variant": "overcharged", "weight": 0.18},
+					{"variant": "volatile", "weight": 0.12},
+					{"variant": "shielded", "weight": 0.08}
+				]
 	match enemy_type:
 		"triad_splitter":
 			return [
@@ -8329,8 +8410,9 @@ func _start_run_event(event_type: String) -> void:
 			_run_event_duration = RUN_EVENT_CACHE_DURATION
 			_run_event_timer = _run_event_duration
 			_run_event_stage = "sync"
+			_run_event_spawn_timer = 1.35 if _sector_index >= 3 else 0.0
 			_run_event_node = _create_run_event_marker("data_cache", _run_event_spawn_position())
-			_show_combat_notice("DATA CACHE FOUND // STAND INSIDE THE RING TO SYNC", _run_event_notice_color("data_cache"), 1.95)
+			_show_combat_notice("HYPER DATA CACHE // STAND INSIDE THE RING TO SYNC" if _sector_index >= 3 else "DATA CACHE FOUND // STAND INSIDE THE RING TO SYNC", _run_event_notice_color("data_cache"), 1.95)
 		"rift_surge":
 			_run_event_duration = RUN_EVENT_RIFT_DURATION
 			_run_event_timer = _run_event_duration
@@ -8379,12 +8461,18 @@ func _update_data_cache_event(delta: float) -> void:
 		_finish_run_event(false, "DATA CACHE LOST", false)
 		return
 	var near_cache := _xz_distance(_player_area.position, _run_event_node.position) <= RUN_EVENT_INTERACTION_RADIUS
+	var required_hold := _data_cache_required_hold_time()
 	if near_cache:
-		_run_event_progress = minf(RUN_EVENT_CACHE_HOLD_TIME, _run_event_progress + delta)
+		_run_event_progress = minf(required_hold, _run_event_progress + delta)
 	else:
 		_run_event_progress = maxf(0.0, _run_event_progress - delta * 0.38)
-	_show_run_event_progress_notice("DATA CACHE SYNCING", _run_event_progress / RUN_EVENT_CACHE_HOLD_TIME, _run_event_notice_color("data_cache"))
-	if _run_event_progress >= RUN_EVENT_CACHE_HOLD_TIME:
+	if _sector_index >= 3:
+		_run_event_spawn_timer -= delta
+		if _run_event_spawn_timer <= 0.0 and _enemies.size() < ENEMY_CAP - 2:
+			_run_event_spawn_timer = 2.45
+			_spawn_enemy(_hyper_grid_pressure_enemy_type(), _spawn_position_on_edge())
+	_show_run_event_progress_notice("HYPER CACHE SYNCING" if _sector_index >= 3 else "DATA CACHE SYNCING", _run_event_progress / required_hold, _run_event_notice_color("data_cache"))
+	if _run_event_progress >= required_hold:
 		_finish_run_event(true, "DATA CACHE SECURED", true)
 	elif _run_event_timer <= 0.0:
 		_finish_run_event(false, "DATA CACHE FAILED // RETURN TO CACHE RING NEXT TIME", false)
@@ -8406,14 +8494,15 @@ func _update_rift_surge_event(delta: float) -> void:
 	if _run_event_stage == "surge":
 		_run_event_hazard_timer -= delta
 		if _run_event_hazard_timer <= 0.0:
-			_run_event_hazard_timer = clampf(1.85 - float(_sector_index) * 0.18, 1.15, 1.85)
+			_run_event_hazard_timer = clampf(1.85 - float(_sector_index) * 0.18 - (0.12 if _sector_index >= 3 else 0.0), 1.05, 1.85)
 			var offset := Vector3(_run_event_rng.randf_range(-5.2, 5.2), 0.0, _run_event_rng.randf_range(-5.2, 5.2))
 			var target := _clamp_to_arena(_player_area.position + offset, 2.8)
-			_spawn_pressure_hazard(target, 1.75 + float(_sector_index) * 0.16, 1.35, "hazard_pulse", 7.0 + float(_sector_index) * 1.2, 0.42, "run_event")
+			_spawn_pressure_hazard(target, 1.75 + float(_sector_index) * 0.16 + (0.12 if _sector_index >= 3 else 0.0), 1.35, "hazard_pulse", 7.0 + float(_sector_index) * 1.2, 0.42, "run_event")
 		_run_event_spawn_timer -= delta
 		if _run_event_spawn_timer <= 0.0 and _enemies.size() < ENEMY_CAP - 1:
-			_run_event_spawn_timer = clampf(3.1 - float(_sector_index) * 0.25, 2.2, 3.1)
-			_spawn_enemy(_enemy_type_for_sector_phase(_sector_index, maxi(1, _wave_index)), _spawn_position_on_edge())
+			_run_event_spawn_timer = clampf(3.1 - float(_sector_index) * 0.25 - (0.18 if _sector_index >= 3 else 0.0), 2.0, 3.1)
+			var spawn_type := _hyper_grid_pressure_enemy_type() if _sector_index >= 3 else _enemy_type_for_sector_phase(_sector_index, maxi(1, _wave_index))
+			_spawn_enemy(spawn_type, _spawn_position_on_edge())
 	if _run_event_timer <= 0.0:
 		_finish_run_event(true, "RIFT SURGE SURVIVED", true)
 
@@ -8454,14 +8543,15 @@ func _update_overload_shrine_event(delta: float) -> void:
 	elif _run_event_stage == "overload":
 		_run_event_hazard_timer -= delta
 		if _run_event_hazard_timer <= 0.0:
-			_run_event_hazard_timer = clampf(2.05 - float(_sector_index) * 0.18, 1.35, 2.05)
+			_run_event_hazard_timer = clampf(2.05 - float(_sector_index) * 0.18 - (0.16 if _sector_index >= 3 else 0.0), 1.18, 2.05)
 			var angle := _run_event_rng.randf() * TAU
 			var target := _clamp_to_arena(_run_event_node.position + Vector3(cos(angle), 0.0, sin(angle)) * _run_event_rng.randf_range(2.2, 6.2), 2.8)
-			_spawn_pressure_hazard(target, 1.48 + float(_sector_index) * 0.12, 1.25, "hazard_leech", 6.0 + float(_sector_index), 0.38, "run_event")
+			_spawn_pressure_hazard(target, 1.48 + float(_sector_index) * 0.12 + (0.10 if _sector_index >= 3 else 0.0), 1.25, "hazard_leech", 6.0 + float(_sector_index), 0.38, "run_event")
 		_run_event_spawn_timer -= delta
 		if _run_event_spawn_timer <= 0.0 and _enemies.size() < ENEMY_CAP - 1:
-			_run_event_spawn_timer = clampf(3.25 - float(_sector_index) * 0.24, 2.35, 3.25)
-			_spawn_enemy(_enemy_type_for_sector_phase(_sector_index, maxi(1, _wave_index)), _spawn_position_on_edge())
+			_run_event_spawn_timer = clampf(3.25 - float(_sector_index) * 0.24 - (0.18 if _sector_index >= 3 else 0.0), 2.10, 3.25)
+			var overload_spawn_type := _hyper_grid_pressure_enemy_type() if _sector_index >= 3 else _enemy_type_for_sector_phase(_sector_index, maxi(1, _wave_index))
+			_spawn_enemy(overload_spawn_type, _spawn_position_on_edge())
 		if _run_event_timer <= 0.0:
 			_finish_run_event(true, "POWER NODE STABILIZED", true)
 
@@ -8495,6 +8585,15 @@ func _spawn_run_event_elite_target() -> void:
 	_play_sfx("warning", 0.12)
 
 
+func _hyper_grid_pressure_enemy_type() -> String:
+	var roll := _run_event_rng.randf()
+	if roll < 0.48:
+		return "rail_skimmer"
+	if roll < 0.78:
+		return "grid_splitter"
+	return "hex_slicer"
+
+
 func _run_event_elite_type_for_sector() -> String:
 	match _sector_index:
 		0:
@@ -8504,7 +8603,7 @@ func _run_event_elite_type_for_sector() -> String:
 		2:
 			return "shield_node" if _run_event_rng.randf() < 0.55 else "hex_pulser"
 		_:
-			return "hex_slicer" if _run_event_rng.randf() < 0.52 else "spiral_drifter"
+			return "rail_skimmer" if _run_event_rng.randf() < 0.58 else "grid_splitter"
 
 
 func _run_event_elite_variant_for_sector(enemy_type: String) -> String:
@@ -8618,7 +8717,7 @@ func _update_run_event_marker_animation(delta: float) -> void:
 		match _run_event_type:
 			"data_cache":
 				_run_event_node.scale = Vector3.ONE * pulse
-				var filled_segments := clampi(int(ceil(clampf(_run_event_progress / RUN_EVENT_CACHE_HOLD_TIME, 0.0, 1.0) * 4.0)), 0, 4)
+				var filled_segments := clampi(int(ceil(clampf(_run_event_progress / _data_cache_required_hold_time(), 0.0, 1.0) * 4.0)), 0, 4)
 				for i in range(4):
 					var segment := _run_event_node.get_node_or_null("DataCacheProgressSegment%d" % i) as MeshInstance3D
 					if is_instance_valid(segment):
@@ -8836,14 +8935,14 @@ func _spawn_sector_boss() -> void:
 	var spawn_position := _sector_boss_spawn_position()
 	_spawn_enemy(boss_type, spawn_position)
 	_spawn_burst(spawn_position, 2.35 if _is_null_boss_type(boss_type) else 1.90, _burst_key_for_enemy(boss_type))
-	_show_combat_notice("%s ARRIVAL" % _boss_name_for_type(boss_type), _boss_notice_color(boss_type), 1.55)
+	_show_combat_notice("HYPER GRID FINAL BREACH // %s" % _boss_name_for_type(boss_type) if _sector_index >= 3 else "%s ARRIVAL" % _boss_name_for_type(boss_type), _boss_notice_color(boss_type), 1.70 if _sector_index >= 3 else 1.55)
 	_spawn_timer = 1.35
 	_player_invuln = maxf(_player_invuln, 0.55)
 	_set_music_state("boss")
 	_play_sfx("boss_warning", 0.50)
-	_trigger_presentation_flash(Color(1.0, 0.08, 0.86), 0.14, 0.28)
-	_trigger_sector_background_reaction(0.86, 0.95)
-	_add_screen_shake(0.18 if _is_null_boss_type(boss_type) else 0.12, 0.34 if _is_null_boss_type(boss_type) else 0.25)
+	_trigger_presentation_flash(Color(0.72, 0.96, 1.0) if _sector_index >= 3 else Color(1.0, 0.08, 0.86), 0.16 if _sector_index >= 3 else 0.14, 0.30 if _sector_index >= 3 else 0.28)
+	_trigger_sector_background_reaction(1.0 if _sector_index >= 3 else 0.86, 1.08 if _sector_index >= 3 else 0.95)
+	_add_screen_shake(0.20 if _sector_index >= 3 else 0.18 if _is_null_boss_type(boss_type) else 0.12, 0.36 if _sector_index >= 3 else 0.34 if _is_null_boss_type(boss_type) else 0.25)
 
 
 func _sector_boss_spawn_position() -> Vector3:
@@ -8984,6 +9083,12 @@ func _elite_variant_data(variant: String) -> Dictionary:
 			return {"label": "VOLATILE", "hp_mult": 1.14, "speed_mult": 1.08, "score_mult": 1.42, "xp_bonus": 2, "dust_chance": 0.10, "dust": 3, "material": "elite_volatile", "burst": "burst_red", "scale_mult": 1.10}
 		"splitter_elite":
 			return {"label": "SPLITTER ELITE", "hp_mult": 1.34, "speed_mult": 1.05, "score_mult": 1.70, "xp_bonus": 4, "dust_chance": 0.16, "dust": 5, "material": "elite_splitter", "burst": "burst_magenta", "scale_mult": 1.15}
+		"hypercharged":
+			return {"label": "HYPERCHARGED", "hp_mult": 1.24, "speed_mult": 1.24, "score_mult": 1.64, "xp_bonus": 3, "dust_chance": 0.14, "dust": 5, "material": "elite_hypercharged", "burst": "rail_skimmer", "scale_mult": 1.12}
+		"rail_armored":
+			return {"label": "RAIL-ARMORED", "hp_mult": 1.56, "speed_mult": 0.96, "score_mult": 1.76, "xp_bonus": 4, "dust_chance": 0.16, "dust": 6, "material": "elite_rail_armored", "burst": "burst_cyan", "scale_mult": 1.16}
+		"overclocked_splitter":
+			return {"label": "OVERCLOCKED SPLITTER", "hp_mult": 1.32, "speed_mult": 1.08, "score_mult": 1.82, "xp_bonus": 5, "dust_chance": 0.18, "dust": 6, "material": "elite_overclocked_splitter", "burst": "grid_splitter", "scale_mult": 1.16}
 		_:
 			return {}
 
@@ -9017,6 +9122,12 @@ func _apply_elite_visual_marker(visual: Node3D, elite_variant: String, enemy_typ
 			radius = 0.96
 		"splitter_elite":
 			radius = 0.86
+		"hypercharged":
+			radius = 0.90
+		"rail_armored":
+			radius = 1.00
+		"overclocked_splitter":
+			radius = 0.94
 	var ring := Kit.add_mesh(marker, "EliteReadableOuterNeonRing", Kit.torus_mesh(radius, 0.032, 42, 5), material)
 	ring.rotation.x = PI * 0.5
 	var cross := Kit.add_mesh(marker, "EliteVerticalNeonProfileRing", Kit.torus_mesh(radius * 0.82, 0.018, 34, 4), material)
@@ -9026,6 +9137,10 @@ func _apply_elite_visual_marker(visual: Node3D, elite_variant: String, enemy_typ
 	elif elite_variant == "volatile":
 		var warning := Kit.add_mesh(marker, "EliteVolatileWarningCore", Kit.torus_mesh(radius * 1.10, 0.018, 30, 4), material)
 		warning.rotation.x = PI * 0.5
+	elif elite_variant == "rail_armored":
+		Kit.add_mesh(marker, "EliteRailArmoredWhiteRailFrame", Kit.box_mesh(Vector3(radius * 1.44, 0.050, radius * 0.42)), material, Vector3(0.0, -0.18, 0.0))
+	elif elite_variant == "overclocked_splitter":
+		Kit.add_mesh(marker, "EliteOverclockedSplitterSquareFrame", Kit.box_mesh(Vector3(radius * 1.18, 0.050, radius * 1.18)), material, Vector3(0.0, -0.18, 0.0))
 	return marker
 
 
@@ -9047,6 +9162,12 @@ func _elite_notice_color(elite_variant: String) -> Color:
 			return Color(1.0, 0.30, 0.04)
 		"splitter_elite":
 			return Color(1.0, 0.08, 0.86)
+		"hypercharged":
+			return Color(0.58, 0.96, 1.0)
+		"rail_armored":
+			return Color(0.92, 0.98, 1.0)
+		"overclocked_splitter":
+			return Color(1.0, 0.74, 0.10)
 		_:
 			return Color(0.0, 0.96, 1.0)
 
@@ -9069,6 +9190,12 @@ func _enemy_stats(enemy_type: String) -> Dictionary:
 			return {"hp": 22.0, "speed": 4.85, "radius": 0.52, "damage": 6.0, "visual_scale": 0.52, "score": 16, "xp": 1}
 		"hex_pulser":
 			return {"hp": 86.0, "speed": 2.08, "radius": 1.02, "damage": 13.0, "visual_scale": 0.82, "score": 96, "xp": 5}
+		"rail_skimmer":
+			return {"hp": 66.0, "speed": 3.35, "radius": 0.88, "damage": 15.0, "visual_scale": 0.86, "score": 92, "xp": 5}
+		"grid_splitter":
+			return {"hp": 92.0, "speed": 2.54, "radius": 1.02, "damage": 14.0, "visual_scale": 0.90, "score": 108, "xp": 5}
+		"grid_fragment":
+			return {"hp": 28.0, "speed": 4.35, "radius": 0.54, "damage": 7.0, "visual_scale": 0.58, "score": 18, "xp": 1}
 		"prism_leech":
 			return {"hp": 78.0, "speed": 2.48, "radius": 0.98, "damage": 10.0, "visual_scale": 0.76, "score": 76, "xp": 4}
 		"spiral_drifter":
@@ -9093,6 +9220,12 @@ func _create_enemy_visual(enemy_type: String) -> Node3D:
 			return _create_triad_fragment_visual()
 		"hex_pulser":
 			return _create_hex_pulser_visual()
+		"rail_skimmer":
+			return _create_rail_skimmer_visual()
+		"grid_splitter":
+			return _create_grid_splitter_visual()
+		"grid_fragment":
+			return _create_grid_fragment_visual()
 		"fractal_crown":
 			return _create_fractal_crown_visual()
 		_:
@@ -9135,6 +9268,40 @@ func _create_hex_pulser_visual() -> Node3D:
 	ring.rotation.x = PI * 0.5
 	var warning := Kit.add_mesh(root, "HexPulserOrangeWarningRing", Kit.torus_mesh(1.20, 0.020, 42, 4), _materials["fractal_orange"])
 	warning.rotation.x = PI * 0.5
+	return root
+
+
+func _create_rail_skimmer_visual() -> Node3D:
+	var root := Node3D.new()
+	root.name = "RailSkimmerHyperGridFallbackVisual"
+	var body := Kit.add_mesh(root, "RailSkimmerDarkArrowBody", Kit.tetrahedron_arrow_mesh(), _materials["enemy_dark_body"])
+	body.scale = Vector3(0.86, 0.42, 1.48)
+	Kit.add_glowing_edges(root, "RailSkimmerArrow", _scaled_points(Kit.tetrahedron_arrow_points(), 1.10), Kit.tetrahedron_edges(), 0.046, 0.016, _materials["rail_skimmer"], _materials["soft_white"])
+	for side in [-1.0, 1.0]:
+		var rail := Kit.add_mesh(root, "RailSkimmerSideRail%.0f" % side, Kit.box_mesh(Vector3(0.12, 0.08, 1.42)), _materials["rail_skimmer"], Vector3(side * 0.44, 0.02, -0.05))
+		rail.rotation.y = side * 0.10
+	var warning := Kit.add_mesh(root, "RailSkimmerDashTelegraphHotNose", Kit.box_mesh(Vector3(0.14, 0.10, 0.48)), _materials["rail_skimmer_warning"], Vector3(0.0, 0.08, -0.70))
+	warning.rotation.y = 0.0
+	return root
+
+
+func _create_grid_splitter_visual() -> Node3D:
+	var root := Node3D.new()
+	root.name = "GridSplitterHyperGridFallbackVisual"
+	Kit.add_mesh(root, "GridSplitterDarkSquareCore", Kit.box_mesh(Vector3(1.24, 0.42, 1.24)), _materials["enemy_dark_body"], Vector3.ZERO)
+	Kit.add_glowing_edges(root, "GridSplitterSquareFrame", Kit.box_points(Vector3(1.32, 0.48, 1.32)), Kit.box_edges(), 0.038, 0.014, _materials["grid_splitter"], _materials["soft_white"])
+	for offset in [-0.34, 0.34]:
+		Kit.add_mesh(root, "GridSplitterHorizontalCircuit%.0f" % (offset * 100.0), Kit.box_mesh(Vector3(1.10, 0.064, 0.070)), _materials["grid_splitter"], Vector3(0.0, 0.28, offset))
+		Kit.add_mesh(root, "GridSplitterVerticalCircuit%.0f" % (offset * 100.0), Kit.box_mesh(Vector3(0.070, 0.064, 1.10)), _materials["grid_splitter"], Vector3(offset, 0.28, 0.0))
+	Kit.add_mesh(root, "GridSplitterWhiteCore", Kit.sphere_mesh(0.17, 10, 5), _materials["burst_hot_core"], Vector3(0.0, 0.32, 0.0))
+	return root
+
+
+func _create_grid_fragment_visual() -> Node3D:
+	var root := Node3D.new()
+	root.name = "GridFragmentHyperGridFallbackVisual"
+	Kit.add_mesh(root, "GridFragmentDarkRectBody", Kit.box_mesh(Vector3(0.74, 0.28, 0.48)), _materials["enemy_dark_body"], Vector3.ZERO)
+	Kit.add_glowing_edges(root, "GridFragmentRectFrame", Kit.box_points(Vector3(0.80, 0.32, 0.52)), Kit.box_edges(), 0.034, 0.012, _materials["grid_fragment"], _materials["soft_white"])
 	return root
 
 
@@ -9212,6 +9379,12 @@ func _burst_key_for_enemy(enemy_type: String) -> String:
 			return "triad_fragment"
 		"hex_pulser":
 			return "hex_pulser"
+		"rail_skimmer":
+			return "rail_skimmer"
+		"grid_splitter":
+			return "grid_splitter"
+		"grid_fragment":
+			return "grid_fragment"
 		"prism_leech":
 			return "burst_leech"
 		"tank":
@@ -10587,6 +10760,43 @@ func _apply_enemy_damage_at(index: int, amount: float, burst_key := "burst", bur
 	return false
 
 
+func _rail_skimmer_dash_direction(direction: Vector3) -> Vector3:
+	if direction.length_squared() <= 0.001:
+		return Vector3.FORWARD
+	var candidates := [
+		Vector3.RIGHT,
+		Vector3.LEFT,
+		Vector3.FORWARD,
+		Vector3.BACK,
+		Vector3(1.0, 0.0, 1.0).normalized(),
+		Vector3(-1.0, 0.0, 1.0).normalized(),
+		Vector3(1.0, 0.0, -1.0).normalized(),
+		Vector3(-1.0, 0.0, -1.0).normalized()
+	]
+	var best := direction.normalized()
+	var best_dot := -2.0
+	for candidate in candidates:
+		var dot := direction.normalized().dot(candidate)
+		if dot > best_dot:
+			best_dot = dot
+			best = candidate
+	return best
+
+
+func _spawn_rail_skimmer_dash_telegraph(position: Vector3, direction: Vector3) -> void:
+	if direction.length_squared() <= 0.001 or _beam_effects.size() >= BEAM_EFFECT_CAP:
+		return
+	var root := Node3D.new()
+	root.name = "RailSkimmerDashTelegraph"
+	_fx_root.add_child(root)
+	var start := Vector3(position.x, 0.74, position.z)
+	var end := _clamp_to_arena(position + direction.normalized() * 5.8, 2.1)
+	end.y = 0.74
+	Kit.tube_between(root, "RailSkimmerWarningLane", start, end, 0.040, _materials["rail_skimmer_warning"], 8)
+	Kit.tube_between(root, "RailSkimmerWarningLaneCore", start, end, 0.018, _materials["soft_white"], 6)
+	_beam_effects.append({"node": root, "life": 0.54, "duration": 0.54, "rail_warning": true})
+
+
 func _spawn_beam_effect(start: Vector3, end: Vector3, duration: float) -> void:
 	if _beam_effects.size() >= BEAM_EFFECT_CAP:
 		return
@@ -10801,6 +11011,15 @@ func _update_enemies(delta: float) -> void:
 		elif type_name == "triad_fragment" and direction.length_squared() > 0.01:
 			var fragment_tangent := Vector3(-direction.z, 0.0, direction.x)
 			movement_direction = (direction + fragment_tangent * sin(_survival_time * 5.6 + float(enemy.get("phase", 0.0))) * 0.28).normalized()
+		elif type_name == "grid_splitter" and direction.length_squared() > 0.01:
+			var grid_lane := Vector3(signf(direction.x), 0.0, 0.0) if absf(direction.x) > absf(direction.z) else Vector3(0.0, 0.0, signf(direction.z))
+			var grid_tangent := Vector3(-direction.z, 0.0, direction.x)
+			movement_direction = (direction * 0.70 + grid_lane * 0.26 + grid_tangent * sin(_survival_time * 3.1 + float(enemy.get("phase", 0.0))) * 0.14).normalized()
+			speed *= 0.92
+		elif type_name == "grid_fragment" and direction.length_squared() > 0.01:
+			var fragment_lane := Vector3(signf(direction.x), 0.0, 0.0) if absf(direction.x) > absf(direction.z) else Vector3(0.0, 0.0, signf(direction.z))
+			var fragment_tangent := Vector3(-direction.z, 0.0, direction.x)
+			movement_direction = (direction * 0.68 + fragment_lane * 0.18 + fragment_tangent * sin(_survival_time * 6.4 + float(enemy.get("phase", 0.0))) * 0.30).normalized()
 		elif type_name == "hex_pulser" and direction.length_squared() > 0.01:
 			var pulser_tangent := Vector3(-direction.z, 0.0, direction.x)
 			if distance < 5.0:
@@ -10836,6 +11055,32 @@ func _update_enemies(delta: float) -> void:
 			elif direction.length_squared() > 0.01:
 				var slicer_tangent := Vector3(-direction.z, 0.0, direction.x)
 				movement_direction = (direction + slicer_tangent * sin(_survival_time * 4.0 + float(enemy.get("phase", 0.0))) * 0.34).normalized()
+		elif type_name == "rail_skimmer":
+			enemy["dash_cd"] = maxf(0.0, float(enemy.get("dash_cd", 0.0)) - delta)
+			enemy["dash_windup"] = maxf(0.0, float(enemy.get("dash_windup", 0.0)) - delta)
+			enemy["dash_time"] = maxf(0.0, float(enemy.get("dash_time", 0.0)) - delta)
+			if float(enemy["dash_time"]) > 0.0:
+				movement_direction = enemy.get("dash_dir", direction)
+				speed = 16.2
+				enemy["flash"] = maxf(float(enemy["flash"]), 0.12)
+			elif float(enemy["dash_windup"]) > 0.0:
+				movement_direction = Vector3.ZERO
+				speed = 0.0
+				enemy["flash"] = maxf(float(enemy["flash"]), 0.18)
+				if float(enemy["dash_windup"]) <= delta + 0.001:
+					enemy["dash_time"] = 0.30
+			elif distance < 17.5 and float(enemy["dash_cd"]) <= 0.0:
+				var dash_direction := _rail_skimmer_dash_direction(direction)
+				enemy["dash_windup"] = 0.50
+				enemy["dash_cd"] = randf_range(2.15, 2.95)
+				enemy["dash_dir"] = dash_direction
+				_spawn_rail_skimmer_dash_telegraph(node.position, dash_direction)
+				_spawn_burst(node.position, 0.72, "rail_skimmer_warning")
+				movement_direction = Vector3.ZERO
+				speed = 0.0
+			elif direction.length_squared() > 0.01:
+				var rail_tangent := Vector3(-direction.z, 0.0, direction.x)
+				movement_direction = (direction + rail_tangent * sin(_survival_time * 4.8 + float(enemy.get("phase", 0.0))) * 0.20).normalized()
 		elif _is_null_boss_type(type_name) and direction.length_squared() > 0.01:
 			var null_tangent := Vector3(-direction.z, 0.0, direction.x)
 			movement_direction = (movement_direction + null_tangent * sin(_survival_time * 0.9) * 0.28).normalized()
@@ -10859,6 +11104,8 @@ func _update_enemies(delta: float) -> void:
 				flash_scale += sin(_survival_time * 4.0 + float(enemy.get("phase", 0.0))) * 0.035
 			if type_name == "hex_pulser" and float(enemy.get("pulse_windup", 0.0)) > 0.0:
 				flash_scale += 0.12 + sin(_survival_time * 18.0) * 0.045
+			if type_name == "rail_skimmer" and (float(enemy.get("dash_windup", 0.0)) > 0.0 or float(enemy.get("dash_time", 0.0)) > 0.0):
+				flash_scale += 0.10 + sin(_survival_time * 18.0) * 0.035
 			if type_name == "fractal_crown" and bool(enemy.get("phase2", false)):
 				flash_scale += 0.08 + sin(_survival_time * 8.0) * 0.035
 			visual.scale = Vector3.ONE * float(enemy["visual_scale"]) * flash_scale
@@ -11112,6 +11359,8 @@ func _kill_enemy_at(index: int, exploded: bool) -> void:
 	_enemies.remove_at(index)
 	if enemy_type == "triad_splitter":
 		_spawn_triad_fragments(position, elite_variant == "splitter_elite")
+	if enemy_type == "grid_splitter":
+		_spawn_grid_fragments(position, elite_variant == "overclocked_splitter")
 	if is_boss:
 		_handle_sector_boss_defeated(enemy_type)
 
@@ -11144,6 +11393,21 @@ func _spawn_triad_fragments(position: Vector3, elite_splitter := false) -> void:
 		_spawn_enemy("triad_fragment", Vector3(clampf(position.x + offset.x, -ARENA_HALF_SIZE + 1.5, ARENA_HALF_SIZE - 1.5), 0.95, clampf(position.z + offset.z, -ARENA_HALF_SIZE + 1.5, ARENA_HALF_SIZE - 1.5)))
 	if fragment_count > 0:
 		_spawn_burst(position, 1.20 if elite_splitter else 1.10, "triad_fragment")
+
+
+func _spawn_grid_fragments(position: Vector3, elite_splitter := false) -> void:
+	var active_fragments := _count_enemy_type("grid_fragment")
+	var target_count := 4 if elite_splitter else 3
+	var fragment_cap := 14 if elite_splitter else 11
+	var fragment_count := mini(target_count, ENEMY_CAP - _enemies.size())
+	fragment_count = mini(fragment_count, maxi(0, fragment_cap - active_fragments))
+	for i in range(fragment_count):
+		var angle := TAU * float(i) / float(maxi(1, target_count)) + randf_range(-0.12, 0.12)
+		var offset := Vector3(cos(angle), 0.0, sin(angle)) * 0.82
+		var spawn_position := Vector3(clampf(position.x + offset.x, -ARENA_HALF_SIZE + 1.5, ARENA_HALF_SIZE - 1.5), 0.95, clampf(position.z + offset.z, -ARENA_HALF_SIZE + 1.5, ARENA_HALF_SIZE - 1.5))
+		_spawn_enemy("grid_fragment", spawn_position)
+	if fragment_count > 0:
+		_spawn_burst(position, 1.22 if elite_splitter else 1.08, "grid_splitter")
 
 
 func _handle_sector_boss_defeated(enemy_type: String) -> void:
@@ -11289,7 +11553,7 @@ func _spawn_sector_opening_wave() -> void:
 		if _enemies.size() < ENEMY_CAP:
 			_spawn_enemy("triad_splitter", _spawn_position_on_edge())
 	elif _sector_index == 3:
-		for enemy_type in ["hex_slicer", "hex_pulser", "spiral_drifter"]:
+		for enemy_type in ["rail_skimmer", "grid_splitter", "hex_slicer", "hex_pulser"]:
 			if _enemies.size() < ENEMY_CAP:
 				_spawn_enemy(enemy_type, _spawn_position_on_edge())
 	for i in range(count):

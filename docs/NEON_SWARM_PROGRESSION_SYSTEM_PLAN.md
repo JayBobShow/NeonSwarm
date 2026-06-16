@@ -564,3 +564,28 @@ Future progression options:
 - Track completed event counts in post-run summaries.
 - Add event medals, objective streaks, or challenge goals after the basic event pacing is proven.
 - Allow rare event chains or sector-specific objectives only after readability and reward pacing are tuned.
+
+## 21. Phase 35 Sector 4 Hyper Grid Progression Hooks
+
+Implemented Sector 4 content foundation:
+
+- Rail Skimmer adds a fast, telegraphed dash enemy for Hyper Grid.
+- Grid Splitter adds a square/rectangular splitter enemy with capped Grid Fragments.
+- Sector 4 opening waves and weighted wave mixes now introduce Hyper Grid enemies directly.
+- Sector 4 Elite Hunt targets prefer Rail Skimmer or Grid Splitter.
+- Sector 4 Data Cache, Rift Surge, and Overload Node events add Hyper Grid pressure without changing their reward categories.
+- Null Octagon Prime remains the final Sector 4 boss, with stronger warning/arrival presentation.
+
+Progression boundaries:
+
+- New Sector 4 enemies do not drop weapons directly.
+- Elite variants use existing XP/score/Neon Dust bonus hooks.
+- Event rewards remain XP, score, and small Neon Dust chance.
+- No new save data fields were added in Phase 35.
+- No Core Upgrade, Forge, Evolution/Fusion, Armory, stash, or weapon reward balance was changed.
+
+Future tuning options:
+
+- Track Sector 4 objective completion and Hyper elite kills in post-run summaries.
+- Add Sector 4-specific challenge goals only after Rail Skimmer/Grid Splitter readability is approved.
+- Consider a later Hyper Grid boss alternate only through a separately approved phase.

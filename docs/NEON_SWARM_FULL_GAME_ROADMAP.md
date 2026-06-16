@@ -54,7 +54,7 @@ Current and planned sectors:
 | 1 | Neon Grid | Implemented with Phase 26 Hard Reset HD background plate | Opening sector, teaches movement, XP, rewards, and boss clear flow. | HD square/rectangle cyan-blue arena plate with connected circuit paths and sparse light runners. |
 | 2 | Prism Rift | Implemented with Phase 26 Hard Reset HD background plate | Middle pressure, fractures, stronger enemy mixes, Fractal Crown event. | HD diamond/triangle prism plate with magenta/purple/cyan angular route lighting. |
 | 3 | Null Zone | Implemented with Phase 26 Hard Reset HD background plate | Darker late-run escalation and Null Octagon gatekeeper. | HD octagon/hex black-glass plate with slow purple/cyan polygon edge lighting. |
-| 4 | Hyper Grid | Foundation implemented with Phase 26 Hard Reset HD background plate | Faster final-push prototype pressure using existing content. | HD rail/stretched-diamond hyperlane plate with fast cyan/white lane runners. |
+| 4 | Hyper Grid | Phase 35 active content pass implemented | Late-game/final-sector pressure using Rail Skimmer dash enemies, Grid Splitters, Hyper Grid elite variants, stronger event pressure, and Null Octagon Prime final buildup. | HD rail/stretched-diamond hyperlane plate with fast cyan/white lane runners. |
 | 5 | Fractal Core | Planned | Deep build-check sector with heavier pattern variety. | Stacked triangles, recursive shards, crown-core motifs. |
 | 6 | Singularity Swarm | Planned | Full-game final sector with dense but readable endgame pressure. | Rings, lens shapes, gravity arcs, singularity cages. |
 
@@ -456,6 +456,7 @@ Likely future phases:
 | Phase 32 | Weapon Evolution / Fusion Foundation | Adds Forge-based Evolve/Fuse with compatible stash-material consumption, saved evolution ranks, and modest runtime stat effects. |
 | Phase 33 | Project Safety / Git / Backup Foundation | Adds root README, recovery/backup plan, and timestamped project backup script. No gameplay content changes. |
 | Phase 34 | Run Objective / Sector Event Variety Foundation | Adds a lightweight Run Event Director plus Data Cache, Rift Surge, Elite Hunt, and Overload Shrine objectives with safe cleanup and modest rewards. |
+| Phase 35 | Sector 4 Hyper Grid Full Content Pass | Adds Rail Skimmer, Grid Splitter/Grid Fragment, Sector 4 elite variants, Hyper Grid wave director tuning, Sector 4 event pressure, and final-sector boss buildup. |
 | Later approved phase | Real Audio Replacement Pass | Original authored music/SFX replacement direction. Do not start without explicit approval. |
 
 Do not start the next phase until explicitly approved.
@@ -476,6 +477,7 @@ Recommended next production direction:
 - Tune Phase 29 Forge costs/effects and Phase 30 elite spawn rates after real playtesting before adding more progression power or enemy content.
 - Tune Phase 31 boss telegraph timing, attack frequency, and visual intensity through manual playtesting before adding more bosses.
 - Tune Phase 34 event frequency, reward values, and objective readability through manual playtesting before expanding event pools.
+- Tune Phase 35 Sector 4 rail dash timing, Grid Splitter fragment caps, Hyper elite frequency, and event pressure through manual playtesting before adding more late-game sectors or enemies.
 - Expand Armory only through approved focused passes.
 - Keep tuning the four-sector prototype run while architecture work happens.
 - Add stronger boss and graphics variety only through approved focused phases.
