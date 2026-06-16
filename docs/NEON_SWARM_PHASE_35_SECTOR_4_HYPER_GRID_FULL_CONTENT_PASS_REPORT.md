@@ -235,6 +235,46 @@ It validates:
 
 The user should equip or obtain Arc Beam / Prism Chain and confirm links now appear as thin segmented neon electricity between targets. During level-up or reward selection, active chain VFX should be gone or heavily suppressed, not covering the panel.
 
+## Phase 35 Hotfix 2 — Chain Weapon Visibility Balance
+
+### Why This Follow-Up Was Needed
+
+The first chain VFX hotfix fixed the oversized slab/floodlight problem, but the retuned links became too small and too short-lived to read clearly during combat. Hotfix 2 keeps the safe segmented renderer and overlay cleanup, but raises the link visibility to a stronger middle ground.
+
+### Final Chain VFX Constants
+
+- `CHAIN_VFX_OUTER_RADIUS`: `0.084`
+- `CHAIN_VFX_CORE_RADIUS`: `0.032`
+- `CHAIN_VFX_TICK_RADIUS`: `0.024`
+- `CHAIN_VFX_LIFETIME`: `0.26s`
+- `CHAIN_VFX_MAX_SEGMENT_LENGTH`: `9.25`
+- `CHAIN_VFX_ALPHA`: `0.82`
+- `CHAIN_VFX_CORE_ALPHA`: `0.92`
+- `CHAIN_VFX_OUTER_EMISSION`: `5.8`
+- `CHAIN_VFX_CORE_EMISSION`: `6.9`
+- `CHAIN_VFX_PRISM_EMISSION`: `5.9`
+
+### What Changed From The Too-Small Hotfix
+
+- Arc Beam / Prism Chain outer tubes increased from `0.036` to `0.084`.
+- White-hot core increased from `0.012` to `0.032`.
+- Tick/spark radius increased from `0.010` to `0.024`.
+- Lifetime increased from `0.14s` to `0.26s`.
+- Chain alpha/emission were raised from the too-subtle settings, still below the original screen-blinding values.
+- Each link now has small interior spark nodes and a target-end impact ring/core so the player can see which enemy was hit.
+
+### Gameplay Preservation
+
+Weapon damage, cooldowns, target counts, stat rolls, and loadout behavior were not changed. This pass only changes visibility, link shape, and target impact feedback.
+
+### Overlay Suppression Confirmation
+
+The existing suppression remains in place: chain VFX are cleared or blocked during level-up, sector reward, weapon reward decision, pause, title, game over, and run complete UI states.
+
+### Manual Test Target
+
+The user should test Arc Beam and Prism Chain during dense enemy swarms. The intended result is visible linked energy between enemies with clear endpoint flashes, without giant cyan/white slabs and without upgrade/reward UI being hidden.
+
 ## 14. Known Issues
 
 - F10 is a temporary development/test control, intentionally guarded behind Event Test Mode.

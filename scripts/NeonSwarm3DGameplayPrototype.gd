@@ -49,11 +49,16 @@ const PLAYER_PROJECTILE_CAP := 36
 const ENEMY_PROJECTILE_CAP := 28
 const BURST_CAP := 18
 const BEAM_EFFECT_CAP := 8
-const CHAIN_LINK_OUTER_RADIUS := 0.036
-const CHAIN_LINK_CORE_RADIUS := 0.012
-const CHAIN_LINK_TICK_RADIUS := 0.010
-const CHAIN_LINK_MAX_DURATION := 0.14
-const CHAIN_LINK_MAX_SEGMENT_LENGTH := 9.25
+const CHAIN_VFX_OUTER_RADIUS := 0.084
+const CHAIN_VFX_CORE_RADIUS := 0.032
+const CHAIN_VFX_TICK_RADIUS := 0.024
+const CHAIN_VFX_LIFETIME := 0.26
+const CHAIN_VFX_MAX_SEGMENT_LENGTH := 9.25
+const CHAIN_VFX_ALPHA := 0.82
+const CHAIN_VFX_CORE_ALPHA := 0.92
+const CHAIN_VFX_OUTER_EMISSION := 5.8
+const CHAIN_VFX_CORE_EMISSION := 6.9
+const CHAIN_VFX_PRISM_EMISSION := 5.9
 const BOSS_TELEGRAPH_CAP := 8
 const MINE_CAP := 6
 const HAZARD_TRAIL_CAP := 10
@@ -1923,8 +1928,8 @@ func _create_materials() -> void:
 	_materials["sector_transition_scan"] = Kit.make_emissive_material(Color(0.82, 1.0, 1.0, 0.62), 3.2, true)
 	_materials["enemy_projectile"] = Kit.make_emissive_material(Color(1.0, 0.12, 0.04, 0.90), 6.2, true)
 	_materials["enemy_projectile_core"] = Kit.make_emissive_material(Color(1.0, 0.99, 0.76, 1.0), 8.2, false)
-	_materials["arc_beam"] = Kit.make_emissive_material(Color(0.02, 1.0, 1.0, 0.66), 4.0, true)
-	_materials["arc_beam_core"] = Kit.make_emissive_material(Color(1.0, 1.0, 0.84, 0.84), 5.0, false)
+	_materials["arc_beam"] = Kit.make_emissive_material(Color(0.02, 1.0, 1.0, CHAIN_VFX_ALPHA), CHAIN_VFX_OUTER_EMISSION, true)
+	_materials["arc_beam_core"] = Kit.make_emissive_material(Color(1.0, 1.0, 0.84, CHAIN_VFX_CORE_ALPHA), CHAIN_VFX_CORE_EMISSION, false)
 	_materials["mine_body"] = Kit.make_emissive_material(Color(0.84, 0.04, 1.0, 0.90), 6.5, true)
 	_materials["mine_core"] = Kit.make_emissive_material(Color(1.0, 0.99, 0.78, 1.0), 8.4, false)
 	_materials["mine_field"] = Kit.make_emissive_material(Color(0.50, 0.02, 1.0, 0.22), 2.35, true)
@@ -1943,7 +1948,7 @@ func _create_materials() -> void:
 	_materials["hex_mortar"] = Kit.make_emissive_material(Color(0.0, 0.96, 1.0, 0.92), 7.1, true)
 	_materials["vector_spear"] = Kit.make_emissive_material(Color(0.56, 0.92, 1.0, 0.92), 7.4, true)
 	_materials["orbital_saw_array"] = Kit.make_emissive_material(Color(0.0, 1.0, 0.72, 0.88), 6.9, true)
-	_materials["prism_chain"] = Kit.make_emissive_material(Color(0.90, 0.08, 1.0, 0.68), 4.1, true)
+	_materials["prism_chain"] = Kit.make_emissive_material(Color(0.90, 0.08, 1.0, CHAIN_VFX_ALPHA), CHAIN_VFX_PRISM_EMISSION, true)
 	_materials["gravity_well"] = Kit.make_emissive_material(Color(0.46, 0.04, 1.0, 0.86), 7.0, true)
 	_materials["nova_needle"] = Kit.make_emissive_material(Color(0.0, 1.0, 0.94, 0.92), 7.0, true)
 	_materials["fractal_bloom"] = Kit.make_emissive_material(Color(1.0, 0.34, 0.04, 0.90), 7.2, true)
@@ -10185,9 +10190,9 @@ func _combat_overlay_active() -> bool:
 func _chain_link_clamped_end(start: Vector3, end: Vector3) -> Vector3:
 	var flat_delta := Vector3(end.x - start.x, 0.0, end.z - start.z)
 	var length := flat_delta.length()
-	if length <= 0.001 or length <= CHAIN_LINK_MAX_SEGMENT_LENGTH:
+	if length <= 0.001 or length <= CHAIN_VFX_MAX_SEGMENT_LENGTH:
 		return end
-	var clamped := start + flat_delta.normalized() * CHAIN_LINK_MAX_SEGMENT_LENGTH
+	var clamped := start + flat_delta.normalized() * CHAIN_VFX_MAX_SEGMENT_LENGTH
 	return Vector3(clamped.x, end.y, clamped.z)
 
 
@@ -10214,19 +10219,26 @@ func _spawn_chain_link_effect(start: Vector3, end: Vector3, duration: float, mat
 	var points: Array[Vector3] = [local_start]
 	for i in range(1, point_count):
 		var t := float(i) / float(point_count)
-		var offset := perpendicular * (0.055 if i % 2 == 0 else -0.055)
+		var offset := perpendicular * (0.090 if i % 2 == 0 else -0.090)
 		points.append(local_start.lerp(local_end, t) + offset)
 	points.append(local_end)
 	var outer_segments: Array = []
 	var core_segments: Array = []
 	for i in range(points.size() - 1):
-		outer_segments.append(Kit.tube_between(root, "%sSegment%02d" % [material_key.to_pascal_case(), i], points[i], points[i + 1], CHAIN_LINK_OUTER_RADIUS, material, 6))
-		core_segments.append(Kit.tube_between(root, "%sCore%02d" % [material_key.to_pascal_case(), i], points[i], points[i + 1], CHAIN_LINK_CORE_RADIUS, _materials["arc_beam_core"], 5))
+		outer_segments.append(Kit.tube_between(root, "%sSegment%02d" % [material_key.to_pascal_case(), i], points[i], points[i + 1], CHAIN_VFX_OUTER_RADIUS, material, 7))
+		core_segments.append(Kit.tube_between(root, "%sCore%02d" % [material_key.to_pascal_case(), i], points[i], points[i + 1], CHAIN_VFX_CORE_RADIUS, _materials["arc_beam_core"], 6))
 	for i in range(1, points.size() - 1):
-		var tick_start := points[i] - perpendicular * 0.105
-		var tick_end := points[i] + perpendicular * 0.105
-		Kit.tube_between(root, "%sLinkTick%02d" % [material_key.to_pascal_case(), i], tick_start, tick_end, CHAIN_LINK_TICK_RADIUS, material, 5)
-	var safe_duration := clampf(duration, 0.055, CHAIN_LINK_MAX_DURATION)
+		var tick_start := points[i] - perpendicular * 0.145
+		var tick_end := points[i] + perpendicular * 0.145
+		Kit.tube_between(root, "%sLinkTick%02d" % [material_key.to_pascal_case(), i], tick_start, tick_end, CHAIN_VFX_TICK_RADIUS, material, 6)
+		var spark_node := Kit.add_mesh(root, "%sSparkNode%02d" % [material_key.to_pascal_case(), i], Kit.sphere_mesh(CHAIN_VFX_TICK_RADIUS * 2.2, 8, 4), _materials["arc_beam_core"])
+		spark_node.position = points[i]
+	var impact_ring := Kit.add_mesh(root, "%sTargetImpactRing" % material_key.to_pascal_case(), Kit.torus_mesh(0.24, CHAIN_VFX_TICK_RADIUS * 0.72, 28, 4), material)
+	impact_ring.rotation.x = PI * 0.5
+	impact_ring.position = local_end
+	var impact_core := Kit.add_mesh(root, "%sTargetImpactCore" % material_key.to_pascal_case(), Kit.sphere_mesh(CHAIN_VFX_CORE_RADIUS * 2.25, 8, 4), _materials["arc_beam_core"])
+	impact_core.position = local_end
+	var safe_duration := clampf(duration, 0.22, CHAIN_VFX_LIFETIME)
 	_beam_effects.append({"node": root, "outer": outer_segments, "core": core_segments, "life": safe_duration, "duration": safe_duration, "chain_link": true})
 
 
