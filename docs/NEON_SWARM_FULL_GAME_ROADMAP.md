@@ -205,6 +205,13 @@ Phase 32 Weapon Evolution / Fusion status:
 - Evolution is capped at rank 3 and adds modest damage, cooldown, range, and lifetime bonuses through the same runtime stat aggregation path as normal rolls and Forge power.
 - Evolved weapons show `EV#` row labels, detail-panel evolution rank, fusion group, evolution bonuses, and fusion history.
 
+Phase 33 project safety / backup status:
+
+- Git project safety has an explicit recovery and backup plan.
+- Root README documents the active-development project and official run command.
+- `tools/backup_neon_swarm.sh` creates timestamped archives under `~/GodotProjects/NeonSwarm_BACKUPS/`.
+- Backup archives exclude Git metadata, Godot caches, import caches, build/export folders, temp/log/cache files, and Blender `.blend1` backups.
+
 Phase 23 weapon content status:
 
 - First weapon content pack adds 10 active loot families.
@@ -438,6 +445,7 @@ Likely future phases:
 | Phase 30 | Enemy Wave Director / Elite Enemy Variety Foundation | Adds sector-aware wave pacing, sector-specific enemy mix pressure, capped elite enemy variants, and modest elite XP/score/Neon Dust hooks. |
 | Phase 31 | Boss Encounter / Attack Telegraph Upgrade | Adds boss attack telegraphs, scheduled attack release, boss phase feedback, boss-specific attack patterns, and preserved boss reward flow. |
 | Phase 32 | Weapon Evolution / Fusion Foundation | Adds Forge-based Evolve/Fuse with compatible stash-material consumption, saved evolution ranks, and modest runtime stat effects. |
+| Phase 33 | Project Safety / Git / Backup Foundation | Adds root README, recovery/backup plan, and timestamped project backup script. No gameplay content changes. |
 | Later approved phase | Real Audio Replacement Pass | Original authored music/SFX replacement direction. Do not start without explicit approval. |
 
 Do not start the next phase until explicitly approved.
