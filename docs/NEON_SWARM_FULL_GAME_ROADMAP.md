@@ -15,6 +15,7 @@ Current approved baseline:
 - The current prototype run now has four playable sectors after Phase 18 foundation work.
 - Phase 30 adds the first Wave Director foundation and elite enemy variants using existing enemy families.
 - Phase 31 adds the first boss encounter telegraph foundation for readable delayed boss attacks and phase feedback.
+- Phase 34 adds the first Run Objective / Sector Event foundation so sectors can include readable mid-run goals beyond pure survival.
 
 Major development still needed:
 
@@ -126,6 +127,14 @@ Phase 31 boss encounter status:
 - Null Octagon telegraphs void ring, void pulse, and add-vector attacks with phase feedback.
 - Null Octagon Prime adds stronger multi-ring and Hyper Grid rail-sweep telegraphs.
 - Boss HUD labels append `PHASE 2` when a boss enters escalation.
+
+Phase 34 run objective status:
+
+- A lightweight Run Event Director now controls one active sector objective at a time.
+- Current event types are Data Cache, Rift Surge, Elite Hunt, and Overload Shrine / Power Node.
+- Events are blocked during title/menu/Armory/Forge/pause/reward states and near boss windows.
+- Event rewards are modest score, XP burst pickups, and capped Neon Dust chance.
+- Event markers use current runtime neon geometry; future phases can replace them with authored Blender props if approved.
 
 ## 5. Weapon Roster
 
@@ -446,6 +455,7 @@ Likely future phases:
 | Phase 31 | Boss Encounter / Attack Telegraph Upgrade | Adds boss attack telegraphs, scheduled attack release, boss phase feedback, boss-specific attack patterns, and preserved boss reward flow. |
 | Phase 32 | Weapon Evolution / Fusion Foundation | Adds Forge-based Evolve/Fuse with compatible stash-material consumption, saved evolution ranks, and modest runtime stat effects. |
 | Phase 33 | Project Safety / Git / Backup Foundation | Adds root README, recovery/backup plan, and timestamped project backup script. No gameplay content changes. |
+| Phase 34 | Run Objective / Sector Event Variety Foundation | Adds a lightweight Run Event Director plus Data Cache, Rift Surge, Elite Hunt, and Overload Shrine objectives with safe cleanup and modest rewards. |
 | Later approved phase | Real Audio Replacement Pass | Original authored music/SFX replacement direction. Do not start without explicit approval. |
 
 Do not start the next phase until explicitly approved.
@@ -465,6 +475,7 @@ Recommended next production direction:
 - Tune Phase 28 Neon Dust values and Core Upgrade costs after real playtesting; current values are intentionally conservative.
 - Tune Phase 29 Forge costs/effects and Phase 30 elite spawn rates after real playtesting before adding more progression power or enemy content.
 - Tune Phase 31 boss telegraph timing, attack frequency, and visual intensity through manual playtesting before adding more bosses.
+- Tune Phase 34 event frequency, reward values, and objective readability through manual playtesting before expanding event pools.
 - Expand Armory only through approved focused passes.
 - Keep tuning the four-sector prototype run while architecture work happens.
 - Add stronger boss and graphics variety only through approved focused phases.

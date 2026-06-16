@@ -31,12 +31,14 @@ Already implemented:
 - Phase 30 Wave Director foundation, sector enemy pacing profiles, and capped elite variants with modest XP/score/Neon Dust reward hooks.
 - Phase 31 Boss Telegraph foundation for readable delayed boss attacks, boss phase feedback, and preserved boss reward flow.
 - Phase 32 Weapon Evolution/Fusion foundation for spending Neon Dust and compatible stash material weapons to add saved evolution ranks.
+- Phase 34 Run Objective / Sector Event foundation with Data Cache, Rift Surge, Elite Hunt, and Overload Shrine mid-run goals.
 
 Not implemented yet:
 
 - Permanent unlocks.
 - Manual weapon equip/unequip.
 - Loot drops from enemies.
+- Deep objective chains or multi-step mission arcs.
 - Deep behavior-changing affixes.
 - Character/core roster.
 - Challenge modes.
@@ -540,3 +542,25 @@ Progression boundaries:
 - Bosses do not drop weapons directly in Phase 31.
 - Boss telegraph tuning should happen before future difficulty modifiers increase boss pressure.
 - Future post-run summaries can later track boss hitless clears, boss phase survival, or boss defeat medals if approved.
+
+## 20. Phase 34 Run Objective / Sector Event Progression Hooks
+
+Implemented run objective foundation:
+
+- Data Cache: hold near a cache to sync it, then receive score, XP pickups, and a small Neon Dust chance.
+- Rift Surge: survive a warned rift pressure window with capped hazards and pressure spawns, then receive score, XP pickups, and a small Neon Dust chance.
+- Elite Hunt: kill a marked elite target before timeout for score, XP pickups, and a small Neon Dust chance.
+- Overload Shrine / Power Node: trigger a stationary node by proximity, survive overload pressure, then receive score, XP pickups, and a small Neon Dust chance.
+
+Progression boundaries:
+
+- Events do not drop weapons directly in Phase 34.
+- Events do not alter Forge, Evolution/Fusion, Core Upgrades, stash, or save schema.
+- Neon Dust from events is a bonus chance, not a main currency faucet.
+- Events are not active in title/menu/Armory/Forge states and are cleared on boss spawn, return-to-title, death, restart, and run completion.
+
+Future progression options:
+
+- Track completed event counts in post-run summaries.
+- Add event medals, objective streaks, or challenge goals after the basic event pacing is proven.
+- Allow rare event chains or sector-specific objectives only after readability and reward pacing are tuned.

@@ -197,6 +197,20 @@ const EVOLUTION_STAT_STEP := {
 	"range_bonus": 0.006,
 	"lifetime_bonus": 0.004
 }
+const RUN_EVENT_START_DELAY := [24.0, 22.0, 20.0, 18.0]
+const RUN_EVENT_COOLDOWN := [48.0, 42.0, 36.0, 32.0]
+const RUN_EVENT_MAX_PER_SECTOR := [1, 2, 2, 2]
+const RUN_EVENT_BOSS_BUFFER := 18.0
+const RUN_EVENT_CACHE_HOLD_TIME := 4.0
+const RUN_EVENT_CACHE_DURATION := 18.0
+const RUN_EVENT_RIFT_WARNING_TIME := 2.4
+const RUN_EVENT_RIFT_DURATION := 14.0
+const RUN_EVENT_ELITE_HUNT_DURATION := 23.0
+const RUN_EVENT_SHRINE_ARM_DURATION := 20.0
+const RUN_EVENT_SHRINE_TRIGGER_TIME := 1.35
+const RUN_EVENT_SHRINE_OVERLOAD_DURATION := 11.0
+const RUN_EVENT_INTERACTION_RADIUS := 4.1
+const RUN_EVENT_AUTO_REWARD_POSITION := Vector3(99999.0, 99999.0, 99999.0)
 const WAVE_DIRECTOR_ELITE_MIN_TIME := [38.0, 28.0, 22.0, 18.0]
 const WAVE_DIRECTOR_ELITE_COOLDOWN := [18.0, 15.0, 13.0, 11.0]
 const WAVE_DIRECTOR_MAX_ELITES := [1, 2, 2, 3]
@@ -277,6 +291,7 @@ var _core_pickup_radius_bonus := 0.0
 var _core_damage_multiplier := 1.0
 var _core_cooldown_multiplier := 1.0
 var _weapon_loot_rng := RandomNumberGenerator.new()
+var _run_event_rng := RandomNumberGenerator.new()
 var _upgrade_pool: Array[Dictionary] = []
 var _upgrade_rng := RandomNumberGenerator.new()
 var _sfx: Dictionary = {}
@@ -311,6 +326,21 @@ var _wave_index := 0
 var _wave_name := "IGNITION"
 var _wave_director_elite_cooldown := 0.0
 var _elite_notice_timer := 0.0
+var _run_event_active := false
+var _run_event_type := ""
+var _run_event_stage := ""
+var _run_event_timer := 0.0
+var _run_event_duration := 0.0
+var _run_event_cooldown := 16.0
+var _run_event_sector_count := 0
+var _run_event_progress := 0.0
+var _run_event_notice_step := -1
+var _run_event_spawn_timer := 0.0
+var _run_event_hazard_timer := 0.0
+var _run_event_node: Node3D
+var _run_event_target_node: Node3D
+var _run_event_target_instance_id := 0
+var _enemy_instance_counter := 0
 var _mini_boss_spawned := false
 var _mini_boss_active := false
 var _mini_boss_warning_played := false
@@ -523,6 +553,7 @@ func _ready() -> void:
 	InputMapConfig.ensure_actions()
 	_upgrade_rng.randomize()
 	_weapon_loot_rng.randomize()
+	_run_event_rng.randomize()
 	_load_settings()
 	_initialize_weapon_framework()
 	_initialize_weapon_inventory()
@@ -649,6 +680,7 @@ func _process(delta: float) -> void:
 	_player_invuln = maxf(0.0, _player_invuln - delta)
 	_update_player(delta)
 	_update_wave_director(delta)
+	_update_run_event_director(delta)
 	_update_weapons(delta)
 	_update_enemies(delta)
 	_update_boss_telegraphs(delta)
@@ -1698,6 +1730,15 @@ func _create_materials() -> void:
 	_materials["hazard_leech"] = Kit.make_emissive_material(Color(0.72, 0.04, 1.0, 0.34), 3.8, true)
 	_materials["hazard_null"] = Kit.make_emissive_material(Color(0.0, 0.86, 1.0, 0.30), 3.6, true)
 	_materials["hazard_pulse"] = Kit.make_emissive_material(Color(1.0, 0.48, 0.02, 0.34), 3.9, true)
+	_materials["event_cache_body"] = Kit.make_neon_body_material(Color(0.025, 0.090, 0.145, 1.0), 0.58)
+	_materials["event_cache_edge"] = Kit.make_emissive_material(Color(0.0, 0.96, 1.0, 0.88), 6.4, true)
+	_materials["event_cache_core"] = Kit.make_emissive_material(Color(1.0, 0.94, 0.20, 0.92), 7.2, true)
+	_materials["event_rift"] = Kit.make_emissive_material(Color(1.0, 0.08, 0.86, 0.40), 4.3, true)
+	_materials["event_rift_core"] = Kit.make_emissive_material(Color(0.0, 0.94, 1.0, 0.66), 5.2, true)
+	_materials["event_elite_hunt"] = Kit.make_emissive_material(Color(1.0, 0.58, 0.04, 0.84), 6.2, true)
+	_materials["event_shrine_body"] = Kit.make_neon_body_material(Color(0.055, 0.035, 0.105, 1.0), 0.60)
+	_materials["event_shrine_edge"] = Kit.make_emissive_material(Color(1.0, 0.24, 0.92, 0.82), 6.0, true)
+	_materials["event_shrine_core"] = Kit.make_emissive_material(Color(0.86, 1.0, 1.0, 0.86), 6.8, true)
 	_materials["boss_telegraph_prism"] = Kit.make_emissive_material(Color(1.0, 0.08, 0.88, 0.42), 4.4, true)
 	_materials["boss_telegraph_null"] = Kit.make_emissive_material(Color(0.0, 0.76, 1.0, 0.40), 4.2, true)
 	_materials["boss_telegraph_prime"] = Kit.make_emissive_material(Color(0.72, 0.96, 1.0, 0.44), 4.7, true)
@@ -4412,6 +4453,7 @@ func _start_title_run() -> void:
 	_manual_pause = false
 	_pause_options_visible = false
 	_clear_weapon_reward_decision_state()
+	_reset_run_event_director_for_run()
 	get_tree().paused = false
 	_set_gameplay_hud_visible(true)
 	if _title_menu_panel:
@@ -4668,6 +4710,7 @@ func _return_to_title_from_pause() -> void:
 	_level_up_active = false
 	_sector_reward_active = false
 	_clear_weapon_reward_decision_state()
+	_clear_run_event_state()
 	_title_menu_active = true
 	_clear_enemy_projectiles_and_hazards()
 	_set_music_state("none")
@@ -7950,6 +7993,515 @@ func _active_elite_count() -> int:
 	return count
 
 
+func _update_run_event_director(delta: float) -> void:
+	if not _run_event_gameplay_allowed():
+		return
+	if _run_event_blocked_by_boss():
+		if _run_event_active:
+			_finish_run_event(false, "OBJECTIVE CLEARED // BOSS PRIORITY", false)
+		return
+	if _run_event_active:
+		_update_active_run_event(delta)
+		return
+	_run_event_cooldown = maxf(0.0, _run_event_cooldown - delta)
+	if _can_start_run_event():
+		_start_run_event(_pick_run_event_type())
+
+
+func _run_event_gameplay_allowed() -> bool:
+	if _title_menu_active or get_tree().paused or _game_over or _run_success:
+		return false
+	if _level_up_active or _sector_reward_active or _weapon_reward_decision_active:
+		return false
+	return true
+
+
+func _run_event_blocked_by_boss() -> bool:
+	var sector := _current_sector()
+	var boss_time := float(sector.get("boss_time", 90.0))
+	if _sector_boss_active or _sector_boss_spawned or _sector_boss_warning_played:
+		return true
+	return boss_time - _sector_elapsed <= RUN_EVENT_BOSS_BUFFER
+
+
+func _can_start_run_event() -> bool:
+	if _run_event_active or _run_event_cooldown > 0.0:
+		return false
+	var sector_index := clampi(_sector_index, 0, RUN_EVENT_START_DELAY.size() - 1)
+	if _sector_elapsed < float(RUN_EVENT_START_DELAY[sector_index]):
+		return false
+	if _run_event_sector_count >= int(RUN_EVENT_MAX_PER_SECTOR[sector_index]):
+		return false
+	if _run_event_blocked_by_boss():
+		return false
+	return true
+
+
+func _pick_run_event_type() -> String:
+	var pool: Array[Dictionary] = []
+	match _sector_index:
+		0:
+			pool = [
+				{"type": "data_cache", "weight": 0.58},
+				{"type": "elite_hunt", "weight": 0.30},
+				{"type": "overload_shrine", "weight": 0.12}
+			]
+		1:
+			pool = [
+				{"type": "data_cache", "weight": 0.30},
+				{"type": "rift_surge", "weight": 0.28},
+				{"type": "elite_hunt", "weight": 0.24},
+				{"type": "overload_shrine", "weight": 0.18}
+			]
+		2:
+			pool = [
+				{"type": "data_cache", "weight": 0.20},
+				{"type": "rift_surge", "weight": 0.32},
+				{"type": "elite_hunt", "weight": 0.22},
+				{"type": "overload_shrine", "weight": 0.26}
+			]
+		_:
+			pool = [
+				{"type": "data_cache", "weight": 0.16},
+				{"type": "rift_surge", "weight": 0.36},
+				{"type": "elite_hunt", "weight": 0.20},
+				{"type": "overload_shrine", "weight": 0.28}
+			]
+	if _enemies.size() >= ENEMY_CAP - 2:
+		pool = pool.filter(func(entry: Dictionary) -> bool:
+			return str(entry.get("type", "")) != "elite_hunt"
+		)
+	if pool.is_empty():
+		return "data_cache"
+	var total := 0.0
+	for entry in pool:
+		total += float(entry.get("weight", 0.0))
+	var roll := _run_event_rng.randf() * maxf(0.001, total)
+	var cursor := 0.0
+	for entry in pool:
+		cursor += float(entry.get("weight", 0.0))
+		if roll <= cursor:
+			return str(entry.get("type", "data_cache"))
+	return str(pool.back().get("type", "data_cache"))
+
+
+func _start_run_event(event_type: String) -> void:
+	if _run_event_active:
+		return
+	_run_event_active = true
+	_run_event_type = event_type
+	_run_event_stage = "active"
+	_run_event_progress = 0.0
+	_run_event_notice_step = -1
+	_run_event_spawn_timer = 0.0
+	_run_event_hazard_timer = 0.0
+	_run_event_sector_count += 1
+	_run_event_node = null
+	_run_event_target_node = null
+	_run_event_target_instance_id = 0
+	match event_type:
+		"data_cache":
+			_run_event_duration = RUN_EVENT_CACHE_DURATION
+			_run_event_timer = _run_event_duration
+			_run_event_stage = "sync"
+			_run_event_node = _create_run_event_marker("data_cache", _run_event_spawn_position())
+			_show_combat_notice("DATA CACHE ONLINE // HOLD NEAR CACHE", Color(0.0, 0.96, 1.0), 1.55)
+		"rift_surge":
+			_run_event_duration = RUN_EVENT_RIFT_DURATION
+			_run_event_timer = _run_event_duration
+			_run_event_stage = "warning"
+			_run_event_node = _create_run_event_marker("rift_surge", _run_event_spawn_position())
+			_show_combat_notice("RIFT SURGE WARNING // DANGER FIELD FORMING", Color(1.0, 0.08, 0.86), 1.65)
+			_play_sfx("warning", 0.12)
+		"elite_hunt":
+			_run_event_duration = RUN_EVENT_ELITE_HUNT_DURATION
+			_run_event_timer = _run_event_duration
+			_run_event_stage = "hunt"
+			_spawn_run_event_elite_target()
+		"overload_shrine":
+			_run_event_duration = RUN_EVENT_SHRINE_ARM_DURATION
+			_run_event_timer = _run_event_duration
+			_run_event_stage = "armed"
+			_run_event_node = _create_run_event_marker("overload_shrine", _run_event_spawn_position())
+			_show_combat_notice("POWER NODE FOUND // HOLD NEAR NODE TO OVERLOAD", Color(1.0, 0.58, 0.04), 1.70)
+		_:
+			_run_event_type = "data_cache"
+			_run_event_duration = RUN_EVENT_CACHE_DURATION
+			_run_event_timer = _run_event_duration
+			_run_event_stage = "sync"
+			_run_event_node = _create_run_event_marker("data_cache", _run_event_spawn_position())
+	_trigger_sector_background_reaction(0.30, 0.34)
+
+
+func _update_active_run_event(delta: float) -> void:
+	_run_event_timer = maxf(0.0, _run_event_timer - delta)
+	_update_run_event_marker_animation(delta)
+	match _run_event_type:
+		"data_cache":
+			_update_data_cache_event(delta)
+		"rift_surge":
+			_update_rift_surge_event(delta)
+		"elite_hunt":
+			_update_elite_hunt_event(delta)
+		"overload_shrine":
+			_update_overload_shrine_event(delta)
+		_:
+			_finish_run_event(false, "OBJECTIVE ERROR // EVENT CLEARED", false)
+
+
+func _update_data_cache_event(delta: float) -> void:
+	if not is_instance_valid(_run_event_node):
+		_finish_run_event(false, "DATA CACHE LOST", false)
+		return
+	var near_cache := _xz_distance(_player_area.position, _run_event_node.position) <= RUN_EVENT_INTERACTION_RADIUS
+	if near_cache:
+		_run_event_progress = minf(RUN_EVENT_CACHE_HOLD_TIME, _run_event_progress + delta)
+	else:
+		_run_event_progress = maxf(0.0, _run_event_progress - delta * 0.38)
+	_show_run_event_progress_notice("CACHE SYNC", _run_event_progress / RUN_EVENT_CACHE_HOLD_TIME, Color(0.0, 0.96, 1.0))
+	if _run_event_progress >= RUN_EVENT_CACHE_HOLD_TIME:
+		_finish_run_event(true, "DATA CACHE SECURED", true)
+	elif _run_event_timer <= 0.0:
+		_finish_run_event(false, "DATA CACHE EXPIRED", false)
+
+
+func _update_rift_surge_event(delta: float) -> void:
+	if not is_instance_valid(_run_event_node):
+		_finish_run_event(false, "RIFT SURGE COLLAPSED", false)
+		return
+	var elapsed := RUN_EVENT_RIFT_DURATION - _run_event_timer
+	if _run_event_stage == "warning" and elapsed >= RUN_EVENT_RIFT_WARNING_TIME:
+		_run_event_stage = "surge"
+		_run_event_hazard_timer = 0.0
+		_run_event_spawn_timer = 1.0
+		_show_combat_notice("RIFT SURGE ACTIVE // SURVIVE THE PRESSURE", Color(1.0, 0.08, 0.86), 1.35)
+	if _run_event_stage == "surge":
+		_run_event_hazard_timer -= delta
+		if _run_event_hazard_timer <= 0.0:
+			_run_event_hazard_timer = clampf(1.85 - float(_sector_index) * 0.18, 1.15, 1.85)
+			var offset := Vector3(_run_event_rng.randf_range(-5.2, 5.2), 0.0, _run_event_rng.randf_range(-5.2, 5.2))
+			var target := _clamp_to_arena(_player_area.position + offset, 2.8)
+			_spawn_pressure_hazard(target, 1.75 + float(_sector_index) * 0.16, 1.35, "hazard_pulse", 7.0 + float(_sector_index) * 1.2, 0.42, "run_event")
+		_run_event_spawn_timer -= delta
+		if _run_event_spawn_timer <= 0.0 and _enemies.size() < ENEMY_CAP - 1:
+			_run_event_spawn_timer = clampf(3.1 - float(_sector_index) * 0.25, 2.2, 3.1)
+			_spawn_enemy(_enemy_type_for_sector_phase(_sector_index, maxi(1, _wave_index)), _spawn_position_on_edge())
+	if _run_event_timer <= 0.0:
+		_finish_run_event(true, "RIFT SURGE SURVIVED", true)
+
+
+func _update_elite_hunt_event(delta: float) -> void:
+	if not is_instance_valid(_run_event_target_node):
+		_finish_run_event(false, "ELITE HUNT TARGET LOST", false)
+		return
+	if _run_event_timer <= 0.0:
+		_demote_run_event_target()
+		_finish_run_event(false, "ELITE HUNT ESCAPED", false)
+		return
+	if _run_event_timer <= 8.0:
+		_show_run_event_progress_notice("ELITE HUNT TIMER", 1.0 - _run_event_timer / 8.0, Color(1.0, 0.58, 0.04))
+
+
+func _update_overload_shrine_event(delta: float) -> void:
+	if not is_instance_valid(_run_event_node):
+		_finish_run_event(false, "POWER NODE LOST", false)
+		return
+	if _run_event_stage == "armed":
+		var near_node := _xz_distance(_player_area.position, _run_event_node.position) <= RUN_EVENT_INTERACTION_RADIUS
+		if near_node:
+			_run_event_progress = minf(RUN_EVENT_SHRINE_TRIGGER_TIME, _run_event_progress + delta)
+		else:
+			_run_event_progress = maxf(0.0, _run_event_progress - delta * 0.45)
+		_show_run_event_progress_notice("NODE OVERLOAD", _run_event_progress / RUN_EVENT_SHRINE_TRIGGER_TIME, Color(1.0, 0.58, 0.04))
+		if _run_event_progress >= RUN_EVENT_SHRINE_TRIGGER_TIME:
+			_run_event_stage = "overload"
+			_run_event_timer = RUN_EVENT_SHRINE_OVERLOAD_DURATION
+			_run_event_hazard_timer = 0.0
+			_run_event_spawn_timer = 0.65
+			_show_combat_notice("OVERLOAD ACTIVE // SURVIVE THE POWER SPIKE", Color(1.0, 0.58, 0.04), 1.35)
+			_spawn_burst(_run_event_node.position, 1.24, "burst_gold")
+			_play_sfx("sector", 0.16)
+		elif _run_event_timer <= 0.0:
+			_finish_run_event(false, "POWER NODE WENT DORMANT", false)
+	elif _run_event_stage == "overload":
+		_run_event_hazard_timer -= delta
+		if _run_event_hazard_timer <= 0.0:
+			_run_event_hazard_timer = clampf(2.05 - float(_sector_index) * 0.18, 1.35, 2.05)
+			var angle := _run_event_rng.randf() * TAU
+			var target := _clamp_to_arena(_run_event_node.position + Vector3(cos(angle), 0.0, sin(angle)) * _run_event_rng.randf_range(2.2, 6.2), 2.8)
+			_spawn_pressure_hazard(target, 1.48 + float(_sector_index) * 0.12, 1.25, "hazard_leech", 6.0 + float(_sector_index), 0.38, "run_event")
+		_run_event_spawn_timer -= delta
+		if _run_event_spawn_timer <= 0.0 and _enemies.size() < ENEMY_CAP - 1:
+			_run_event_spawn_timer = clampf(3.25 - float(_sector_index) * 0.24, 2.35, 3.25)
+			_spawn_enemy(_enemy_type_for_sector_phase(_sector_index, maxi(1, _wave_index)), _spawn_position_on_edge())
+		if _run_event_timer <= 0.0:
+			_finish_run_event(true, "POWER NODE STABILIZED", true)
+
+
+func _show_run_event_progress_notice(label: String, progress: float, color: Color) -> void:
+	var step := clampi(int(floor(clampf(progress, 0.0, 1.0) * 4.0)), 0, 4)
+	if step <= 0 or step == _run_event_notice_step:
+		return
+	_run_event_notice_step = step
+	_show_combat_notice("%s %d%%" % [label, step * 25], color, 0.78)
+
+
+func _spawn_run_event_elite_target() -> void:
+	if _enemies.size() >= ENEMY_CAP - 1:
+		_finish_run_event(false, "ELITE HUNT BLOCKED // HOSTILE CAP", false)
+		return
+	var enemy_type := _run_event_elite_type_for_sector()
+	var elite_variant := _run_event_elite_variant_for_sector(enemy_type)
+	var enemy_index := _spawn_enemy(enemy_type, _spawn_position_on_edge(), elite_variant)
+	if enemy_index < 0:
+		_finish_run_event(false, "ELITE HUNT BLOCKED // SPAWN FAILED", false)
+		return
+	_run_event_target_instance_id += 1
+	var enemy := _enemies[enemy_index]
+	enemy["run_event_target"] = true
+	enemy["run_event_target_id"] = _run_event_target_instance_id
+	enemy["run_event_target_marker"] = _apply_run_event_target_marker(enemy)
+	_enemies[enemy_index] = enemy
+	_run_event_target_node = enemy.get("node", null)
+	_show_combat_notice("ELITE HUNT // TARGET MARKED", Color(1.0, 0.58, 0.04), 1.55)
+	_play_sfx("warning", 0.12)
+
+
+func _run_event_elite_type_for_sector() -> String:
+	match _sector_index:
+		0:
+			return "chaser"
+		1:
+			return "triad_splitter" if _run_event_rng.randf() < 0.45 else "hex_slicer"
+		2:
+			return "shield_node" if _run_event_rng.randf() < 0.55 else "hex_pulser"
+		_:
+			return "hex_slicer" if _run_event_rng.randf() < 0.52 else "spiral_drifter"
+
+
+func _run_event_elite_variant_for_sector(enemy_type: String) -> String:
+	var pool := _elite_variant_pool(enemy_type)
+	if pool.is_empty():
+		return "overcharged"
+	return _pick_weighted_elite_variant(pool)
+
+
+func _apply_run_event_target_marker(enemy: Dictionary) -> Node3D:
+	var visual: Node3D = enemy.get("visual", null)
+	if not is_instance_valid(visual):
+		return null
+	var marker := Node3D.new()
+	marker.name = "RunEventEliteHuntTargetMarker"
+	visual.add_child(marker)
+	var ring := Kit.add_mesh(marker, "EliteHuntGoldTargetRing", Kit.torus_mesh(1.10, 0.036, 48, 5), _materials["event_elite_hunt"])
+	ring.rotation.x = PI * 0.5
+	var vertical := Kit.add_mesh(marker, "EliteHuntVerticalTargetRing", Kit.torus_mesh(0.88, 0.022, 36, 4), _materials["event_elite_hunt"])
+	vertical.rotation.z = PI * 0.5
+	var core := Kit.add_mesh(marker, "EliteHuntWhiteHotCoreDot", Kit.sphere_mesh(0.11, 10, 5), _materials["burst_hot_core"], Vector3(0.0, 0.58, 0.0))
+	core.scale = Vector3(1.0, 0.40, 1.0)
+	return marker
+
+
+func _handle_run_event_target_enemy_killed(enemy: Dictionary, position: Vector3) -> void:
+	if not _run_event_active or _run_event_type != "elite_hunt":
+		return
+	if not bool(enemy.get("run_event_target", false)):
+		return
+	_finish_run_event(true, "ELITE HUNT COMPLETE", true, position)
+
+
+func _create_run_event_marker(event_type: String, position: Vector3) -> Node3D:
+	var root := Node3D.new()
+	root.name = "RunObjective%sMarker3D" % event_type.capitalize()
+	root.position = Vector3(position.x, 0.82, position.z)
+	_fx_root.add_child(root)
+	match event_type:
+		"data_cache":
+			Kit.add_mesh(root, "DataCacheDarkBodyCube", Kit.box_mesh(Vector3(1.12, 0.74, 1.12)), _materials["event_cache_body"])
+			var ring := Kit.add_mesh(root, "DataCacheCyanSquareRouteRing", Kit.torus_mesh(0.88, 0.030, 4, 4), _materials["event_cache_edge"])
+			ring.rotation.x = PI * 0.5
+			var vertical := Kit.add_mesh(root, "DataCacheVerticalNeonRouteRing", Kit.torus_mesh(0.72, 0.024, 4, 4), _materials["event_cache_edge"])
+			vertical.rotation.z = PI * 0.5
+			Kit.add_mesh(root, "DataCacheGoldCore", Kit.sphere_mesh(0.20, 14, 7), _materials["event_cache_core"], Vector3(0.0, 0.12, 0.0))
+		"rift_surge":
+			var outer := Kit.add_mesh(root, "RiftSurgeTelegraphAnnulus", Kit.torus_mesh(2.72, 0.040, 60, 5), _materials["event_rift"])
+			outer.rotation.x = PI * 0.5
+			var inner := Kit.add_mesh(root, "RiftSurgeInnerPrismRing", Kit.torus_mesh(1.24, 0.030, 6, 4), _materials["event_rift_core"])
+			inner.rotation.x = PI * 0.5
+			Kit.add_mesh(root, "RiftSurgeDarkAnchor", Kit.octahedron_mesh(0.48), _materials["sector2_dark_glass"], Vector3(0.0, 0.18, 0.0))
+		"overload_shrine":
+			Kit.add_mesh(root, "OverloadShrineDarkHexBody", Kit.hex_prism_mesh(0.62, 0.84), _materials["event_shrine_body"])
+			var shrine_ring := Kit.add_mesh(root, "OverloadShrineMagentaTriggerRing", Kit.torus_mesh(1.10, 0.034, 6, 5), _materials["event_shrine_edge"])
+			shrine_ring.rotation.x = PI * 0.5
+			var shrine_core := Kit.add_mesh(root, "OverloadShrineWhiteCyanCore", Kit.sphere_mesh(0.20, 14, 7), _materials["event_shrine_core"], Vector3(0.0, 0.25, 0.0))
+			shrine_core.scale = Vector3(1.0, 0.65, 1.0)
+		_:
+			Kit.add_mesh(root, "RunEventFallbackCore", Kit.sphere_mesh(0.36, 12, 6), _materials["event_cache_edge"])
+	return root
+
+
+func _update_run_event_marker_animation(delta: float) -> void:
+	if is_instance_valid(_run_event_node):
+		var pulse := 1.0 + sin(_survival_time * 5.0) * 0.035
+		_run_event_node.rotation.y += delta * (0.72 if _run_event_type != "rift_surge" else 1.08)
+		_run_event_node.scale = Vector3.ONE * pulse
+	if is_instance_valid(_run_event_target_node):
+		var target_marker := _run_event_target_marker_node()
+		if is_instance_valid(target_marker):
+			target_marker.rotation.y += delta * 2.4
+			target_marker.scale = Vector3.ONE * (1.0 + sin(_survival_time * 8.0) * 0.045)
+
+
+func _run_event_target_marker_node() -> Node3D:
+	for enemy in _enemies:
+		if bool(enemy.get("run_event_target", false)):
+			var marker: Node3D = enemy.get("run_event_target_marker", null)
+			if is_instance_valid(marker):
+				return marker
+	return null
+
+
+func _finish_run_event(success: bool, message: String, grant_reward: bool, reward_position := RUN_EVENT_AUTO_REWARD_POSITION) -> void:
+	if not _run_event_active:
+		return
+	var event_type := _run_event_type
+	var position := reward_position
+	if position == RUN_EVENT_AUTO_REWARD_POSITION:
+		if is_instance_valid(_run_event_node):
+			position = _run_event_node.position
+		elif is_instance_valid(_run_event_target_node):
+			position = _run_event_target_node.position
+		else:
+			position = _player_area.position
+	if success and grant_reward:
+		_grant_run_event_reward(event_type, position)
+	else:
+		_show_combat_notice(message, Color(0.82, 0.96, 1.0), 1.15)
+	_clear_run_event_state()
+	_run_event_cooldown = _run_event_cooldown_for_sector()
+
+
+func _grant_run_event_reward(event_type: String, position: Vector3, force_dust := false) -> Dictionary:
+	var sector_bonus := _sector_index
+	var xp_orbs := 5 + sector_bonus
+	var score_bonus := 220 + sector_bonus * 80
+	var dust_chance := 0.12 + float(sector_bonus) * 0.035
+	var dust_amount := 3 + sector_bonus * 2
+	var reward_label := "OBJECTIVE"
+	match event_type:
+		"data_cache":
+			xp_orbs += 2
+			score_bonus += 80
+			dust_chance += 0.03
+			reward_label = "DATA CACHE"
+		"rift_surge":
+			xp_orbs += 3
+			score_bonus += 130
+			dust_chance += 0.06
+			reward_label = "RIFT SURGE"
+		"elite_hunt":
+			xp_orbs += 4
+			score_bonus += 180
+			dust_chance += 0.07
+			reward_label = "ELITE HUNT"
+		"overload_shrine":
+			xp_orbs += 5
+			score_bonus += 210
+			dust_chance += 0.08
+			reward_label = "POWER NODE"
+	_score += score_bonus
+	for i in range(xp_orbs):
+		var angle := TAU * float(i) / float(maxi(1, xp_orbs))
+		_drop_xp(position + Vector3(cos(angle), 0.0, sin(angle)) * (0.85 + float(i % 3) * 0.28), 2)
+	var dust_awarded := 0
+	if force_dust or _run_event_rng.randf() < clampf(dust_chance, 0.0, 0.42):
+		dust_awarded = dust_amount
+		_grant_neon_dust(dust_awarded, true)
+	var dust_text := "  +%d DUST" % dust_awarded if dust_awarded > 0 else ""
+	_show_combat_notice("%s COMPLETE // +%d SCORE%s" % [reward_label, score_bonus, dust_text], Color(1.0, 0.94, 0.18), 1.45)
+	_spawn_burst(position, 1.12, "burst_gold" if dust_awarded > 0 else "burst_cyan")
+	_play_sfx("reward", 0.12)
+	_update_hud()
+	return {"xp_orbs": xp_orbs, "score": score_bonus, "dust": dust_awarded}
+
+
+func _clear_run_event_state(show_notice := false) -> void:
+	if is_instance_valid(_run_event_node):
+		_run_event_node.queue_free()
+	_run_event_node = null
+	_demote_run_event_target()
+	_clear_run_event_hazards()
+	_run_event_active = false
+	_run_event_type = ""
+	_run_event_stage = ""
+	_run_event_timer = 0.0
+	_run_event_duration = 0.0
+	_run_event_progress = 0.0
+	_run_event_notice_step = -1
+	_run_event_spawn_timer = 0.0
+	_run_event_hazard_timer = 0.0
+	_run_event_target_node = null
+	_run_event_target_instance_id = 0
+	if show_notice:
+		_show_combat_notice("OBJECTIVE CLEARED", Color(0.82, 0.96, 1.0), 0.9)
+
+
+func _demote_run_event_target() -> void:
+	for i in range(_enemies.size()):
+		var enemy := _enemies[i]
+		if not bool(enemy.get("run_event_target", false)):
+			continue
+		var marker: Node3D = enemy.get("run_event_target_marker", null)
+		if is_instance_valid(marker):
+			marker.queue_free()
+		enemy["run_event_target"] = false
+		enemy["run_event_target_id"] = 0
+		enemy["run_event_target_marker"] = null
+		_enemies[i] = enemy
+
+
+func _clear_run_event_hazards() -> void:
+	for i in range(_hazard_trails.size() - 1, -1, -1):
+		var hazard := _hazard_trails[i]
+		if str(hazard.get("source", "")) != "run_event":
+			continue
+		var node: Node3D = hazard.get("node", null)
+		if is_instance_valid(node):
+			node.queue_free()
+		_hazard_trails.remove_at(i)
+
+
+func _run_event_cooldown_for_sector() -> float:
+	return float(RUN_EVENT_COOLDOWN[clampi(_sector_index, 0, RUN_EVENT_COOLDOWN.size() - 1)])
+
+
+func _reset_run_event_director_for_run() -> void:
+	_clear_run_event_state()
+	_run_event_sector_count = 0
+	_run_event_cooldown = float(RUN_EVENT_START_DELAY[clampi(_sector_index, 0, RUN_EVENT_START_DELAY.size() - 1)])
+
+
+func _reset_run_event_director_for_sector() -> void:
+	_clear_run_event_state()
+	_run_event_sector_count = 0
+	_run_event_cooldown = float(RUN_EVENT_START_DELAY[clampi(_sector_index, 0, RUN_EVENT_START_DELAY.size() - 1)]) * 0.55
+
+
+func _run_event_spawn_position() -> Vector3:
+	var origin := _player_area.position if is_instance_valid(_player_area) else Vector3.ZERO
+	for i in range(8):
+		var angle := _run_event_rng.randf() * TAU
+		var distance := _run_event_rng.randf_range(7.0, 15.0)
+		var candidate := _clamp_to_arena(origin + Vector3(cos(angle), 0.0, sin(angle)) * distance, 4.0)
+		if _xz_distance(candidate, origin) >= 5.5:
+			return Vector3(candidate.x, 0.82, candidate.z)
+	return Vector3(clampf(origin.x + 8.0, -ARENA_HALF_SIZE + 4.0, ARENA_HALF_SIZE - 4.0), 0.82, clampf(origin.z, -ARENA_HALF_SIZE + 4.0, ARENA_HALF_SIZE - 4.0))
+
+
+func _clamp_to_arena(position: Vector3, margin: float) -> Vector3:
+	return Vector3(clampf(position.x, -ARENA_HALF_SIZE + margin, ARENA_HALF_SIZE - margin), position.y, clampf(position.z, -ARENA_HALF_SIZE + margin, ARENA_HALF_SIZE - margin))
+
+
 func _spawn_position_on_edge() -> Vector3:
 	var side := randi() % 4
 	var offset := randf_range(-ARENA_HALF_SIZE + 2.0, ARENA_HALF_SIZE - 2.0)
@@ -7977,6 +8529,7 @@ func _spawn_sector_boss() -> void:
 		return
 	var sector := _current_sector()
 	var boss_type := str(sector["boss_type"])
+	_clear_run_event_state()
 	_trim_non_boss_enemies(int(sector.get("boss_trim_keep", 14)))
 	_clear_enemy_projectiles_and_hazards()
 	_sector_boss_spawned = true
@@ -8062,7 +8615,9 @@ func _clear_enemy_projectiles_and_hazards() -> void:
 	_boss_telegraphs.clear()
 
 
-func _spawn_enemy(enemy_type: String, position: Vector3, elite_variant := "") -> void:
+func _spawn_enemy(enemy_type: String, position: Vector3, elite_variant := "") -> int:
+	if _enemies.size() >= ENEMY_CAP:
+		return -1
 	var stats := _enemy_stats(enemy_type)
 	var elite_data := _elite_variant_data(elite_variant)
 	if not elite_data.is_empty() and not _is_boss_type(enemy_type):
@@ -8081,8 +8636,10 @@ func _spawn_enemy(enemy_type: String, position: Vector3, elite_variant := "") ->
 	enemy.add_child(visual)
 	_apply_enemy_blender_model(visual, enemy_type)
 	var elite_marker := _apply_elite_visual_marker(visual, elite_variant, enemy_type)
+	_enemy_instance_counter += 1
 	_enemies.append({
 		"node": enemy,
+		"instance_id": _enemy_instance_counter,
 		"type": enemy_type,
 		"elite_variant": elite_variant,
 		"elite_label": str(elite_data.get("label", "")),
@@ -8119,6 +8676,7 @@ func _spawn_enemy(enemy_type: String, position: Vector3, elite_variant := "") ->
 	})
 	if not elite_data.is_empty():
 		_show_elite_spawn_feedback(position, elite_variant, elite_data)
+	return _enemies.size() - 1
 
 
 func _elite_variant_data(variant: String) -> Dictionary:
@@ -9794,7 +10352,7 @@ func _spawn_gravity_mine(position: Vector3) -> void:
 	_mines.append({"node": mine, "life": mine_life, "duration": mine_life, "radius": mine_radius, "damaged": {}})
 
 
-func _spawn_pressure_hazard(position: Vector3, radius: float, duration: float, material_key := "hazard_leech", damage := 7.0, arm_time := 0.34) -> void:
+func _spawn_pressure_hazard(position: Vector3, radius: float, duration: float, material_key := "hazard_leech", damage := 7.0, arm_time := 0.34, source := "") -> void:
 	if _hazard_trails.size() >= HAZARD_TRAIL_CAP:
 		var oldest: Dictionary = _hazard_trails.pop_front()
 		var old_node: Node3D = oldest.get("node", null)
@@ -9816,7 +10374,8 @@ func _spawn_pressure_hazard(position: Vector3, radius: float, duration: float, m
 		"radius": radius,
 		"damage": damage,
 		"arm_time": arm_time,
-		"hit_cd": 0.0
+		"hit_cd": 0.0,
+		"source": source
 	})
 
 
@@ -10237,6 +10796,8 @@ func _kill_enemy_at(index: int, exploded: bool) -> void:
 	_spawn_burst(position, burst_scale, _burst_key_for_enemy(enemy["type"]))
 	if is_elite:
 		_handle_elite_death_feedback(enemy, position, elite_variant)
+	if bool(enemy.get("run_event_target", false)):
+		_handle_run_event_target_enemy_killed(enemy, position)
 	_play_sfx("boss_death" if is_boss else "death", 0.12)
 	_add_screen_shake(0.26 if is_null_boss else 0.23 if is_fractal_boss else 0.21 if is_mini_boss else 0.07 if exploded else 0.040, 0.34 if is_boss else 0.12)
 	var xp_value := int(enemy.get("xp", stats.xp)) + (0 if is_boss else _enemy_xp_reward_bonus)
@@ -10307,6 +10868,7 @@ func _begin_sector_clear_reward() -> void:
 	if _sector_reward_active or _run_success or _game_over:
 		return
 	var sector := _current_sector()
+	_clear_run_event_state()
 	_sector_reward_active = true
 	_level_up_active = true
 	_upgrade_selected_index = 0
@@ -10412,6 +10974,7 @@ func _advance_to_next_sector() -> void:
 	_wave_index = 0
 	_wave_name = str(_current_sector()["intro_wave"])
 	_spawn_timer = 0.65
+	_reset_run_event_director_for_sector()
 	_player_invuln = maxf(_player_invuln, 1.10)
 	_apply_sector_visual_identity()
 	_trigger_sector_transition_scan()
@@ -10443,6 +11006,7 @@ func _spawn_sector_opening_wave() -> void:
 
 
 func _clear_transition_combat_state() -> void:
+	_clear_run_event_state()
 	for i in range(_enemies.size() - 1, -1, -1):
 		var enemy := _enemies[i]
 		if _is_boss_type(str(enemy["type"])):
@@ -10864,6 +11428,7 @@ func _complete_run() -> void:
 	if _run_success or _game_over:
 		return
 	_run_success = true
+	_clear_run_event_state()
 	_clear_enemy_projectiles_and_hazards()
 	_finalize_run_neon_dust(true)
 	_update_run_end_summary(true)
@@ -10892,6 +11457,7 @@ func _damage_player(amount: float) -> void:
 	_add_screen_shake(0.10, 0.18)
 	if _player_health <= 0.0:
 		_game_over = true
+		_clear_run_event_state()
 		_finalize_run_neon_dust(false)
 		_update_run_end_summary(false)
 		_game_over_panel.visible = true
@@ -10915,6 +11481,7 @@ func _restart_run() -> void:
 	_level_up_active = false
 	_sector_reward_active = false
 	_clear_weapon_reward_decision_state()
+	_clear_run_event_state()
 	_run_success = false
 	call_deferred("_reload_official_scene")
 
