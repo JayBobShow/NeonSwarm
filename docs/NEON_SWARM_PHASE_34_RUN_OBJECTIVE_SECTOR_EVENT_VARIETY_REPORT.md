@@ -168,3 +168,98 @@ godot --path /home/jason/GodotProjects/NeonSwarm scenes/Main.tscn
 ## 11. Approval Question
 
 Is Phase 34 approved as the Run Objective / Sector Event Variety foundation, or should event frequency, objective readability, or reward values be tuned before Phase 35 is considered?
+
+## Phase 34 Hotfix — Event Testability / Readability Pass
+
+This is a Phase 34 hotfix only. Phase 35 was not started.
+
+### Event Test Mode Controls
+
+Temporary developer event test mode now works during an active run only.
+
+Controls:
+
+- `F6`: Toggle `EVENT TEST MODE` on/off.
+- `F7`: Cycle selected test event.
+- `F8`: Force-spawn selected test event.
+- `F9`: Clear the active event safely.
+
+Cycle order:
+
+1. Data Cache
+2. Rift Surge
+3. Elite Hunt
+4. Overload Shrine / Power Node
+
+Guardrails:
+
+- Hotkeys do not work on the title menu.
+- Hotkeys do not work in Armory, Forge, Options, How To Play, pause, reward screens, game over, or run complete.
+- Test mode does not replace normal random event spawning.
+- Test mode does not increase event frequency unless the player explicitly uses it.
+- Force-spawn is blocked during boss windows.
+
+### Test HUD
+
+When enabled, the gameplay HUD shows:
+
+- `EVENT TEST MODE`
+- Selected event name
+- `F7 CYCLE | F8 SPAWN | F9 CLEAR`
+- Active event state and timer
+
+The test HUD is hidden outside active gameplay.
+
+### Event Readability Changes
+
+Data Cache:
+
+- Larger dark cube/cache body.
+- Brighter cyan square route rings.
+- Brighter gold core.
+- Floating `DATA CACHE` label.
+- HUD text now says `DATA CACHE // SYNCING: HOLD NEAR CACHE`.
+- Progress text says `DATA CACHE SYNCING`.
+- Completion notice says `DATA CACHE COMPLETE`.
+
+Rift Surge:
+
+- Larger magenta warning annulus.
+- Added visible warning-zone ring before pressure begins.
+- Larger cyan inner prism ring and dark anchor.
+- Floating `RIFT SURGE` label.
+- HUD text now shows a short warning countdown before danger starts.
+- Active text says `RIFT SURGE // SURVIVE`.
+- Completion notice says `RIFT SURGE COMPLETE`.
+
+Elite Hunt:
+
+- Target marker rings are larger and brighter.
+- Added floating `ELITE HUNT` label on the marked target.
+- HUD text says `ELITE HUNT // TARGET MARKED`.
+- Kill notice says `ELITE HUNT // TARGET DOWN`.
+- Failure notices say target escaped or target lost.
+
+Overload Shrine / Power Node:
+
+- Larger dark hex node body.
+- Larger magenta trigger ring.
+- Added large proximity ring.
+- Brighter white/cyan core.
+- Floating `OVERLOAD NODE` label.
+- HUD text says `OVERLOAD NODE // APPROACH NODE TO TRIGGER`.
+- Active text says `OVERLOAD NODE // OVERLOAD ACTIVE`.
+- Completion notice says `OVERLOAD NODE COMPLETE`.
+
+### What The User Should Test
+
+- Start a run.
+- Press `F6` to enable Event Test Mode.
+- Press `F7` until `DATA CACHE` is selected, then `F8` to spawn it.
+- Press `F9` to clear it.
+- Repeat for `RIFT SURGE`, `ELITE HUNT`, and `OVERLOAD NODE`.
+- Confirm each event is visually obvious before interacting with it.
+- Confirm Rift Surge gives warning text/countdown before hazard pressure starts.
+- Confirm Overload Node is easy to see and says to approach it.
+- Confirm F6/F7/F8/F9 do nothing in title/menu/Armory/Forge/reward/game-over states.
+- Confirm normal random event spawning still works when test mode is not used.

@@ -211,6 +211,7 @@ const RUN_EVENT_SHRINE_TRIGGER_TIME := 1.35
 const RUN_EVENT_SHRINE_OVERLOAD_DURATION := 11.0
 const RUN_EVENT_INTERACTION_RADIUS := 4.1
 const RUN_EVENT_AUTO_REWARD_POSITION := Vector3(99999.0, 99999.0, 99999.0)
+const RUN_EVENT_TEST_TYPES := ["data_cache", "rift_surge", "elite_hunt", "overload_shrine"]
 const WAVE_DIRECTOR_ELITE_MIN_TIME := [38.0, 28.0, 22.0, 18.0]
 const WAVE_DIRECTOR_ELITE_COOLDOWN := [18.0, 15.0, 13.0, 11.0]
 const WAVE_DIRECTOR_MAX_ELITES := [1, 2, 2, 3]
@@ -341,6 +342,10 @@ var _run_event_node: Node3D
 var _run_event_target_node: Node3D
 var _run_event_target_instance_id := 0
 var _enemy_instance_counter := 0
+var _run_event_test_enabled := false
+var _run_event_test_selected_index := 0
+var _run_event_test_panel: Control
+var _run_event_test_label: Label
 var _mini_boss_spawned := false
 var _mini_boss_active := false
 var _mini_boss_warning_played := false
@@ -608,6 +613,8 @@ func _input(event: InputEvent) -> void:
 		_toggle_audio_mute()
 		get_viewport().set_input_as_handled()
 		return
+	if _handle_run_event_test_input(event):
+		return
 	if _help_visible:
 		_handle_help_input(event)
 		return
@@ -632,12 +639,114 @@ func _input(event: InputEvent) -> void:
 		_toggle_pause()
 
 
+func _handle_run_event_test_input(event: InputEvent) -> bool:
+	if not event is InputEventKey:
+		return false
+	var key_event := event as InputEventKey
+	if not key_event.pressed or key_event.echo:
+		return false
+	match key_event.keycode:
+		KEY_F6:
+			if not _run_event_test_input_allowed():
+				return false
+			_toggle_run_event_test_mode()
+		KEY_F7:
+			if not _run_event_test_enabled or not _run_event_test_input_allowed():
+				return false
+			_cycle_run_event_test_selection()
+		KEY_F8:
+			if not _run_event_test_enabled or not _run_event_test_input_allowed():
+				return false
+			_force_spawn_selected_run_event_test()
+		KEY_F9:
+			if not _run_event_test_enabled or not _run_event_test_input_allowed():
+				return false
+			_clear_run_event_test_spawn()
+		_:
+			return false
+	get_viewport().set_input_as_handled()
+	return true
+
+
+func _run_event_test_input_allowed() -> bool:
+	if not _run_event_gameplay_allowed():
+		return false
+	if _title_options_visible or _help_visible or _armory_visible or _core_upgrades_visible:
+		return false
+	if _pause_options_visible:
+		return false
+	return true
+
+
+func _toggle_run_event_test_mode() -> void:
+	_run_event_test_enabled = not _run_event_test_enabled
+	_show_combat_notice("EVENT TEST MODE %s" % ("ON" if _run_event_test_enabled else "OFF"), Color(1.0, 0.94, 0.18), 1.10)
+	_update_run_event_test_hud()
+
+
+func _cycle_run_event_test_selection() -> void:
+	_run_event_test_selected_index = wrapi(_run_event_test_selected_index + 1, 0, RUN_EVENT_TEST_TYPES.size())
+	_show_combat_notice("EVENT TEST SELECT // %s" % _run_event_display_name(_run_event_test_selected_type()).to_upper(), Color(0.0, 0.96, 1.0), 1.05)
+	_update_run_event_test_hud()
+
+
+func _force_spawn_selected_run_event_test() -> void:
+	if _run_event_blocked_by_boss():
+		_show_combat_notice("EVENT TEST BLOCKED // BOSS WINDOW ACTIVE", Color(1.0, 0.58, 0.04), 1.20)
+		return
+	if _run_event_active:
+		_clear_run_event_state()
+	_run_event_cooldown = 0.0
+	var event_type := _run_event_test_selected_type()
+	_start_run_event(event_type)
+	_show_combat_notice("EVENT TEST SPAWN // %s" % _run_event_display_name(event_type).to_upper(), _run_event_notice_color(event_type), 1.20)
+	_update_run_event_test_hud()
+
+
+func _clear_run_event_test_spawn() -> void:
+	if _run_event_active:
+		_clear_run_event_state(true)
+		_run_event_cooldown = 0.0
+	else:
+		_show_combat_notice("EVENT TEST CLEAR // NO ACTIVE EVENT", Color(0.82, 0.96, 1.0), 0.95)
+	_update_run_event_test_hud()
+
+
+func _run_event_test_selected_type() -> String:
+	if RUN_EVENT_TEST_TYPES.is_empty():
+		return "data_cache"
+	return str(RUN_EVENT_TEST_TYPES[clampi(_run_event_test_selected_index, 0, RUN_EVENT_TEST_TYPES.size() - 1)])
+
+
+func _update_run_event_test_hud() -> void:
+	if not is_instance_valid(_run_event_test_panel) or not is_instance_valid(_run_event_test_label):
+		return
+	var visible := _run_event_test_enabled and _run_event_test_input_allowed()
+	_run_event_test_panel.visible = visible
+	if not visible:
+		return
+	var active_text := "NONE"
+	if _run_event_active:
+		active_text = "%s // %s // %.0fs" % [_run_event_display_name(_run_event_type).to_upper(), _run_event_stage.to_upper(), _run_event_timer]
+	_run_event_test_label.text = "EVENT TEST MODE  //  SELECTED: %s\nF7 CYCLE  |  F8 SPAWN  |  F9 CLEAR  //  ACTIVE: %s" % [
+		_run_event_display_name(_run_event_test_selected_type()).to_upper(),
+		active_text
+	]
+	var frame := _run_event_test_panel as NeonFramePanel
+	if frame:
+		frame.accent_primary = Color(1.0, 0.94, 0.18, 0.90)
+		frame.accent_secondary = _run_event_notice_color(_run_event_test_selected_type())
+		frame.animated = true
+		frame.queue_redraw()
+
+
 func _process(delta: float) -> void:
 	_update_sfx_cooldowns(delta)
 	_sync_hud_design_scale()
 	_update_presentation_flash(delta)
 	_update_tutorial_prompt(delta)
 	_update_combat_notice(delta)
+	_update_run_event_test_hud()
 	_update_music_state()
 	_update_sector_transition_effect(delta)
 	_update_right_stick_ui_scroll(delta)
@@ -1731,14 +1840,14 @@ func _create_materials() -> void:
 	_materials["hazard_null"] = Kit.make_emissive_material(Color(0.0, 0.86, 1.0, 0.30), 3.6, true)
 	_materials["hazard_pulse"] = Kit.make_emissive_material(Color(1.0, 0.48, 0.02, 0.34), 3.9, true)
 	_materials["event_cache_body"] = Kit.make_neon_body_material(Color(0.025, 0.090, 0.145, 1.0), 0.58)
-	_materials["event_cache_edge"] = Kit.make_emissive_material(Color(0.0, 0.96, 1.0, 0.88), 6.4, true)
-	_materials["event_cache_core"] = Kit.make_emissive_material(Color(1.0, 0.94, 0.20, 0.92), 7.2, true)
-	_materials["event_rift"] = Kit.make_emissive_material(Color(1.0, 0.08, 0.86, 0.40), 4.3, true)
-	_materials["event_rift_core"] = Kit.make_emissive_material(Color(0.0, 0.94, 1.0, 0.66), 5.2, true)
-	_materials["event_elite_hunt"] = Kit.make_emissive_material(Color(1.0, 0.58, 0.04, 0.84), 6.2, true)
+	_materials["event_cache_edge"] = Kit.make_emissive_material(Color(0.0, 0.96, 1.0, 0.96), 7.4, true)
+	_materials["event_cache_core"] = Kit.make_emissive_material(Color(1.0, 0.94, 0.20, 0.96), 8.2, true)
+	_materials["event_rift"] = Kit.make_emissive_material(Color(1.0, 0.08, 0.86, 0.54), 5.3, true)
+	_materials["event_rift_core"] = Kit.make_emissive_material(Color(0.0, 0.94, 1.0, 0.78), 6.4, true)
+	_materials["event_elite_hunt"] = Kit.make_emissive_material(Color(1.0, 0.58, 0.04, 0.94), 7.2, true)
 	_materials["event_shrine_body"] = Kit.make_neon_body_material(Color(0.055, 0.035, 0.105, 1.0), 0.60)
-	_materials["event_shrine_edge"] = Kit.make_emissive_material(Color(1.0, 0.24, 0.92, 0.82), 6.0, true)
-	_materials["event_shrine_core"] = Kit.make_emissive_material(Color(0.86, 1.0, 1.0, 0.86), 6.8, true)
+	_materials["event_shrine_edge"] = Kit.make_emissive_material(Color(1.0, 0.24, 0.92, 0.94), 7.0, true)
+	_materials["event_shrine_core"] = Kit.make_emissive_material(Color(0.86, 1.0, 1.0, 0.94), 7.8, true)
 	_materials["boss_telegraph_prism"] = Kit.make_emissive_material(Color(1.0, 0.08, 0.88, 0.42), 4.4, true)
 	_materials["boss_telegraph_null"] = Kit.make_emissive_material(Color(0.0, 0.76, 1.0, 0.40), 4.2, true)
 	_materials["boss_telegraph_prime"] = Kit.make_emissive_material(Color(0.72, 0.96, 1.0, 0.44), 4.7, true)
@@ -3305,6 +3414,16 @@ func _create_hud() -> void:
 	_combat_notice_label.add_theme_font_size_override("font_size", 15)
 	_combat_notice_label.add_theme_color_override("font_color", Color(1.0, 0.94, 0.18))
 	_combat_notice_panel.add_child(_combat_notice_label)
+
+	_run_event_test_panel = _make_frame(NeonFramePanel.FrameKind.ALERT_RAIL, Rect2(610, 126, 700, 72), Color(1.0, 0.94, 0.18, 0.90), Color(0.0, 0.95, 1.0, 0.70), 18.0, 1.8, Vector4(18, 8, 18, 8))
+	_run_event_test_panel.name = "Phase34RunEventTestModeRail"
+	_run_event_test_panel.visible = false
+	_gameplay_hud_root.add_child(_run_event_test_panel)
+	_run_event_test_label = _make_hud_label("EVENT TEST MODE")
+	_run_event_test_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_run_event_test_label.add_theme_font_size_override("font_size", 14)
+	_run_event_test_label.add_theme_color_override("font_color", Color(1.0, 0.94, 0.18))
+	_run_event_test_panel.add_child(_run_event_test_label)
 
 	_create_level_up_panel(_hud_design_root)
 	_create_weapon_reward_decision_panel(_hud_design_root)
@@ -8037,6 +8156,34 @@ func _can_start_run_event() -> bool:
 	return true
 
 
+func _run_event_display_name(event_type: String) -> String:
+	match event_type:
+		"data_cache":
+			return "Data Cache"
+		"rift_surge":
+			return "Rift Surge"
+		"elite_hunt":
+			return "Elite Hunt"
+		"overload_shrine":
+			return "Overload Node"
+		_:
+			return "Objective"
+
+
+func _run_event_notice_color(event_type: String) -> Color:
+	match event_type:
+		"data_cache":
+			return Color(0.0, 0.96, 1.0)
+		"rift_surge":
+			return Color(1.0, 0.08, 0.86)
+		"elite_hunt":
+			return Color(1.0, 0.58, 0.04)
+		"overload_shrine":
+			return Color(1.0, 0.72, 0.10)
+		_:
+			return Color(1.0, 0.94, 0.18)
+
+
 func _pick_run_event_type() -> String:
 	var pool: Array[Dictionary] = []
 	match _sector_index:
@@ -8105,13 +8252,13 @@ func _start_run_event(event_type: String) -> void:
 			_run_event_timer = _run_event_duration
 			_run_event_stage = "sync"
 			_run_event_node = _create_run_event_marker("data_cache", _run_event_spawn_position())
-			_show_combat_notice("DATA CACHE ONLINE // HOLD NEAR CACHE", Color(0.0, 0.96, 1.0), 1.55)
+			_show_combat_notice("DATA CACHE // SYNCING: HOLD NEAR CACHE", _run_event_notice_color("data_cache"), 1.75)
 		"rift_surge":
 			_run_event_duration = RUN_EVENT_RIFT_DURATION
 			_run_event_timer = _run_event_duration
 			_run_event_stage = "warning"
 			_run_event_node = _create_run_event_marker("rift_surge", _run_event_spawn_position())
-			_show_combat_notice("RIFT SURGE WARNING // DANGER FIELD FORMING", Color(1.0, 0.08, 0.86), 1.65)
+			_show_combat_notice("RIFT SURGE // WARNING FIELD FORMING", _run_event_notice_color("rift_surge"), 1.85)
 			_play_sfx("warning", 0.12)
 		"elite_hunt":
 			_run_event_duration = RUN_EVENT_ELITE_HUNT_DURATION
@@ -8123,7 +8270,7 @@ func _start_run_event(event_type: String) -> void:
 			_run_event_timer = _run_event_duration
 			_run_event_stage = "armed"
 			_run_event_node = _create_run_event_marker("overload_shrine", _run_event_spawn_position())
-			_show_combat_notice("POWER NODE FOUND // HOLD NEAR NODE TO OVERLOAD", Color(1.0, 0.58, 0.04), 1.70)
+			_show_combat_notice("OVERLOAD NODE // APPROACH NODE TO TRIGGER", _run_event_notice_color("overload_shrine"), 1.90)
 		_:
 			_run_event_type = "data_cache"
 			_run_event_duration = RUN_EVENT_CACHE_DURATION
@@ -8158,11 +8305,11 @@ func _update_data_cache_event(delta: float) -> void:
 		_run_event_progress = minf(RUN_EVENT_CACHE_HOLD_TIME, _run_event_progress + delta)
 	else:
 		_run_event_progress = maxf(0.0, _run_event_progress - delta * 0.38)
-	_show_run_event_progress_notice("CACHE SYNC", _run_event_progress / RUN_EVENT_CACHE_HOLD_TIME, Color(0.0, 0.96, 1.0))
+	_show_run_event_progress_notice("DATA CACHE SYNCING", _run_event_progress / RUN_EVENT_CACHE_HOLD_TIME, _run_event_notice_color("data_cache"))
 	if _run_event_progress >= RUN_EVENT_CACHE_HOLD_TIME:
 		_finish_run_event(true, "DATA CACHE SECURED", true)
 	elif _run_event_timer <= 0.0:
-		_finish_run_event(false, "DATA CACHE EXPIRED", false)
+		_finish_run_event(false, "DATA CACHE FAILED // EXPIRED", false)
 
 
 func _update_rift_surge_event(delta: float) -> void:
@@ -8170,11 +8317,14 @@ func _update_rift_surge_event(delta: float) -> void:
 		_finish_run_event(false, "RIFT SURGE COLLAPSED", false)
 		return
 	var elapsed := RUN_EVENT_RIFT_DURATION - _run_event_timer
+	if _run_event_stage == "warning":
+		var countdown := maxf(0.0, RUN_EVENT_RIFT_WARNING_TIME - elapsed)
+		_show_combat_notice("RIFT SURGE WARNING // %.1f SEC" % countdown, _run_event_notice_color("rift_surge"), 0.34)
 	if _run_event_stage == "warning" and elapsed >= RUN_EVENT_RIFT_WARNING_TIME:
 		_run_event_stage = "surge"
 		_run_event_hazard_timer = 0.0
 		_run_event_spawn_timer = 1.0
-		_show_combat_notice("RIFT SURGE ACTIVE // SURVIVE THE PRESSURE", Color(1.0, 0.08, 0.86), 1.35)
+		_show_combat_notice("RIFT SURGE // SURVIVE", _run_event_notice_color("rift_surge"), 1.45)
 	if _run_event_stage == "surge":
 		_run_event_hazard_timer -= delta
 		if _run_event_hazard_timer <= 0.0:
@@ -8192,14 +8342,14 @@ func _update_rift_surge_event(delta: float) -> void:
 
 func _update_elite_hunt_event(delta: float) -> void:
 	if not is_instance_valid(_run_event_target_node):
-		_finish_run_event(false, "ELITE HUNT TARGET LOST", false)
+		_finish_run_event(false, "ELITE HUNT FAILED // TARGET LOST", false)
 		return
 	if _run_event_timer <= 0.0:
 		_demote_run_event_target()
-		_finish_run_event(false, "ELITE HUNT ESCAPED", false)
+		_finish_run_event(false, "ELITE HUNT FAILED // TARGET ESCAPED", false)
 		return
 	if _run_event_timer <= 8.0:
-		_show_run_event_progress_notice("ELITE HUNT TIMER", 1.0 - _run_event_timer / 8.0, Color(1.0, 0.58, 0.04))
+		_show_run_event_progress_notice("ELITE HUNT TIMER", 1.0 - _run_event_timer / 8.0, _run_event_notice_color("elite_hunt"))
 
 
 func _update_overload_shrine_event(delta: float) -> void:
@@ -8212,17 +8362,17 @@ func _update_overload_shrine_event(delta: float) -> void:
 			_run_event_progress = minf(RUN_EVENT_SHRINE_TRIGGER_TIME, _run_event_progress + delta)
 		else:
 			_run_event_progress = maxf(0.0, _run_event_progress - delta * 0.45)
-		_show_run_event_progress_notice("NODE OVERLOAD", _run_event_progress / RUN_EVENT_SHRINE_TRIGGER_TIME, Color(1.0, 0.58, 0.04))
+		_show_run_event_progress_notice("OVERLOAD NODE APPROACH", _run_event_progress / RUN_EVENT_SHRINE_TRIGGER_TIME, _run_event_notice_color("overload_shrine"))
 		if _run_event_progress >= RUN_EVENT_SHRINE_TRIGGER_TIME:
 			_run_event_stage = "overload"
 			_run_event_timer = RUN_EVENT_SHRINE_OVERLOAD_DURATION
 			_run_event_hazard_timer = 0.0
 			_run_event_spawn_timer = 0.65
-			_show_combat_notice("OVERLOAD ACTIVE // SURVIVE THE POWER SPIKE", Color(1.0, 0.58, 0.04), 1.35)
+			_show_combat_notice("OVERLOAD NODE // OVERLOAD ACTIVE", _run_event_notice_color("overload_shrine"), 1.55)
 			_spawn_burst(_run_event_node.position, 1.24, "burst_gold")
 			_play_sfx("sector", 0.16)
 		elif _run_event_timer <= 0.0:
-			_finish_run_event(false, "POWER NODE WENT DORMANT", false)
+			_finish_run_event(false, "OVERLOAD NODE FAILED // WENT DORMANT", false)
 	elif _run_event_stage == "overload":
 		_run_event_hazard_timer -= delta
 		if _run_event_hazard_timer <= 0.0:
@@ -8293,12 +8443,13 @@ func _apply_run_event_target_marker(enemy: Dictionary) -> Node3D:
 	var marker := Node3D.new()
 	marker.name = "RunEventEliteHuntTargetMarker"
 	visual.add_child(marker)
-	var ring := Kit.add_mesh(marker, "EliteHuntGoldTargetRing", Kit.torus_mesh(1.10, 0.036, 48, 5), _materials["event_elite_hunt"])
+	var ring := Kit.add_mesh(marker, "EliteHuntGoldTargetRing", Kit.torus_mesh(1.34, 0.052, 56, 5), _materials["event_elite_hunt"])
 	ring.rotation.x = PI * 0.5
-	var vertical := Kit.add_mesh(marker, "EliteHuntVerticalTargetRing", Kit.torus_mesh(0.88, 0.022, 36, 4), _materials["event_elite_hunt"])
+	var vertical := Kit.add_mesh(marker, "EliteHuntVerticalTargetRing", Kit.torus_mesh(1.02, 0.032, 40, 4), _materials["event_elite_hunt"])
 	vertical.rotation.z = PI * 0.5
-	var core := Kit.add_mesh(marker, "EliteHuntWhiteHotCoreDot", Kit.sphere_mesh(0.11, 10, 5), _materials["burst_hot_core"], Vector3(0.0, 0.58, 0.0))
+	var core := Kit.add_mesh(marker, "EliteHuntWhiteHotCoreDot", Kit.sphere_mesh(0.14, 10, 5), _materials["burst_hot_core"], Vector3(0.0, 0.68, 0.0))
 	core.scale = Vector3(1.0, 0.40, 1.0)
+	_add_run_event_label(marker, "ELITE HUNT", _run_event_notice_color("elite_hunt"), 1.58)
 	return marker
 
 
@@ -8307,7 +8458,19 @@ func _handle_run_event_target_enemy_killed(enemy: Dictionary, position: Vector3)
 		return
 	if not bool(enemy.get("run_event_target", false)):
 		return
+	_show_combat_notice("ELITE HUNT // TARGET DOWN", _run_event_notice_color("elite_hunt"), 0.80)
 	_finish_run_event(true, "ELITE HUNT COMPLETE", true, position)
+
+
+func _add_run_event_label(parent: Node3D, text: String, color: Color, height := 1.42) -> Label3D:
+	var label := Kit.add_label(parent, text, Vector3(0.0, height, 0.0))
+	label.font_size = 32
+	label.pixel_size = 0.026
+	label.modulate = color
+	label.outline_size = 10
+	label.outline_modulate = Color(0.0, 0.02, 0.06, 0.96)
+	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	return label
 
 
 func _create_run_event_marker(event_type: String, position: Vector3) -> Node3D:
@@ -8317,24 +8480,31 @@ func _create_run_event_marker(event_type: String, position: Vector3) -> Node3D:
 	_fx_root.add_child(root)
 	match event_type:
 		"data_cache":
-			Kit.add_mesh(root, "DataCacheDarkBodyCube", Kit.box_mesh(Vector3(1.12, 0.74, 1.12)), _materials["event_cache_body"])
-			var ring := Kit.add_mesh(root, "DataCacheCyanSquareRouteRing", Kit.torus_mesh(0.88, 0.030, 4, 4), _materials["event_cache_edge"])
+			Kit.add_mesh(root, "DataCacheDarkBodyCube", Kit.box_mesh(Vector3(1.38, 0.92, 1.38)), _materials["event_cache_body"])
+			var ring := Kit.add_mesh(root, "DataCacheCyanSquareRouteRing", Kit.torus_mesh(1.12, 0.046, 4, 4), _materials["event_cache_edge"])
 			ring.rotation.x = PI * 0.5
-			var vertical := Kit.add_mesh(root, "DataCacheVerticalNeonRouteRing", Kit.torus_mesh(0.72, 0.024, 4, 4), _materials["event_cache_edge"])
+			var vertical := Kit.add_mesh(root, "DataCacheVerticalNeonRouteRing", Kit.torus_mesh(0.92, 0.036, 4, 4), _materials["event_cache_edge"])
 			vertical.rotation.z = PI * 0.5
-			Kit.add_mesh(root, "DataCacheGoldCore", Kit.sphere_mesh(0.20, 14, 7), _materials["event_cache_core"], Vector3(0.0, 0.12, 0.0))
+			Kit.add_mesh(root, "DataCacheGoldCore", Kit.sphere_mesh(0.28, 14, 7), _materials["event_cache_core"], Vector3(0.0, 0.12, 0.0))
+			_add_run_event_label(root, "DATA CACHE", _run_event_notice_color("data_cache"), 1.62)
 		"rift_surge":
-			var outer := Kit.add_mesh(root, "RiftSurgeTelegraphAnnulus", Kit.torus_mesh(2.72, 0.040, 60, 5), _materials["event_rift"])
+			var outer := Kit.add_mesh(root, "RiftSurgeTelegraphAnnulus", Kit.torus_mesh(3.45, 0.060, 72, 5), _materials["event_rift"])
 			outer.rotation.x = PI * 0.5
-			var inner := Kit.add_mesh(root, "RiftSurgeInnerPrismRing", Kit.torus_mesh(1.24, 0.030, 6, 4), _materials["event_rift_core"])
+			var warning := Kit.add_mesh(root, "RiftSurgeWarningZoneRing", Kit.torus_mesh(2.30, 0.032, 48, 4), _materials["event_rift_core"])
+			warning.rotation.x = PI * 0.5
+			var inner := Kit.add_mesh(root, "RiftSurgeInnerPrismRing", Kit.torus_mesh(1.48, 0.044, 6, 4), _materials["event_rift_core"])
 			inner.rotation.x = PI * 0.5
-			Kit.add_mesh(root, "RiftSurgeDarkAnchor", Kit.octahedron_mesh(0.48), _materials["sector2_dark_glass"], Vector3(0.0, 0.18, 0.0))
+			Kit.add_mesh(root, "RiftSurgeDarkAnchor", Kit.octahedron_mesh(0.64), _materials["sector2_dark_glass"], Vector3(0.0, 0.22, 0.0))
+			_add_run_event_label(root, "RIFT SURGE", _run_event_notice_color("rift_surge"), 1.70)
 		"overload_shrine":
-			Kit.add_mesh(root, "OverloadShrineDarkHexBody", Kit.hex_prism_mesh(0.62, 0.84), _materials["event_shrine_body"])
-			var shrine_ring := Kit.add_mesh(root, "OverloadShrineMagentaTriggerRing", Kit.torus_mesh(1.10, 0.034, 6, 5), _materials["event_shrine_edge"])
+			Kit.add_mesh(root, "OverloadShrineDarkHexBody", Kit.hex_prism_mesh(0.82, 1.10), _materials["event_shrine_body"])
+			var shrine_ring := Kit.add_mesh(root, "OverloadShrineMagentaTriggerRing", Kit.torus_mesh(1.58, 0.054, 6, 5), _materials["event_shrine_edge"])
 			shrine_ring.rotation.x = PI * 0.5
-			var shrine_core := Kit.add_mesh(root, "OverloadShrineWhiteCyanCore", Kit.sphere_mesh(0.20, 14, 7), _materials["event_shrine_core"], Vector3(0.0, 0.25, 0.0))
+			var proximity := Kit.add_mesh(root, "OverloadShrineApproachRadiusRing", Kit.torus_mesh(RUN_EVENT_INTERACTION_RADIUS, 0.030, 72, 4), _materials["event_shrine_core"])
+			proximity.rotation.x = PI * 0.5
+			var shrine_core := Kit.add_mesh(root, "OverloadShrineWhiteCyanCore", Kit.sphere_mesh(0.30, 14, 7), _materials["event_shrine_core"], Vector3(0.0, 0.33, 0.0))
 			shrine_core.scale = Vector3(1.0, 0.65, 1.0)
+			_add_run_event_label(root, "OVERLOAD NODE", _run_event_notice_color("overload_shrine"), 1.78)
 		_:
 			Kit.add_mesh(root, "RunEventFallbackCore", Kit.sphere_mesh(0.36, 12, 6), _materials["event_cache_edge"])
 	return root
@@ -8387,28 +8557,28 @@ func _grant_run_event_reward(event_type: String, position: Vector3, force_dust :
 	var score_bonus := 220 + sector_bonus * 80
 	var dust_chance := 0.12 + float(sector_bonus) * 0.035
 	var dust_amount := 3 + sector_bonus * 2
-	var reward_label := "OBJECTIVE"
+	var reward_label := "OBJECTIVE COMPLETE"
 	match event_type:
 		"data_cache":
 			xp_orbs += 2
 			score_bonus += 80
 			dust_chance += 0.03
-			reward_label = "DATA CACHE"
+			reward_label = "DATA CACHE COMPLETE"
 		"rift_surge":
 			xp_orbs += 3
 			score_bonus += 130
 			dust_chance += 0.06
-			reward_label = "RIFT SURGE"
+			reward_label = "RIFT SURGE COMPLETE"
 		"elite_hunt":
 			xp_orbs += 4
 			score_bonus += 180
 			dust_chance += 0.07
-			reward_label = "ELITE HUNT"
+			reward_label = "ELITE HUNT TARGET DOWN"
 		"overload_shrine":
 			xp_orbs += 5
 			score_bonus += 210
 			dust_chance += 0.08
-			reward_label = "POWER NODE"
+			reward_label = "OVERLOAD NODE COMPLETE"
 	_score += score_bonus
 	for i in range(xp_orbs):
 		var angle := TAU * float(i) / float(maxi(1, xp_orbs))
@@ -8418,7 +8588,7 @@ func _grant_run_event_reward(event_type: String, position: Vector3, force_dust :
 		dust_awarded = dust_amount
 		_grant_neon_dust(dust_awarded, true)
 	var dust_text := "  +%d DUST" % dust_awarded if dust_awarded > 0 else ""
-	_show_combat_notice("%s COMPLETE // +%d SCORE%s" % [reward_label, score_bonus, dust_text], Color(1.0, 0.94, 0.18), 1.45)
+	_show_combat_notice("%s // +%d SCORE%s" % [reward_label, score_bonus, dust_text], Color(1.0, 0.94, 0.18), 1.55)
 	_spawn_burst(position, 1.12, "burst_gold" if dust_awarded > 0 else "burst_cyan")
 	_play_sfx("reward", 0.12)
 	_update_hud()
