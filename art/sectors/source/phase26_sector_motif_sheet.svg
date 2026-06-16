@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 240">
+  <rect width="960" height="240" fill="#020715"/>
+  <g fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <g transform="translate(40 34)" stroke="#00d8ff">
+      <text x="0" y="-10" fill="#aef7ff" stroke="none" font-family="monospace" font-size="14">NEON GRID</text>
+      <path d="M0 70h170M85 0v140" opacity=".75"/>
+      <path d="M20 20h130M20 120h130M35 0v140M135 0v140" opacity=".35"/>
+      <path d="M85 12l24 42h-48zM85 128l-24-42h48z" stroke="#ffe24a"/>
+    </g>
+    <g transform="translate(280 34)" stroke="#ff17d8">
+      <text x="0" y="-10" fill="#ffd7ff" stroke="none" font-family="monospace" font-size="14">PRISM RIFT</text>
+      <path d="M0 120L170 22M18 18l132 118" opacity=".7"/>
+      <path d="M52 24l34 20-10 38-42-2-18-34zM120 76l38 10-8 40-44 4-12-34z" stroke="#00f0ff"/>
+      <path d="M68 104l-34 42M102 36l44-28" opacity=".5"/>
+    </g>
+    <g transform="translate(520 34)" stroke="#7f24ff">
+      <text x="0" y="-10" fill="#dcc8ff" stroke="none" font-family="monospace" font-size="14">NULL ZONE</text>
+      <path d="M72 8l52 22 22 52-22 52-52 22-52-22-22-52 22-52z" opacity=".76"/>
+      <path d="M0 132L170 26M0 26l170 106" opacity=".45"/>
+      <path d="M44 40l28-12 28 12 12 28-12 28-28 12-28-12-12-28z" stroke="#00e5ff" opacity=".55"/>
+    </g>
+    <g transform="translate(760 34)" stroke="#aeefff">
+      <text x="0" y="-10" fill="#eaffff" stroke="none" font-family="monospace" font-size="14">HYPER GRID</text>
+      <path d="M0 22h170M0 58h170M0 94h170M0 130h170" opacity=".52"/>
+      <path d="M22 86l44-18 44 18-44 18zM106 34l38-16 38 16-38 16z" stroke="#00e8ff"/>
+      <path d="M8 150l154-126M28 150l154-126" opacity=".42"/>
+    </g>
+  </g>
+</svg>

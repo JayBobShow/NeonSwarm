@@ -1,0 +1,30 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/Main.gd" id="1_main"]
+[ext_resource type="Script" path="res://scripts/EnemySpawner.gd" id="2_spawner"]
+[ext_resource type="Script" path="res://scripts/UpgradeSystem.gd" id="3_upgrades"]
+[ext_resource type="Script" path="res://scripts/ParticleFX.gd" id="4_fx"]
+[ext_resource type="Script" path="res://scripts/HUD.gd" id="5_hud"]
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1_main")
+
+[node name="World" type="Node2D" parent="."]
+
+[node name="Enemies" type="Node2D" parent="World"]
+
+[node name="Projectiles" type="Node2D" parent="World"]
+
+[node name="Pickups" type="Node2D" parent="World"]
+
+[node name="EnemySpawner" type="Node" parent="."]
+script = ExtResource("2_spawner")
+
+[node name="UpgradeSystem" type="Node" parent="."]
+script = ExtResource("3_upgrades")
+
+[node name="ParticleFX" type="Node2D" parent="."]
+script = ExtResource("4_fx")
+
+[node name="HUD" type="CanvasLayer" parent="."]
+script = ExtResource("5_hud")

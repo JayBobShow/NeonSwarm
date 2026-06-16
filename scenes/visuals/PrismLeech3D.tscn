@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/visuals/PrismLeech3D.gd" id="1_prismleech3d"]
+
+[node name="PrismLeech3D" type="Node3D"]
+script = ExtResource("1_prismleech3d")

@@ -1,0 +1,30 @@
+# Godot local/import cache
+.godot/
+.import/
+
+# Local temp / logs
+*.tmp
+*.log
+*.bak
+*~
+
+# Export/build outputs
+export/
+exports/
+build/
+builds/
+*.x86_64
+*.exe
+*.pck
+*.zip
+*.tar.gz
+
+# OS/editor junk
+.DS_Store
+Thumbs.db
+
+# Local backup folders
+NeonSwarm_BACKUPS/
+
+# Blender backup files
+*.blend1

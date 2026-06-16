@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs>
+    <filter id="cyanGlow" x="-20%" y="-30%" width="140%" height="160%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="magentaGlow" x="-20%" y="-30%" width="140%" height="160%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <style>
+      .glass { fill: rgba(0, 8, 24, 0.74); }
+      .cyan { fill: none; stroke: #00f0ff; stroke-width: 4; filter: url(#cyanGlow); }
+      .magenta { fill: none; stroke: #ff0bdc; stroke-width: 3; filter: url(#magentaGlow); }
+      .thin { fill: none; stroke: rgba(255,255,255,0.68); stroke-width: 1.25; }
+      .label { fill: #d8fbff; font-family: sans-serif; font-size: 18px; letter-spacing: 2px; }
+      .note { fill: #ffdb2d; font-family: sans-serif; font-size: 14px; letter-spacing: 1px; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1920" height="1080" fill="#02030a"/>
+  <g transform="translate(24 28)">
+    <path class="glass" d="M0,16 L16,0 L326,0 L360,34 L360,98 L326,132 L0,132 Z"/>
+    <path class="cyan" d="M0,16 L16,0 L326,0 L360,34 L360,98 L326,132 L0,132 Z"/>
+    <path class="magenta" d="M18,126 L326,126 L354,98"/>
+    <text class="label" x="24" y="44">CORE VITALS WEDGE</text>
+  </g>
+
+  <g transform="translate(1536 28)">
+    <path class="glass" d="M34,0 L360,0 L360,116 L344,132 L34,132 L0,98 L0,34 Z"/>
+    <path class="cyan" d="M34,0 L360,0 L360,116 L344,132 L34,132 L0,98 L0,34 Z"/>
+    <path class="magenta" d="M6,34 L34,6 L342,6"/>
+    <text class="label" x="128" y="44">RUN TELEMETRY</text>
+  </g>
+
+  <g transform="translate(420 980)">
+    <path class="glass" d="M18,0 L1062,0 L1080,18 L1080,54 L1062,72 L18,72 L0,54 L0,18 Z"/>
+    <path class="cyan" d="M18,0 L1062,0 L1080,18 L1080,54 L1062,72 L18,72 L0,54 L0,18 Z"/>
+    <path class="magenta" d="M12,60 L26,66 L1054,66 L1068,54"/>
+    <text class="label" x="392" y="44">LOADOUT CHIP RAIL</text>
+  </g>
+
+  <g transform="translate(560 24)">
+    <path class="glass" d="M14,0 L786,0 L800,14 L800,34 L786,48 L14,48 L0,34 L0,14 Z"/>
+    <path class="cyan" d="M14,0 L786,0 L800,14 L800,34 L786,48 L14,48 L0,34 L0,14 Z"/>
+    <path class="magenta" d="M18,42 L782,42"/>
+    <text class="note" x="344" y="30">BOSS ALERT RAIL</text>
+  </g>
+
+  <g transform="translate(660 410)">
+    <path class="glass" d="M28,0 L572,0 L600,28 L600,182 L572,210 L28,210 L0,182 L0,28 Z"/>
+    <path class="cyan" d="M28,0 L572,0 L600,28 L600,182 L572,210 L28,210 L0,182 L0,28 Z"/>
+    <path class="magenta" d="M14,52 L14,14 L52,14 M548,14 L586,14 L586,52 M586,158 L586,196 L548,196 M52,196 L14,196 L14,158"/>
+    <text class="label" x="164" y="112">COMMAND PLATE</text>
+  </g>
+</svg>

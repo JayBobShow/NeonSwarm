@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/NeonSwarm3DGameplayPrototype.gd" id="1_gameplay3d"]
+
+[node name="NeonSwarm3DGameplayPrototype" type="Node3D"]
+script = ExtResource("1_gameplay3d")

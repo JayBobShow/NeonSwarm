@@ -1,0 +1,28 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/Player.gd" id="1_player"]
+[ext_resource type="Script" path="res://scripts/WeaponController.gd" id="2_weapons"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_core"]
+radius = 18.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_pickup"]
+radius = 110.0
+
+[node name="Player" type="CharacterBody2D"]
+collision_layer = 1
+collision_mask = 0
+script = ExtResource("1_player")
+
+[node name="CoreCollision" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_core")
+
+[node name="PickupArea" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 8
+
+[node name="PickupShape" type="CollisionShape2D" parent="PickupArea"]
+shape = SubResource("CircleShape2D_pickup")
+
+[node name="WeaponController" type="Node2D" parent="."]
+script = ExtResource("2_weapons")

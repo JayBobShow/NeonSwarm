@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<image w="5120" h="4096" xres="72" yres="72">
+  <stack opacity="1.0" composite-op="svg:src-over" name="Phase 27 weapon visual Krita-ready source">
+    <layer name="Krita glow polish pass" src="data/krita_glow_polish.png" opacity="1.0" composite-op="svg:src-over"/>
+    <layer name="Inkscape vector construction" src="data/vector_construction.png" opacity="1.0" composite-op="svg:src-over"/>
+    <layer name="Krita body/core polish pass" src="data/krita_body_core_polish.png" opacity="0.92" composite-op="svg:src-over"/>
+  </stack>
+</image>

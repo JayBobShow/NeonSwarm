@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 512">
+  <rect width="768" height="512" fill="#020715"/>
+  <g fill="none" stroke="#00f0ff" stroke-width="3">
+    <path d="M32 64h72M54 50h38"/>
+    <circle cx="192" cy="64" r="28"/><circle cx="212" cy="54" r="6" fill="#f2ffff"/>
+    <circle cx="320" cy="64" r="16"/><circle cx="320" cy="64" r="30"/>
+    <polyline points="416,42 444,72 468,44 496,82"/>
+    <circle cx="576" cy="64" r="18"/><circle cx="576" cy="64" r="34" stroke="#ff12d8"/>
+    <path d="M648 64h60"/><polygon points="708,42 736,64 708,86"/>
+    <circle cx="64" cy="192" r="30"/><path d="M64 146l10 22H54zM110 192l-22 10v-20zM64 238l-10-22h20zM18 192l22-10v20z"/>
+    <polygon points="192,148 220,192 192,236 164,192"/><polygon points="156,228 170,204 184,228"/>
+    <polygon points="320,154 350,172 350,210 320,228 290,210 290,172"/><path d="M354 172l28-12M354 210l28 14M286 210l-24 18"/>
+    <polygon points="416,208 438,170 460,208"/><polygon points="456,184 478,146 500,184"/><polygon points="496,208 518,170 540,208"/>
+    <polygon points="604,154 630,170 630,200 604,216 578,200 578,170"/><path d="M638 210l42-34M640 216l52 8M632 220l30 42"/>
+    <path d="M32 320h72"/><polygon points="104,292 132,320 104,348"/>
+    <circle cx="192" cy="320" r="34"/><path d="M192 268l14 26h-28zM244 320l-26 14v-28zM192 372l-14-26h28zM140 320l26-14v28z"/>
+    <polyline points="288,348 318,304 350,338 392,288"/><circle cx="288" cy="348" r="7"/><circle cx="318" cy="304" r="7"/><circle cx="350" cy="338" r="7"/><circle cx="392" cy="288" r="7"/>
+    <circle cx="480" cy="320" r="16"/><circle cx="480" cy="320" r="32" stroke="#ff12d8"/><path d="M442 320c7-48 78-50 88-4"/>
+    <path d="M560 292l76-14M560 312l76-14M560 332l76-14M560 352l76-14"/>
+    <polygon points="704,286 732,334 676,334"/><path d="M676 360l18-30 18 30M704 372l18-30 18 30"/>
+    <polygon points="64,404 104,448 64,492 24,448"/><path d="M34 448h60"/>
+    <path d="M192 410v76M154 448h76M164 420l56 56M220 420l-56 56"/><circle cx="192" cy="448" r="16"/>
+  </g>
+</svg>
