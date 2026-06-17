@@ -65,6 +65,16 @@ const HAZARD_TRAIL_CAP := 10
 const ORBIT_VISUAL_CAP := 5
 const DUST_COUNT := 64
 const XP_TRAIL_VISUAL_CAP := 20
+const PLAYER_PRESENTATION_RIPPLE_COUNT := 3
+const PLAYER_PRESENTATION_RIPPLE_PERIOD := 0.86
+const PLAYER_PRESENTATION_RIPPLE_MIN_RADIUS := 0.46
+const PLAYER_PRESENTATION_RIPPLE_MAX_RADIUS := 2.85
+const PLAYER_PRESENTATION_RIPPLE_BASE_WIDTH := 0.050
+const PLAYER_PRESENTATION_FLOOR_Y := 0.092
+const PLAYER_SPOTLIGHT_HEIGHT := 9.2
+const PLAYER_SPOTLIGHT_Z_OFFSET := 2.55
+const PLAYER_SPOTLIGHT_POOL_RADIUS := 2.75
+const PLAYER_SPOTLIGHT_BASE_ENERGY := 4.8
 
 const PULSE_COOLDOWN := 0.30
 const PULSE_DAMAGE := 27.0
@@ -289,6 +299,14 @@ var _orbit_nodes: Array[Node3D] = []
 var _ring_saw_root: Node3D
 var _dust_batch: MultiMeshInstance3D
 var _dust_data: Array[Dictionary] = []
+var _player_presentation_root: Node3D
+var _player_spotlight: SpotLight3D
+var _player_spotlight_pool_outer: MeshInstance3D
+var _player_spotlight_pool_inner: MeshInstance3D
+var _player_ripple_root: Node3D
+var _player_ripple_nodes: Array[MeshInstance3D] = []
+var _player_ripple_materials: Array[StandardMaterial3D] = []
+var _player_ripple_phase := 0.0
 var _weapon_state: Dictionary = {}
 var _equipped_weapon_instances: Array[Dictionary] = []
 var _stash_weapon_instances: Array[Dictionary] = []
@@ -583,6 +601,7 @@ func _ready() -> void:
 	_create_arena()
 	_create_atmosphere()
 	_create_player()
+	_create_player_presentation_effects()
 	_create_orbit_visuals()
 	_create_ring_saw_visual()
 	_create_hud()
@@ -3386,6 +3405,110 @@ func _create_player() -> void:
 	_apply_player_blender_model(_player_visual)
 
 
+func _create_player_presentation_effects() -> void:
+	_player_presentation_root = Node3D.new()
+	_player_presentation_root.name = "PlayerPresentationSpotlightAndPropulsionRipple"
+	_player_presentation_root.process_mode = Node.PROCESS_MODE_PAUSABLE
+	_player_presentation_root.visible = false
+	_gameplay_root.add_child(_player_presentation_root)
+
+	_player_spotlight = SpotLight3D.new()
+	_player_spotlight.name = "PlayerFocusedBlueCyanSpotlight"
+	_player_spotlight.light_color = Color(0.34, 0.90, 1.0, 1.0)
+	_player_spotlight.light_energy = PLAYER_SPOTLIGHT_BASE_ENERGY
+	_player_spotlight.spot_range = 14.0
+	_player_spotlight.spot_angle = 34.0
+	_player_spotlight.spot_attenuation = 1.65
+	_player_spotlight.shadow_enabled = false
+	_player_spotlight.light_bake_mode = Light3D.BAKE_DISABLED
+	_player_presentation_root.add_child(_player_spotlight)
+
+	var outer_pool_material := Kit.make_emissive_material(Color(0.0, 0.52, 1.0, 0.070), 0.92, true)
+	_player_spotlight_pool_outer = Kit.add_mesh(
+		_player_presentation_root,
+		"PlayerSpotlightOuterFloorFocus",
+		Kit.cylinder_mesh(PLAYER_SPOTLIGHT_POOL_RADIUS, 0.012, 72),
+		outer_pool_material
+	)
+	var inner_pool_material := Kit.make_emissive_material(Color(0.0, 0.96, 1.0, 0.125), 1.62, true)
+	_player_spotlight_pool_inner = Kit.add_mesh(
+		_player_presentation_root,
+		"PlayerSpotlightInnerCyanFloorFocus",
+		Kit.cylinder_mesh(PLAYER_SPOTLIGHT_POOL_RADIUS * 0.42, 0.014, 60),
+		inner_pool_material,
+		Vector3(0.0, 0.008, 0.0)
+	)
+
+	_player_ripple_root = Node3D.new()
+	_player_ripple_root.name = "PlayerPropulsionRippleFixedPool"
+	_player_presentation_root.add_child(_player_ripple_root)
+	_player_ripple_nodes.clear()
+	_player_ripple_materials.clear()
+	for i in range(PLAYER_PRESENTATION_RIPPLE_COUNT):
+		var material := Kit.make_emissive_material(Color(0.0, 0.96, 1.0, 0.0), 5.2, true)
+		var ripple := Kit.add_mesh(
+			_player_ripple_root,
+			"PlayerPropulsionCyanRipple%02d" % i,
+			Kit.torus_mesh(PLAYER_PRESENTATION_RIPPLE_MIN_RADIUS, PLAYER_PRESENTATION_RIPPLE_BASE_WIDTH, 72, 5),
+			material,
+			Vector3(0.0, 0.022 + float(i) * 0.003, 0.0)
+		)
+		ripple.rotation.x = PI * 0.5
+		_player_ripple_nodes.append(ripple)
+		_player_ripple_materials.append(material)
+	_update_player_presentation_effects(0.0)
+
+
+func _set_player_presentation_visible(visible: bool) -> void:
+	if is_instance_valid(_player_presentation_root):
+		_player_presentation_root.visible = visible
+
+
+func _reset_player_presentation_effects() -> void:
+	_player_ripple_phase = 0.0
+	_update_player_presentation_effects(0.0)
+
+
+func _player_presentation_vfx_multiplier() -> float:
+	return 0.55 if _vfx_intensity == 0 else 1.12 if _vfx_intensity == 2 else 1.0
+
+
+func _update_player_presentation_effects(delta: float) -> void:
+	if not is_instance_valid(_player_area) or not is_instance_valid(_player_presentation_root):
+		return
+	_player_presentation_root.position = Vector3(_player_area.position.x, PLAYER_PRESENTATION_FLOOR_Y, _player_area.position.z)
+	var vfx_multiplier := _player_presentation_vfx_multiplier()
+	if is_instance_valid(_player_spotlight):
+		_player_spotlight.light_energy = PLAYER_SPOTLIGHT_BASE_ENERGY * vfx_multiplier
+		_player_spotlight.position = Vector3(0.0, PLAYER_SPOTLIGHT_HEIGHT, PLAYER_SPOTLIGHT_Z_OFFSET)
+		_player_spotlight.look_at(_player_presentation_root.global_position + Vector3(0.0, 0.36, 0.0), Vector3.UP)
+	_player_ripple_phase = fposmod(_player_ripple_phase + delta, PLAYER_PRESENTATION_RIPPLE_PERIOD)
+	var base_progress := _player_ripple_phase / PLAYER_PRESENTATION_RIPPLE_PERIOD
+	var movement_strength := clampf(_player_velocity.length() / maxf(_current_player_speed(), 0.01), 0.0, 1.0)
+	var ripple_alpha_scale := vfx_multiplier * lerpf(0.88, 1.14, movement_strength)
+	for i in range(_player_ripple_nodes.size()):
+		var ripple := _player_ripple_nodes[i]
+		if not is_instance_valid(ripple):
+			continue
+		var progress := fposmod(base_progress + float(i) / float(PLAYER_PRESENTATION_RIPPLE_COUNT), 1.0)
+		var radius := lerpf(PLAYER_PRESENTATION_RIPPLE_MIN_RADIUS, PLAYER_PRESENTATION_RIPPLE_MAX_RADIUS, progress)
+		var width := PLAYER_PRESENTATION_RIPPLE_BASE_WIDTH * lerpf(1.10, 0.62, progress)
+		var fade_in := clampf(progress / 0.14, 0.0, 1.0)
+		fade_in = fade_in * fade_in * (3.0 - 2.0 * fade_in)
+		var alpha := fade_in * pow(1.0 - progress, 1.35)
+		var mesh := ripple.mesh as TorusMesh
+		if mesh:
+			mesh.inner_radius = maxf(0.01, radius - width)
+			mesh.outer_radius = radius + width
+		if i < _player_ripple_materials.size():
+			var material := _player_ripple_materials[i]
+			if material:
+				var color := Color(0.0, lerpf(0.78, 1.0, alpha), 1.0, 0.44 * alpha * ripple_alpha_scale)
+				material.albedo_color = color
+				material.emission = Color(color.r, color.g, color.b, 1.0)
+				material.emission_energy_multiplier = 1.35 + alpha * 5.4 * ripple_alpha_scale
+
+
 func _create_orbit_visuals() -> void:
 	_orbit_visual_root = Node3D.new()
 	_orbit_visual_root.name = "OrbitSparkWeaponVisuals"
@@ -4737,6 +4860,7 @@ func _enter_title_menu() -> void:
 		_core_upgrades_panel.visible = false
 	if _core_upgrade_selection_cursor:
 		_core_upgrade_selection_cursor.visible = false
+	_set_player_presentation_visible(false)
 	_update_title_menu_labels()
 	_set_music_state("title")
 	_queue_tutorial_prompt("armory")
@@ -4780,6 +4904,8 @@ func _start_title_run() -> void:
 		_pause_options_panel.visible = false
 	if _pause_selection_cursor:
 		_pause_selection_cursor.visible = false
+	_set_player_presentation_visible(true)
+	_reset_player_presentation_effects()
 	_update_title_modal_scrim()
 	_update_hud()
 	_set_music_state("gameplay")
@@ -8068,6 +8194,7 @@ func _update_player(delta: float) -> void:
 	if is_instance_valid(_player_visual):
 		var flash_scale := 1.0 + (0.22 if _player_invuln > 0.0 and int(_survival_time * 18.0) % 2 == 0 else 0.0)
 		_player_visual.scale = Vector3.ONE * flash_scale
+	_update_player_presentation_effects(delta)
 
 
 func _current_player_speed() -> float:
