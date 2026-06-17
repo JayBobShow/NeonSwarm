@@ -66,15 +66,16 @@ const ORBIT_VISUAL_CAP := 5
 const DUST_COUNT := 64
 const XP_TRAIL_VISUAL_CAP := 20
 const PLAYER_PRESENTATION_RIPPLE_PERIOD := 0.92
-const PLAYER_PRESENTATION_RIPPLE_RADIUS := 3.05
+const PLAYER_PRESENTATION_RIPPLE_RADIUS := 3.20
+const PLAYER_PRESENTATION_RIPPLE_WAVE_SPEED := 1.0
+const PLAYER_PRESENTATION_RIPPLE_WAVE_FREQUENCY := 4.65
 const PLAYER_PRESENTATION_FLOOR_Y := 0.092
-const PLAYER_SPOTLIGHT_HEIGHT := 9.2
-const PLAYER_SPOTLIGHT_Z_OFFSET := 2.55
-const PLAYER_SPOTLIGHT_POOL_RADIUS := 2.75
-const PLAYER_SPOTLIGHT_BEAM_BOTTOM_RADIUS := 2.45
-const PLAYER_SPOTLIGHT_BEAM_TOP_RADIUS := 0.34
-const PLAYER_SPOTLIGHT_COLUMN_RADIUS := 0.30
-const PLAYER_SPOTLIGHT_BASE_ENERGY := 5.4
+const PLAYER_SPOTLIGHT_HEIGHT := 10.6
+const PLAYER_SPOTLIGHT_Z_OFFSET := 4.15
+const PLAYER_SPOTLIGHT_BEAM_BOTTOM_RADIUS := 2.22
+const PLAYER_SPOTLIGHT_BEAM_TOP_RADIUS := 0.32
+const PLAYER_SPOTLIGHT_BEAM_SHEET_COUNT := 4
+const PLAYER_SPOTLIGHT_BASE_ENERGY := 6.2
 
 const PULSE_COOLDOWN := 0.30
 const PULSE_DAMAGE := 27.0
@@ -301,16 +302,12 @@ var _dust_batch: MultiMeshInstance3D
 var _dust_data: Array[Dictionary] = []
 var _player_presentation_root: Node3D
 var _player_spotlight: SpotLight3D
-var _player_spotlight_beam_cone: MeshInstance3D
-var _player_spotlight_beam_column: MeshInstance3D
+var _player_spotlight_beam_sheets: Array[MeshInstance3D] = []
 var _player_spotlight_beam_material: ShaderMaterial
-var _player_spotlight_column_material: ShaderMaterial
-var _player_spotlight_pool_outer: MeshInstance3D
-var _player_spotlight_pool_inner: MeshInstance3D
 var _player_ripple_root: Node3D
 var _player_propulsion_ripple: MeshInstance3D
 var _player_propulsion_ripple_material: ShaderMaterial
-var _player_ripple_phase := 0.0
+var _player_ripple_time := 0.0
 var _weapon_state: Dictionary = {}
 var _equipped_weapon_instances: Array[Dictionary] = []
 var _stash_weapon_instances: Array[Dictionary] = []
@@ -893,6 +890,7 @@ func _process(delta: float) -> void:
 	_update_music_state()
 	_update_sector_transition_effect(delta)
 	_update_right_stick_ui_scroll(delta)
+	_sync_player_presentation_visibility()
 	if _title_menu_active:
 		_title_menu_nav_cooldown = maxf(0.0, _title_menu_nav_cooldown - delta)
 		if _help_visible:
@@ -3410,15 +3408,30 @@ func _create_player() -> void:
 	_apply_player_blender_model(_player_visual)
 
 
-func _make_player_spotlight_beam_mesh(bottom_radius: float, top_radius: float, radial_segments: int, rings: int) -> CylinderMesh:
-	var mesh := CylinderMesh.new()
-	mesh.bottom_radius = bottom_radius
-	mesh.top_radius = top_radius
-	mesh.height = PLAYER_SPOTLIGHT_HEIGHT
-	mesh.radial_segments = radial_segments
-	mesh.rings = rings
-	mesh.cap_bottom = false
-	mesh.cap_top = false
+func _make_player_spotlight_beam_sheet_mesh(angle: float, bottom_radius: float, top_radius: float, length: float) -> ArrayMesh:
+	var width_axis := Vector3(cos(angle), 0.0, sin(angle))
+	var bottom_center := Vector3(0.0, -length * 0.5, 0.0)
+	var top_center := Vector3(0.0, length * 0.5, 0.0)
+	var vertices := PackedVector3Array([
+		bottom_center - width_axis * bottom_radius,
+		bottom_center + width_axis * bottom_radius,
+		top_center + width_axis * top_radius,
+		top_center - width_axis * top_radius
+	])
+	var uvs := PackedVector2Array([
+		Vector2(0.0, 0.0),
+		Vector2(1.0, 0.0),
+		Vector2(1.0, 1.0),
+		Vector2(0.0, 1.0)
+	])
+	var indices := PackedInt32Array([0, 1, 2, 0, 2, 3])
+	var arrays: Array = []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = vertices
+	arrays[Mesh.ARRAY_TEX_UV] = uvs
+	arrays[Mesh.ARRAY_INDEX] = indices
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 	return mesh
 
 
@@ -3428,28 +3441,24 @@ func _make_player_spotlight_beam_material(color: Color, emission_strength: float
 shader_type spatial;
 render_mode unshaded, blend_add, depth_draw_never, cull_disabled;
 
-uniform vec4 beam_color : source_color = vec4(0.0, 0.86, 1.0, 0.18);
+uniform vec4 beam_color : source_color = vec4(0.0, 0.86, 1.0, 0.16);
 uniform float alpha_scale = 1.0;
 uniform float emission_strength = 3.0;
-uniform float beam_length = 8.0;
-uniform float stripe_phase = 0.0;
+uniform float beam_time = 0.0;
 uniform float movement_boost = 0.0;
 
-varying vec3 local_pos;
-
-void vertex() {
-	local_pos = VERTEX;
-}
-
 void fragment() {
-	float y01 = clamp(local_pos.y / max(beam_length, 0.001) + 0.5, 0.0, 1.0);
-	float end_fade = smoothstep(0.0, 0.10, y01) * (1.0 - smoothstep(0.88, 1.0, y01));
-	float scan = 0.64 + 0.36 * sin((y01 * 7.0 - stripe_phase * 1.35) * 6.2831853);
-	float rib = 0.74 + 0.26 * pow(abs(sin((local_pos.x + local_pos.z) * 2.8 + stripe_phase * 6.2831853)), 2.0);
-	float view_edge = pow(1.0 - clamp(abs(dot(normalize(NORMAL), normalize(VIEW))), 0.0, 1.0), 0.85);
-	float beam = (0.34 + view_edge * 0.92) * end_fade * scan * rib;
-	beam *= 1.0 + movement_boost * 0.22;
-	ALBEDO = beam_color.rgb * beam;
+	float edge = 1.0 - smoothstep(0.18, 1.0, abs(UV.x * 2.0 - 1.0));
+	float end_fade = smoothstep(0.0, 0.18, UV.y) * (1.0 - smoothstep(0.86, 1.0, UV.y));
+	float center_core = pow(edge, 2.45);
+	float side_glow = pow(edge, 0.70) * 0.34;
+	float scan = 0.80 + 0.20 * sin((UV.y * 5.0 - beam_time * 1.35) * 6.2831853);
+	float pulse = 0.88 + 0.12 * sin((UV.y * 2.2 + beam_time * 0.75) * 6.2831853);
+	float beam = (center_core + side_glow) * end_fade * scan * pulse * (1.0 + movement_boost * 0.18);
+	if (beam < 0.012) {
+		discard;
+	}
+	ALBEDO = beam_color.rgb;
 	EMISSION = beam_color.rgb * emission_strength * beam;
 	ALPHA = beam_color.a * alpha_scale * beam;
 }
@@ -3459,8 +3468,7 @@ void fragment() {
 	material.set_shader_parameter("beam_color", color)
 	material.set_shader_parameter("alpha_scale", 1.0)
 	material.set_shader_parameter("emission_strength", emission_strength)
-	material.set_shader_parameter("beam_length", PLAYER_SPOTLIGHT_HEIGHT)
-	material.set_shader_parameter("stripe_phase", 0.0)
+	material.set_shader_parameter("beam_time", 0.0)
 	material.set_shader_parameter("movement_boost", 0.0)
 	return material
 
@@ -3471,47 +3479,67 @@ func _make_player_propulsion_ripple_material() -> ShaderMaterial:
 shader_type spatial;
 render_mode unshaded, blend_add, depth_draw_never, cull_disabled;
 
-uniform vec4 ripple_color : source_color = vec4(0.0, 0.96, 1.0, 0.58);
-uniform vec4 core_color : source_color = vec4(0.28, 0.68, 1.0, 0.30);
-uniform float ripple_phase = 0.0;
+uniform vec4 ripple_color : source_color = vec4(0.0, 0.96, 1.0, 0.76);
+uniform vec4 core_color : source_color = vec4(0.36, 0.72, 1.0, 0.38);
+uniform float ripple_time = 0.0;
+uniform float wave_speed = 1.0;
+uniform float wave_frequency = 4.65;
 uniform float intensity = 1.0;
 uniform float movement_boost = 0.0;
 
+float ring_band(float dist_to_ring, float width) {
+	return 1.0 - smoothstep(width * 0.36, width, abs(dist_to_ring));
+}
+
 void fragment() {
-	vec2 p = UV * 2.0 - vec2(1.0, 1.0);
+	vec2 p = UV - vec2(0.5, 0.5);
+	p *= 2.0;
 	float r = length(p);
-	float outer_fade = 1.0 - smoothstep(0.86, 1.0, r);
+	if (r > 1.02) {
+		discard;
+	}
+	float angle = atan(p.y, p.x);
+	float wobble = sin(angle * 8.0 + ripple_time * 2.4) * 0.006 + sin(angle * 13.0 - ripple_time * 1.6) * 0.003;
+	float rw = max(r + wobble, 0.0);
+	float outer_fade = 1.0 - smoothstep(0.82, 1.0, rw);
 	float rings = 0.0;
 	for (int i = 0; i < 4; i++) {
-		float progress = fract(ripple_phase + float(i) * 0.25);
-		float radius = mix(0.10, 0.82, progress);
-		float width = mix(0.026, 0.055, progress);
-		float band = 1.0 - smoothstep(width * 0.35, width, abs(r - radius));
+		float progress = fract(ripple_time * wave_speed + float(i) * 0.25);
+		float radius = mix(0.035, 0.86, progress);
+		float width = mix(0.022, 0.052, progress);
+		float band = ring_band(rw - radius, width);
+		float trailing = ring_band(rw - max(radius - 0.060, 0.0), width * 1.85) * 0.28;
 		float fade_in = smoothstep(0.0, 0.12, progress);
-		float fade_out = pow(1.0 - progress, 1.35);
-		rings += band * fade_in * fade_out;
+		float fade_out = pow(max(1.0 - progress, 0.0), 1.42);
+		rings += (band + trailing) * fade_in * fade_out;
 	}
-	float core = (1.0 - smoothstep(0.0, 0.42, r)) * 0.30;
-	float spoke = 0.5 + 0.5 * sin((p.x * 10.0 - p.y * 6.0) + ripple_phase * 6.2831853);
-	float propulsion = rings * (0.82 + spoke * 0.18) + core * (1.0 + movement_boost * 0.9);
-	float alpha = (propulsion * 0.52 + core * 0.18) * outer_fade * intensity;
-	vec3 color = mix(core_color.rgb, ripple_color.rgb, clamp(rings, 0.0, 1.0));
-	ALBEDO = color * alpha;
-	EMISSION = color * (2.0 + rings * 5.2 + movement_boost * 1.4) * alpha;
+	float radial_wave = fract(rw * wave_frequency - ripple_time * wave_speed);
+	float waterline = ring_band(radial_wave - 0.035, 0.050) * outer_fade * 0.24;
+	float center_pulse = (1.0 - smoothstep(0.0, 0.18, rw)) * (0.18 + 0.10 * sin(ripple_time * 6.2831853 * 2.0));
+	float propulsion = rings + waterline + center_pulse * (1.0 + movement_boost * 0.65);
+	float alpha = clamp(propulsion * outer_fade * intensity, 0.0, 0.72);
+	if (alpha < 0.008) {
+		discard;
+	}
+	vec3 color = mix(core_color.rgb, ripple_color.rgb, clamp(rings + waterline, 0.0, 1.0));
+	ALBEDO = color;
+	EMISSION = color * (2.4 + rings * 7.8 + waterline * 3.8 + movement_boost * 1.6) * alpha;
 	ALPHA = alpha * ripple_color.a;
 }
 """
 	var material := ShaderMaterial.new()
 	material.shader = shader
-	material.set_shader_parameter("ripple_color", Color(0.0, 0.96, 1.0, 0.58))
-	material.set_shader_parameter("core_color", Color(0.28, 0.68, 1.0, 0.30))
-	material.set_shader_parameter("ripple_phase", 0.0)
+	material.set_shader_parameter("ripple_color", Color(0.0, 0.96, 1.0, 0.76))
+	material.set_shader_parameter("core_color", Color(0.36, 0.72, 1.0, 0.38))
+	material.set_shader_parameter("ripple_time", 0.0)
+	material.set_shader_parameter("wave_speed", PLAYER_PRESENTATION_RIPPLE_WAVE_SPEED)
+	material.set_shader_parameter("wave_frequency", PLAYER_PRESENTATION_RIPPLE_WAVE_FREQUENCY)
 	material.set_shader_parameter("intensity", 1.0)
 	material.set_shader_parameter("movement_boost", 0.0)
 	return material
 
 
-func _update_player_spotlight_beam_transform(node: MeshInstance3D, start: Vector3, end: Vector3, bottom_radius: float, top_radius: float) -> void:
+func _update_player_spotlight_beam_transform(node: MeshInstance3D, start: Vector3, end: Vector3) -> void:
 	if not is_instance_valid(node):
 		return
 	var delta := end - start
@@ -3520,15 +3548,7 @@ func _update_player_spotlight_beam_transform(node: MeshInstance3D, start: Vector
 		node.visible = false
 		return
 	node.visible = true
-	var mesh := node.mesh as CylinderMesh
-	if mesh:
-		mesh.height = length
-		mesh.bottom_radius = bottom_radius
-		mesh.top_radius = top_radius
 	node.transform = Transform3D(Kit.basis_from_y_axis(delta.normalized()), (start + end) * 0.5)
-	var material := node.material_override as ShaderMaterial
-	if material:
-		material.set_shader_parameter("beam_length", length)
 
 
 func _create_player_presentation_effects() -> void:
@@ -3549,36 +3569,18 @@ func _create_player_presentation_effects() -> void:
 	_player_spotlight.light_bake_mode = Light3D.BAKE_DISABLED
 	_player_presentation_root.add_child(_player_spotlight)
 
-	_player_spotlight_beam_material = _make_player_spotlight_beam_material(Color(0.0, 0.66, 1.0, 0.155), 3.10)
-	_player_spotlight_beam_cone = Kit.add_mesh(
-		_player_presentation_root,
-		"PlayerSpotlightVisibleTranslucentCone",
-		_make_player_spotlight_beam_mesh(PLAYER_SPOTLIGHT_BEAM_BOTTOM_RADIUS, PLAYER_SPOTLIGHT_BEAM_TOP_RADIUS, 80, 8),
-		_player_spotlight_beam_material
-	)
-	_player_spotlight_column_material = _make_player_spotlight_beam_material(Color(0.0, 1.0, 1.0, 0.205), 4.40)
-	_player_spotlight_beam_column = Kit.add_mesh(
-		_player_presentation_root,
-		"PlayerSpotlightCyanEnergyColumn",
-		_make_player_spotlight_beam_mesh(PLAYER_SPOTLIGHT_COLUMN_RADIUS, PLAYER_SPOTLIGHT_COLUMN_RADIUS * 0.70, 40, 5),
-		_player_spotlight_column_material
-	)
-
-	var outer_pool_material := Kit.make_emissive_material(Color(0.0, 0.52, 1.0, 0.070), 0.92, true)
-	_player_spotlight_pool_outer = Kit.add_mesh(
-		_player_presentation_root,
-		"PlayerSpotlightOuterFloorFocus",
-		Kit.cylinder_mesh(PLAYER_SPOTLIGHT_POOL_RADIUS, 0.012, 72),
-		outer_pool_material
-	)
-	var inner_pool_material := Kit.make_emissive_material(Color(0.0, 0.96, 1.0, 0.125), 1.62, true)
-	_player_spotlight_pool_inner = Kit.add_mesh(
-		_player_presentation_root,
-		"PlayerSpotlightInnerCyanFloorFocus",
-		Kit.cylinder_mesh(PLAYER_SPOTLIGHT_POOL_RADIUS * 0.42, 0.014, 60),
-		inner_pool_material,
-		Vector3(0.0, 0.008, 0.0)
-	)
+	var beam_length := Vector3(0.0, PLAYER_SPOTLIGHT_HEIGHT, PLAYER_SPOTLIGHT_Z_OFFSET).distance_to(Vector3(0.0, 0.42, 0.0))
+	_player_spotlight_beam_material = _make_player_spotlight_beam_material(Color(0.0, 0.72, 1.0, 0.20), 4.25)
+	_player_spotlight_beam_sheets.clear()
+	for i in range(PLAYER_SPOTLIGHT_BEAM_SHEET_COUNT):
+		var angle := TAU * float(i) / float(PLAYER_SPOTLIGHT_BEAM_SHEET_COUNT)
+		var sheet := Kit.add_mesh(
+			_player_presentation_root,
+			"PlayerSpotlightVolumetricBeamSheet%02d" % i,
+			_make_player_spotlight_beam_sheet_mesh(angle, PLAYER_SPOTLIGHT_BEAM_BOTTOM_RADIUS, PLAYER_SPOTLIGHT_BEAM_TOP_RADIUS, beam_length),
+			_player_spotlight_beam_material
+		)
+		_player_spotlight_beam_sheets.append(sheet)
 
 	_player_ripple_root = Node3D.new()
 	_player_ripple_root.name = "PlayerPropulsionShaderRippleRoot"
@@ -3601,8 +3603,12 @@ func _set_player_presentation_visible(visible: bool) -> void:
 		_player_presentation_root.visible = visible
 
 
+func _sync_player_presentation_visibility() -> void:
+	_set_player_presentation_visible(not _combat_overlay_active())
+
+
 func _reset_player_presentation_effects() -> void:
-	_player_ripple_phase = 0.0
+	_player_ripple_time = 0.0
 	_update_player_presentation_effects(0.0)
 
 
@@ -3624,18 +3630,16 @@ func _update_player_presentation_effects(delta: float) -> void:
 		_player_spotlight.spot_angle = lerpf(32.0, 37.0, movement_strength)
 		_player_spotlight.position = light_source
 		_player_spotlight.look_at(_player_presentation_root.to_global(light_target), Vector3.UP)
-	_player_ripple_phase = fposmod(_player_ripple_phase + delta, PLAYER_PRESENTATION_RIPPLE_PERIOD)
-	var base_progress := _player_ripple_phase / PLAYER_PRESENTATION_RIPPLE_PERIOD
-	_update_player_spotlight_beam_transform(_player_spotlight_beam_cone, light_target, light_source, PLAYER_SPOTLIGHT_BEAM_BOTTOM_RADIUS, PLAYER_SPOTLIGHT_BEAM_TOP_RADIUS)
-	_update_player_spotlight_beam_transform(_player_spotlight_beam_column, light_target + Vector3(0.0, 0.08, 0.0), light_source - Vector3(0.0, 0.24, 0.0), PLAYER_SPOTLIGHT_COLUMN_RADIUS, PLAYER_SPOTLIGHT_COLUMN_RADIUS * 0.70)
+	_player_ripple_time = fposmod(_player_ripple_time + delta, PLAYER_PRESENTATION_RIPPLE_PERIOD * 64.0)
+	for sheet in _player_spotlight_beam_sheets:
+		_update_player_spotlight_beam_transform(sheet, light_target, light_source)
 	var beam_alpha := vfx_multiplier * lerpf(0.88, 1.12, movement_strength)
-	for material in [_player_spotlight_beam_material, _player_spotlight_column_material]:
-		if material:
-			material.set_shader_parameter("alpha_scale", beam_alpha)
-			material.set_shader_parameter("stripe_phase", base_progress)
-			material.set_shader_parameter("movement_boost", movement_strength)
+	if _player_spotlight_beam_material:
+		_player_spotlight_beam_material.set_shader_parameter("alpha_scale", beam_alpha)
+		_player_spotlight_beam_material.set_shader_parameter("beam_time", _player_ripple_time)
+		_player_spotlight_beam_material.set_shader_parameter("movement_boost", movement_strength)
 	if _player_propulsion_ripple_material:
-		_player_propulsion_ripple_material.set_shader_parameter("ripple_phase", base_progress)
+		_player_propulsion_ripple_material.set_shader_parameter("ripple_time", _player_ripple_time)
 		_player_propulsion_ripple_material.set_shader_parameter("intensity", vfx_multiplier * lerpf(0.86, 1.18, movement_strength))
 		_player_propulsion_ripple_material.set_shader_parameter("movement_boost", movement_strength)
 

@@ -17,141 +17,120 @@ No alternate playable scene was created. No Phase 38 work was started. Combat lo
 - `scripts/NeonSwarm3DGameplayPrototype.gd`
 - `docs/NEON_SWARM_PHASE_37_PLAYER_SPOTLIGHT_PROPULSION_RIPPLE_REPORT.md`
 
-## Spotlight Implementation
+## Hard Repair - Godot Manual-Based Spotlight and Shader Ripple
 
-The player presentation effect is created once as `PlayerPresentationSpotlightAndPropulsionRipple` under the pausable gameplay root. It starts hidden on the title menu and is shown/reset when gameplay starts.
+This hard repair replaces the unapproved Phase 37 presentation. The current version uses one real Godot light, crossed volumetric beam sheets, and one radial shader ripple plane.
 
-The spotlight portion uses:
+Manual docs/classes referenced:
 
-- `PlayerFocusedBlueCyanSpotlight`: a focused blue/cyan `SpotLight3D` with disabled shadows and tight attenuation.
-- `PlayerSpotlightOuterFloorFocus` and `PlayerSpotlightInnerCyanFloorFocus`: low-alpha emissive floor focus meshes that provide the readable Neon Swarm-style player pool without washing out the arena.
+- `SpotLight3D`: `https://docs.godotengine.org/en/stable/classes/class_spotlight3d.html`
+- 3D lights and shadows: `https://docs.godotengine.org/en/4.6/tutorials/3d/lights_and_shadows.html`
+- `ShaderMaterial`: `https://docs.godotengine.org/en/4.6/classes/class_shadermaterial.html`
+- Spatial shaders: `https://docs.godotengine.org/en/4.6/tutorials/shaders/shader_reference/spatial_shader.html`
+- Shading language: `https://docs.godotengine.org/en/4.6/tutorials/shaders/shader_reference/shading_language.html`
 
-Every gameplay update, the presentation root copies the player X/Z position, so the spotlight tracks the player while keeping a stable floor height.
+Why those docs/classes were used:
 
-## Propulsion Ripple Implementation
+- The official build is a 3D `Node3D` scene, so the player-following light uses `SpotLight3D`.
+- `SpotLight3D` properties are used directly: color, energy, range, angle, attenuation, and disabled shadows.
+- Godot light/shadow guidance informed the performance decision to keep one focused light and leave shadows disabled for this always-following player presentation.
+- `ShaderMaterial` is used for the beam and ripple so runtime code can update uniforms with `set_shader_parameter()`.
+- Spatial shaders are used because both the beam and ripple are 3D `MeshInstance3D` materials.
+- The ripple shader uses spatial shader built-ins such as `UV`, `ALBEDO`, `EMISSION`, and `ALPHA`.
 
-The propulsion wave uses a fixed three-node pool named `PlayerPropulsionRippleFixedPool`. Each ripple is a cyan torus that expands from a small radius to a controlled outer radius, fades out, and loops.
+Engine light implementation:
 
-Cadence and behavior:
-
-- Ripple count: `3`
-- Ripple period: `0.86` seconds
-- Radius range: `0.46` to `2.85`
-- Each ring is offset evenly through the loop for continuous propulsion energy.
-- Ripple alpha gets a subtle movement boost while the player is moving, but remains visible while standing still.
-- VFX intensity settings scale spotlight and ripple strength.
-
-No ripple nodes are spawned during gameplay. Existing torus meshes and materials are updated in place.
-
-## Performance Safeguards
-
-- Fixed node pool only; no runaway VFX spawning.
-- Spotlight shadows are disabled.
-- The effect is updated only from the gameplay update path.
-- The effect is hidden on title/menu startup and reset when gameplay starts.
-- Pause safety comes from the normal gameplay loop: when the tree is paused, `_process()` returns before `_update_player()`, so ripple phase and spotlight updates stop.
-- The floor focus meshes use low alpha and small radii to avoid screen washout and arena readability loss.
-
-## Delegation Summary
-
-- Runtime Architecture Lead confirmed `scenes/Main.tscn` uses `scripts/NeonSwarm3DGameplayPrototype.gd`, and recommended pausable, fixed gameplay nodes with no per-frame allocation.
-- Visual/VFX Lead recommended a blue/cyan floor-focus presentation, fixed pooled ripple behavior, no global bloom changes, and VFX intensity scaling.
-- Implementation Lead added the runtime effect in the official gameplay script.
-- QA Lead reviewed the working tree and found no blocking issues before final validation.
-
-## Validation Results
-
-Passed:
-
-- `git status`
-- `godot --headless --path . --quit-after 3`
-- `godot --headless --path . scenes/Main.tscn --quit-after 3`
-- `godot --headless --path . --script /tmp/neon_swarm_phase37_player_presentation_validation.gd`
-- `git diff --check`
-- `git diff --stat`
-
-Focused validation covered:
-
-- presentation root exists and starts hidden on title/menu startup
-- gameplay start shows and resets the effect
-- spotlight node exists with shadows disabled
-- fixed three-node ripple pool exists
-- presentation root follows the player X/Z position
-- ripple phase freezes while paused and resumes after unpause
-- VFX intensity scales spotlight energy
-- ripple meshes remain valid torus meshes
-
-## Manual Test Checklist
-
-Run:
-
-```bash
-godot --path /home/jason/GodotProjects/NeonSwarm scenes/Main.tscn
-```
-
-Then test:
-
-- Start Game.
-- Confirm the spotlight visibly follows the player.
-- Confirm the player stands out better from the arena/background.
-- Confirm the blue ripple repeats continuously underneath the player.
-- Confirm the ripple reads as futuristic propulsion energy.
-- Confirm the effect looks good while moving and standing still.
-- Pause gameplay and confirm the ripple freezes correctly.
-- Confirm gameplay remains unchanged.
-
-## Repair - Real Engine Spotlight and Shader Propulsion Ripple
-
-Phase 37 repair replaces the simple torus ripple presentation with a real engine spotlight, visible beam geometry, and a shader-driven propulsion ripple.
-
-Engine light type:
-
-- Uses `SpotLight3D`, because the official build is a 3D `Node3D` scene.
-- The spotlight follows the player through `PlayerPresentationSpotlightAndPropulsionRipple`, which copies the player X/Z position during gameplay updates.
-- Shadows remain disabled for performance.
-- Spotlight energy, range, and angle are scaled by VFX intensity and a small movement boost.
+- Light node: `PlayerFocusedBlueCyanSpotlight`
+- Class: `SpotLight3D`
+- Attached under: `PlayerPresentationSpotlightAndPropulsionRipple`
+- The presentation root follows `_player_area.position.x/z`.
+- The light is positioned above and slightly behind the player, then aimed at the player/floor target.
+- Shadows are disabled.
+- Energy, range, and angle are updated from VFX intensity and a small movement boost.
 
 Visible beam implementation:
 
-- `PlayerSpotlightVisibleTranslucentCone`: translucent blue cone built from a capless `CylinderMesh` frustum.
-- `PlayerSpotlightCyanEnergyColumn`: narrower cyan column inside the cone, also built from a capless `CylinderMesh`.
-- Both use `ShaderMaterial` with unshaded additive blending, edge/length fade, scanline motion, and low alpha.
-- Beam transforms align to the same source/target vector used by the spotlight, so the visible beam follows the player with the light.
+- The visible beam uses four crossed tapered beam sheets:
+  - `PlayerSpotlightVolumetricBeamSheet00`
+  - `PlayerSpotlightVolumetricBeamSheet01`
+  - `PlayerSpotlightVolumetricBeamSheet02`
+  - `PlayerSpotlightVolumetricBeamSheet03`
+- Each beam sheet is an `ArrayMesh` trapezoid aligned to the same source/target vector as the `SpotLight3D`.
+- The beam material is a `ShaderMaterial` spatial shader with:
+  - `render_mode unshaded, blend_add, depth_draw_never, cull_disabled`
+  - center-line core fade
+  - soft edge fade across `UV.x`
+  - length fade across `UV.y`
+  - subtle scan/pulse motion from the gameplay-driven beam time uniform
+- This creates a visible sci-fi spotlight/tractor-beam shaft without adding volumetric fog or a flat floor marker.
 
-Shader ripple implementation:
+Ripple shader implementation:
 
-- The old three torus ripple nodes were removed.
-- The repaired ripple uses one persistent `PlaneMesh` named `PlayerPropulsionRadialShaderRippleDisk`.
-- Its `ShaderMaterial` computes radial distance from the UV center and generates four offset expanding ring bands.
-- Rings expand from the center, fade outward, and loop through a controlled phase uniform.
-- The shader also adds a faint center propulsion core and subtle spoke modulation so the effect reads as blue/cyan anti-grav energy instead of a flat debug circle.
+- Ripple node: `PlayerPropulsionRadialShaderRippleDisk`
+- Mesh: one persistent `PlaneMesh`
+- Material: one persistent `ShaderMaterial`
+- The shader computes a radial coordinate from `UV - vec2(0.5, 0.5)`.
+- Four center-origin ring bands expand outward, fade, and repeat.
+- A secondary repeating radial wave layer adds water-ripple texture without becoming random particles.
+- A small center pulse gives the player core a propulsion source point.
+- The shader disc discards low-alpha fragments outside the circular ripple so it does not read as a square or static flat plate.
 
-Ripple cadence / speed:
+Final ripple settings:
 
-- Ripple period: `0.92` seconds.
-- Ripple disk radius: `3.05`.
-- Four ring layers are offset by `0.25` phase each, producing continuous repeating motion.
-- The phase is advanced in gameplay code and passed to the shader as `ripple_phase`, rather than relying on raw shader `TIME`, so pause freezes the effect correctly.
+- Ripple radius: `3.20`
+- Ripple period: `0.92` seconds
+- Wave speed uniform: `1.0`
+- Wave frequency uniform: `4.65`
+- Ring layers: `4`
+- Beam sheets: `4`
+- Spotlight height: `10.6`
+- Spotlight Z offset: `4.15`
+- Beam bottom radius: `2.22`
+- Beam top radius: `0.32`
+
+Pause/menu behavior:
+
+- The effect is hidden on title/menu startup.
+- The effect is shown/reset only when gameplay starts.
+- `_sync_player_presentation_visibility()` hides it during title, pause, game-over, run-success, level-up, weapon reward, and sector reward modal states.
+- Ripple time advances only through `_update_player_presentation_effects(delta)` on the gameplay update path.
+- The shader uses a gameplay-driven `ripple_time` uniform instead of raw shader `TIME`, so the ripple freezes correctly when gameplay is paused.
 
 Performance safeguards:
 
-- Nodes are created once; there is no runtime VFX spawning.
-- One spotlight, two beam meshes/materials, and one ripple mesh/material are reused.
+- One `SpotLight3D`, four beam sheet meshes, and one ripple plane are created once.
 - Runtime updates only transforms and shader uniforms.
-- No volumetric fog was added.
-- Spotlight shadows are disabled.
-- VFX intensity changes refresh the existing spotlight/beam/ripple uniforms immediately through `_apply_settings_runtime()`.
+- No per-frame node creation.
+- No per-frame mesh rebuilding.
+- No volumetric fog.
+- Shadows are disabled on the player spotlight.
+- Child counts are validated to remain stable across repeated presentation updates.
 
-Repair validation:
+Hard repair validation:
 
-- `godot --headless --path . --script /tmp/neon_swarm_phase37_repair_validate.gd`
-- Confirmed `SpotLight3D`, beam cone `CylinderMesh`, beam column `CylinderMesh`, shader ripple `PlaneMesh`, player follow behavior, pause freeze behavior, VFX intensity scaling, and stable child counts across repeated updates.
+- `godot --headless --path . --script /tmp/neon_swarm_phase37_hard_repair_validate.gd`
+- Confirmed:
+  - `SpotLight3D` initializes safely
+  - four shader beam sheets initialize safely
+  - shader ripple `PlaneMesh` initializes safely
+  - effect is hidden on title/menu startup
+  - effect appears during gameplay
+  - effect follows player X/Z position
+  - ripple time and shader uniform advance during gameplay
+  - presentation hides during manual pause
+  - ripple time does not advance while paused
+  - presentation reappears after pause
+  - presentation hides after return to title
+  - child counts remain stable during repeated updates
 
-Additional manual repair checks:
+Manual hard repair test checklist:
 
-- Start Game and confirm a real visible blue/cyan beam follows the player.
-- Confirm the beam is focused and does not flood the arena.
-- Confirm the ripple is a layered shader wave, not three simple torus rings.
-- Confirm the ripple looks like continuous sci-fi propulsion energy while moving and standing still.
-- Open pause/options and confirm the effect freezes behind the menu.
-- Change VFX intensity and confirm the effect strength updates without breaking pause/menu behavior.
+- Start Game and look for a real blue/cyan spotlight beam, not only a floor circle.
+- Move around and confirm the beam follows the player smoothly.
+- Stand still and confirm the ripple starts from the exact center under the player.
+- Move around and confirm the ripple remains centered under the player.
+- Confirm multiple blue rings expand outward and fade continuously.
+- Confirm the ripple reads as sci-fi propulsion energy, not a debug marker.
+- Pause and confirm the effect hides/freezes cleanly.
+- Return to title and confirm the effect is gone.
+- Change VFX intensity and confirm the effect changes strength without flooding the arena.
