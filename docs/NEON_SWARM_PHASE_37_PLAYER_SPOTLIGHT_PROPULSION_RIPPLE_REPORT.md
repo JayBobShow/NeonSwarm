@@ -156,3 +156,113 @@ Focused validation confirms:
 - Pause and confirm the effect hides/freezes cleanly.
 - Return to title and confirm the effect is gone.
 - Confirm gameplay controls, combat, weapons, progression, menus, and controller support behave unchanged.
+
+## Phase 37 Hotfix 3 - Wider Floor Spotlight / Hidden Top Cone
+
+This hotfix keeps the Hard Repair 2 two-layer direction, preserves the blue propulsion ripple, and adjusts only the white spotlight presentation so the player sits inside a wider, more cinematic floor-reaching light shaft.
+
+### Godot Docs / Classes Referenced
+
+- `SpotLight3D`: `https://docs.godotengine.org/en/stable/classes/class_spotlight3d.html`
+- `Light3D`: `https://docs.godotengine.org/en/stable/classes/class_light3d.html`
+- 3D lights and shadows: `https://docs.godotengine.org/en/4.6/tutorials/3d/lights_and_shadows.html`
+- `ShaderMaterial`: `https://docs.godotengine.org/en/4.6/classes/class_shadermaterial.html`
+- Spatial shaders: `https://docs.godotengine.org/en/4.6/tutorials/shaders/shader_reference/spatial_shader.html`
+- Shading language: `https://docs.godotengine.org/en/4.6/tutorials/shaders/shader_reference/shading_language.html`
+
+### What Changed
+
+- The real `SpotLight3D` remains soft white and player-following.
+- The `SpotLight3D.spot_angle` runtime range was widened to `34.0` through `38.0` degrees.
+- `spot_range` now extends `3.1` units past the source-to-target distance.
+- `spot_attenuation` was softened to `1.42`.
+- Base light energy moved from `3.35` to `3.85`, still with shadows disabled.
+- Visible beam sheets increased from `5` to `7`.
+- The lower beam radius widened from `1.46` to `2.82`.
+- The upper beam radius widened from `0.18` to `0.42`, but the shader now hides/fades the upper cone so the apex does not read as a tight tip.
+
+### Beam Width / Floor Footprint
+
+- New lower beam footprint radius: `2.82`
+- New floor pool radius: `5.35`
+- New floor pool node: `PlayerSpotlightSoftWhiteFloorPool`
+- Floor pool mesh: persistent `PlaneMesh`
+- Floor pool material: persistent spatial `ShaderMaterial`
+- Floor pool color: `Color(1.0, 0.985, 0.94, 0.235)`
+
+The white floor pool is an additive soft oval under the player. It is separate from the blue propulsion ripple so the spotlight reads as a light landing on the floor while the ripple remains propulsion energy.
+
+### Top Cone Fade / Hide Method
+
+The beam shader now suppresses the upper cone/apex using `UV.y` fades:
+
+- `top_crop_fade = 1.0 - smoothstep(0.58, 0.75, UV.y)`
+- `apex_kill = 1.0 - smoothstep(0.72, 0.90, UV.y)`
+
+That makes the upper 25-40% of the visible beam much less visible and shifts emphasis to the lower shaft around the player/floor. The beam starts visually softer and lower, avoiding the skinny top-cone read.
+
+### Floor Light / Contact Change
+
+- New contact node: `PlayerSubtleGroundedContactShadow`
+- Contact mesh: persistent `PlaneMesh`
+- Contact material: persistent spatial `ShaderMaterial`
+- Contact radius: `1.52`
+- Contact color: `Color(0.0, 0.012, 0.018, 0.30)`
+
+The contact material is a small transparent dark oval under the player core. It provides a slight grounded/contact feel without changing collision, gameplay, or player physics.
+
+### Ripple Status
+
+The blue propulsion ripple was not redesigned or retuned in Hotfix 3. It remains:
+
+- blue/cyan neon
+- centered under the player
+- shader-driven on `PlayerPropulsionRadialShaderRippleDisk`
+- repeating outward from the center with the existing script-driven `ripple_time`
+
+### Hotfix 3 Performance Safeguards
+
+- The new floor pool and contact shadow are created once.
+- Runtime updates only visibility and shader uniforms.
+- No per-frame node creation.
+- No per-frame mesh rebuilding.
+- No particle spawning.
+- Player spotlight shadows remain disabled.
+
+### Hotfix 3 Validation Results
+
+Final validation was run after implementation and documentation updates:
+
+- `git status`
+- `godot --headless --path . --quit-after 3`
+- `godot --headless --path . scenes/Main.tscn --quit-after 3`
+- `godot --headless --path . --script /tmp/neon_swarm_phase37_hotfix3_validate.gd`
+- `git diff --check`
+- `git diff --stat`
+- `git status`
+
+Focused validation confirms:
+
+- White `SpotLight3D` initializes safely.
+- Wider beam sheets initialize safely.
+- Beam shader uses the top cone fade/crop variables in shader code.
+- White floor pool material initializes safely.
+- Contact shadow material initializes safely.
+- Blue ripple shader/material still initializes and follows player.
+- Presentation hides on title/menu startup.
+- Presentation hides during manual pause.
+- Presentation hides after return to title.
+- Child counts remain stable across repeated updates.
+
+### Hotfix 3 Manual Test Checklist
+
+- Start Game and confirm the white beam is wider around the player/floor.
+- Confirm the player feels inside the white shaft of light.
+- Confirm the top cone/apex is not visibly tight or distracting.
+- Confirm the floor around the player has a wider, softer white light pool.
+- Confirm the subtle contact shadow helps ground the player without looking like a gameplay marker.
+- Confirm the blue ripple remains visible underneath and still reads as propulsion energy.
+- Move around and confirm the spotlight, floor pool, contact shadow, and ripple stay centered under the player.
+- Pause and confirm the effect hides/freezes cleanly.
+- Return to title and confirm the effect is gone.
+- Confirm gameplay controls, combat, weapons, progression, menus, and controller support behave unchanged.

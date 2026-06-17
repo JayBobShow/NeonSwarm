@@ -72,10 +72,12 @@ const PLAYER_PRESENTATION_RIPPLE_WAVE_FREQUENCY := 5.35
 const PLAYER_PRESENTATION_FLOOR_Y := 0.092
 const PLAYER_SPOTLIGHT_HEIGHT := 11.2
 const PLAYER_SPOTLIGHT_Z_OFFSET := 3.65
-const PLAYER_SPOTLIGHT_BEAM_BOTTOM_RADIUS := 1.46
-const PLAYER_SPOTLIGHT_BEAM_TOP_RADIUS := 0.18
-const PLAYER_SPOTLIGHT_BEAM_SHEET_COUNT := 5
-const PLAYER_SPOTLIGHT_BASE_ENERGY := 3.35
+const PLAYER_SPOTLIGHT_BEAM_BOTTOM_RADIUS := 2.82
+const PLAYER_SPOTLIGHT_BEAM_TOP_RADIUS := 0.42
+const PLAYER_SPOTLIGHT_BEAM_SHEET_COUNT := 7
+const PLAYER_SPOTLIGHT_BASE_ENERGY := 3.85
+const PLAYER_SPOTLIGHT_FLOOR_POOL_RADIUS := 5.35
+const PLAYER_SPOTLIGHT_CONTACT_RADIUS := 1.52
 
 const PULSE_COOLDOWN := 0.30
 const PULSE_DAMAGE := 27.0
@@ -304,6 +306,10 @@ var _player_presentation_root: Node3D
 var _player_spotlight: SpotLight3D
 var _player_spotlight_beam_sheets: Array[MeshInstance3D] = []
 var _player_spotlight_beam_material: ShaderMaterial
+var _player_spotlight_floor_pool: MeshInstance3D
+var _player_spotlight_floor_pool_material: ShaderMaterial
+var _player_contact_shadow: MeshInstance3D
+var _player_contact_shadow_material: ShaderMaterial
 var _player_ripple_root: Node3D
 var _player_propulsion_ripple: MeshInstance3D
 var _player_propulsion_ripple_material: ShaderMaterial
@@ -3450,14 +3456,16 @@ uniform float movement_boost = 0.0;
 void fragment() {
 	float center = 1.0 - abs(UV.x * 2.0 - 1.0);
 	float soft_edge = smoothstep(0.0, 0.72, center);
-	float center_core = pow(max(center, 0.0), 3.8);
-	float side_sheet = pow(max(center, 0.0), 0.92) * 0.18;
-	float source_fade = smoothstep(0.04, 0.20, UV.y);
-	float floor_fade = 1.0 - smoothstep(0.80, 1.0, UV.y);
-	float end_fade = source_fade * floor_fade;
-	float strand = 0.76 + 0.24 * sin((UV.y * 6.5 - beam_time * 0.52) * 6.2831853);
-	float pulse = 0.91 + 0.09 * sin((UV.y * 1.7 + beam_time * 0.36) * 6.2831853);
-	float beam = (center_core + side_sheet * soft_edge) * end_fade * strand * pulse * (1.0 + movement_boost * 0.12);
+	float center_core = pow(max(center, 0.0), 4.2) * 0.54;
+	float side_sheet = pow(max(center, 0.0), 0.74) * 0.30;
+	float floor_start_fade = smoothstep(0.0, 0.18, UV.y);
+	float lower_body = 1.0 - smoothstep(0.30, 0.82, UV.y);
+	float top_crop_fade = 1.0 - smoothstep(0.58, 0.75, UV.y);
+	float apex_kill = 1.0 - smoothstep(0.72, 0.90, UV.y);
+	float end_fade = floor_start_fade * lower_body * top_crop_fade * apex_kill;
+	float strand = 0.78 + 0.22 * sin((UV.y * 5.8 - beam_time * 0.48) * 6.2831853);
+	float pulse = 0.92 + 0.08 * sin((UV.y * 1.55 + beam_time * 0.32) * 6.2831853);
+	float beam = (center_core + side_sheet * soft_edge) * end_fade * strand * pulse * (1.0 + movement_boost * 0.10);
 	if (beam < 0.012) {
 		discard;
 	}
@@ -3472,6 +3480,89 @@ void fragment() {
 	material.set_shader_parameter("alpha_scale", 1.0)
 	material.set_shader_parameter("emission_strength", emission_strength)
 	material.set_shader_parameter("beam_time", 0.0)
+	material.set_shader_parameter("movement_boost", 0.0)
+	return material
+
+
+func _make_player_spotlight_floor_pool_material() -> ShaderMaterial:
+	var shader := Shader.new()
+	shader.code = """
+shader_type spatial;
+render_mode unshaded, blend_add, depth_draw_never, cull_disabled;
+
+uniform vec4 pool_color : source_color = vec4(1.0, 0.985, 0.94, 0.235);
+uniform float alpha_scale = 1.0;
+uniform float emission_strength = 2.7;
+uniform float movement_boost = 0.0;
+
+void fragment() {
+	vec2 p = UV - vec2(0.5, 0.5);
+	p *= 2.0;
+	p.y *= 1.12;
+	float r = length(p);
+	if (r > 1.02) {
+		discard;
+	}
+	float broad_pool = pow(max(1.0 - smoothstep(0.10, 1.0, r), 0.0), 1.22);
+	float landing_core = 1.0 - smoothstep(0.0, 0.34, r);
+	float feather = 1.0 - smoothstep(0.82, 1.02, r);
+	float asymmetric_landing = 0.88 + 0.12 * smoothstep(-0.62, 0.72, p.y);
+	float pool = (broad_pool * 0.74 + landing_core * 0.18) * feather * asymmetric_landing;
+	float alpha = pool * alpha_scale * (0.90 + movement_boost * 0.08);
+	if (alpha < 0.006) {
+		discard;
+	}
+	ALBEDO = pool_color.rgb;
+	EMISSION = pool_color.rgb * emission_strength * alpha;
+	ALPHA = pool_color.a * alpha;
+}
+"""
+	var material := ShaderMaterial.new()
+	material.shader = shader
+	material.render_priority = 1
+	material.set_shader_parameter("pool_color", Color(1.0, 0.985, 0.94, 0.235))
+	material.set_shader_parameter("alpha_scale", 1.0)
+	material.set_shader_parameter("emission_strength", 2.7)
+	material.set_shader_parameter("movement_boost", 0.0)
+	return material
+
+
+func _make_player_contact_shadow_material() -> ShaderMaterial:
+	var shader := Shader.new()
+	shader.code = """
+shader_type spatial;
+render_mode unshaded, blend_mix, depth_draw_never, cull_disabled;
+
+uniform vec4 contact_color : source_color = vec4(0.0, 0.012, 0.018, 0.30);
+uniform float alpha_scale = 1.0;
+uniform float movement_boost = 0.0;
+
+void fragment() {
+	vec2 p = UV - vec2(0.5, 0.5);
+	p *= 2.0;
+	p.x *= 0.82;
+	p.y *= 1.36;
+	float r = length(p);
+	if (r > 1.0) {
+		discard;
+	}
+	float contact = pow(max(1.0 - smoothstep(0.06, 0.96, r), 0.0), 2.2);
+	float inner_softness = 0.62 + 0.38 * smoothstep(0.0, 0.32, r);
+	float movement_lift = mix(1.0, 0.72, movement_boost);
+	float alpha = contact * inner_softness * movement_lift * alpha_scale;
+	if (alpha < 0.006) {
+		discard;
+	}
+	ALBEDO = contact_color.rgb;
+	EMISSION = vec3(0.0);
+	ALPHA = contact_color.a * alpha;
+}
+"""
+	var material := ShaderMaterial.new()
+	material.shader = shader
+	material.render_priority = 2
+	material.set_shader_parameter("contact_color", Color(0.0, 0.012, 0.018, 0.30))
+	material.set_shader_parameter("alpha_scale", 1.0)
 	material.set_shader_parameter("movement_boost", 0.0)
 	return material
 
@@ -3566,15 +3657,15 @@ func _create_player_presentation_effects() -> void:
 	_player_spotlight.name = "PlayerFocusedWhiteSpotlight"
 	_player_spotlight.light_color = Color(1.0, 0.985, 0.94, 1.0)
 	_player_spotlight.light_energy = PLAYER_SPOTLIGHT_BASE_ENERGY
-	_player_spotlight.spot_range = 12.0
-	_player_spotlight.spot_angle = 25.0
-	_player_spotlight.spot_attenuation = 1.92
+	_player_spotlight.spot_range = 14.0
+	_player_spotlight.spot_angle = 34.0
+	_player_spotlight.spot_attenuation = 1.42
 	_player_spotlight.shadow_enabled = false
 	_player_spotlight.light_bake_mode = Light3D.BAKE_DISABLED
 	_player_presentation_root.add_child(_player_spotlight)
 
 	var beam_length := Vector3(0.0, PLAYER_SPOTLIGHT_HEIGHT, PLAYER_SPOTLIGHT_Z_OFFSET).distance_to(Vector3(0.0, 0.42, 0.0))
-	_player_spotlight_beam_material = _make_player_spotlight_beam_material(Color(1.0, 0.985, 0.94, 0.115), 2.85)
+	_player_spotlight_beam_material = _make_player_spotlight_beam_material(Color(1.0, 0.985, 0.94, 0.135), 3.12)
 	_player_spotlight_beam_sheets.clear()
 	for i in range(PLAYER_SPOTLIGHT_BEAM_SHEET_COUNT):
 		var angle := TAU * float(i) / float(PLAYER_SPOTLIGHT_BEAM_SHEET_COUNT)
@@ -3585,6 +3676,28 @@ func _create_player_presentation_effects() -> void:
 			_player_spotlight_beam_material
 		)
 		_player_spotlight_beam_sheets.append(sheet)
+
+	_player_spotlight_floor_pool_material = _make_player_spotlight_floor_pool_material()
+	var pool_mesh := PlaneMesh.new()
+	pool_mesh.size = Vector2(PLAYER_SPOTLIGHT_FLOOR_POOL_RADIUS * 2.16, PLAYER_SPOTLIGHT_FLOOR_POOL_RADIUS * 1.78)
+	_player_spotlight_floor_pool = Kit.add_mesh(
+		_player_presentation_root,
+		"PlayerSpotlightSoftWhiteFloorPool",
+		pool_mesh,
+		_player_spotlight_floor_pool_material,
+		Vector3(0.0, 0.010, 0.0)
+	)
+
+	_player_contact_shadow_material = _make_player_contact_shadow_material()
+	var contact_mesh := PlaneMesh.new()
+	contact_mesh.size = Vector2(PLAYER_SPOTLIGHT_CONTACT_RADIUS * 2.0, PLAYER_SPOTLIGHT_CONTACT_RADIUS * 1.42)
+	_player_contact_shadow = Kit.add_mesh(
+		_player_presentation_root,
+		"PlayerSubtleGroundedContactShadow",
+		contact_mesh,
+		_player_contact_shadow_material,
+		Vector3(0.0, 0.018, 0.0)
+	)
 
 	_player_ripple_root = Node3D.new()
 	_player_ripple_root.name = "PlayerPropulsionShaderRippleRoot"
@@ -3613,6 +3726,10 @@ func _set_player_presentation_visible(visible: bool) -> void:
 	for sheet in _player_spotlight_beam_sheets:
 		if is_instance_valid(sheet):
 			sheet.visible = visible
+	if is_instance_valid(_player_spotlight_floor_pool):
+		_player_spotlight_floor_pool.visible = visible
+	if is_instance_valid(_player_contact_shadow):
+		_player_contact_shadow.visible = visible
 	if is_instance_valid(_player_propulsion_ripple):
 		_player_propulsion_ripple.visible = visible
 
@@ -3641,8 +3758,9 @@ func _update_player_presentation_effects(delta: float) -> void:
 	if is_instance_valid(_player_spotlight):
 		_player_spotlight.light_color = Color(1.0, 0.985, 0.94, 1.0)
 		_player_spotlight.light_energy = PLAYER_SPOTLIGHT_BASE_ENERGY * vfx_multiplier * lerpf(0.94, 1.12, movement_strength)
-		_player_spotlight.spot_range = light_source.distance_to(light_target) + 2.2
-		_player_spotlight.spot_angle = lerpf(23.5, 27.0, movement_strength)
+		_player_spotlight.spot_range = light_source.distance_to(light_target) + 3.1
+		_player_spotlight.spot_angle = lerpf(34.0, 38.0, movement_strength)
+		_player_spotlight.spot_attenuation = 1.42
 		_player_spotlight.position = light_source
 		_player_spotlight.look_at(_player_presentation_root.to_global(light_target), Vector3.UP)
 	_player_ripple_time = fposmod(_player_ripple_time + delta, PLAYER_PRESENTATION_RIPPLE_PERIOD * 64.0)
@@ -3653,6 +3771,12 @@ func _update_player_presentation_effects(delta: float) -> void:
 		_player_spotlight_beam_material.set_shader_parameter("alpha_scale", beam_alpha)
 		_player_spotlight_beam_material.set_shader_parameter("beam_time", _player_ripple_time)
 		_player_spotlight_beam_material.set_shader_parameter("movement_boost", movement_strength)
+	if _player_spotlight_floor_pool_material:
+		_player_spotlight_floor_pool_material.set_shader_parameter("alpha_scale", vfx_multiplier * lerpf(0.92, 1.08, movement_strength))
+		_player_spotlight_floor_pool_material.set_shader_parameter("movement_boost", movement_strength)
+	if _player_contact_shadow_material:
+		_player_contact_shadow_material.set_shader_parameter("alpha_scale", lerpf(0.94, 0.78, movement_strength))
+		_player_contact_shadow_material.set_shader_parameter("movement_boost", movement_strength)
 	if _player_propulsion_ripple_material:
 		_player_propulsion_ripple_material.set_shader_parameter("ripple_time", _player_ripple_time)
 		_player_propulsion_ripple_material.set_shader_parameter("intensity", vfx_multiplier * lerpf(0.86, 1.18, movement_strength))
