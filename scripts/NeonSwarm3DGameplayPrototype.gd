@@ -66,16 +66,16 @@ const ORBIT_VISUAL_CAP := 5
 const DUST_COUNT := 64
 const XP_TRAIL_VISUAL_CAP := 20
 const PLAYER_PRESENTATION_RIPPLE_PERIOD := 0.92
-const PLAYER_PRESENTATION_RIPPLE_RADIUS := 3.20
-const PLAYER_PRESENTATION_RIPPLE_WAVE_SPEED := 1.0
-const PLAYER_PRESENTATION_RIPPLE_WAVE_FREQUENCY := 4.65
+const PLAYER_PRESENTATION_RIPPLE_RADIUS := 2.72
+const PLAYER_PRESENTATION_RIPPLE_WAVE_SPEED := 1.08
+const PLAYER_PRESENTATION_RIPPLE_WAVE_FREQUENCY := 5.35
 const PLAYER_PRESENTATION_FLOOR_Y := 0.092
-const PLAYER_SPOTLIGHT_HEIGHT := 10.6
-const PLAYER_SPOTLIGHT_Z_OFFSET := 4.15
-const PLAYER_SPOTLIGHT_BEAM_BOTTOM_RADIUS := 2.22
-const PLAYER_SPOTLIGHT_BEAM_TOP_RADIUS := 0.32
-const PLAYER_SPOTLIGHT_BEAM_SHEET_COUNT := 4
-const PLAYER_SPOTLIGHT_BASE_ENERGY := 6.2
+const PLAYER_SPOTLIGHT_HEIGHT := 11.2
+const PLAYER_SPOTLIGHT_Z_OFFSET := 3.65
+const PLAYER_SPOTLIGHT_BEAM_BOTTOM_RADIUS := 1.46
+const PLAYER_SPOTLIGHT_BEAM_TOP_RADIUS := 0.18
+const PLAYER_SPOTLIGHT_BEAM_SHEET_COUNT := 5
+const PLAYER_SPOTLIGHT_BASE_ENERGY := 3.35
 
 const PULSE_COOLDOWN := 0.30
 const PULSE_DAMAGE := 27.0
@@ -3441,20 +3441,23 @@ func _make_player_spotlight_beam_material(color: Color, emission_strength: float
 shader_type spatial;
 render_mode unshaded, blend_add, depth_draw_never, cull_disabled;
 
-uniform vec4 beam_color : source_color = vec4(0.0, 0.86, 1.0, 0.16);
+uniform vec4 beam_color : source_color = vec4(1.0, 0.985, 0.94, 0.115);
 uniform float alpha_scale = 1.0;
 uniform float emission_strength = 3.0;
 uniform float beam_time = 0.0;
 uniform float movement_boost = 0.0;
 
 void fragment() {
-	float edge = 1.0 - smoothstep(0.18, 1.0, abs(UV.x * 2.0 - 1.0));
-	float end_fade = smoothstep(0.0, 0.18, UV.y) * (1.0 - smoothstep(0.86, 1.0, UV.y));
-	float center_core = pow(edge, 2.45);
-	float side_glow = pow(edge, 0.70) * 0.34;
-	float scan = 0.80 + 0.20 * sin((UV.y * 5.0 - beam_time * 1.35) * 6.2831853);
-	float pulse = 0.88 + 0.12 * sin((UV.y * 2.2 + beam_time * 0.75) * 6.2831853);
-	float beam = (center_core + side_glow) * end_fade * scan * pulse * (1.0 + movement_boost * 0.18);
+	float center = 1.0 - abs(UV.x * 2.0 - 1.0);
+	float soft_edge = smoothstep(0.0, 0.72, center);
+	float center_core = pow(max(center, 0.0), 3.8);
+	float side_sheet = pow(max(center, 0.0), 0.92) * 0.18;
+	float source_fade = smoothstep(0.04, 0.20, UV.y);
+	float floor_fade = 1.0 - smoothstep(0.80, 1.0, UV.y);
+	float end_fade = source_fade * floor_fade;
+	float strand = 0.76 + 0.24 * sin((UV.y * 6.5 - beam_time * 0.52) * 6.2831853);
+	float pulse = 0.91 + 0.09 * sin((UV.y * 1.7 + beam_time * 0.36) * 6.2831853);
+	float beam = (center_core + side_sheet * soft_edge) * end_fade * strand * pulse * (1.0 + movement_boost * 0.12);
 	if (beam < 0.012) {
 		discard;
 	}
@@ -3479,16 +3482,16 @@ func _make_player_propulsion_ripple_material() -> ShaderMaterial:
 shader_type spatial;
 render_mode unshaded, blend_add, depth_draw_never, cull_disabled;
 
-uniform vec4 ripple_color : source_color = vec4(0.0, 0.96, 1.0, 0.76);
-uniform vec4 core_color : source_color = vec4(0.36, 0.72, 1.0, 0.38);
+uniform vec4 ripple_color : source_color = vec4(0.0, 0.92, 1.0, 0.72);
+uniform vec4 core_color : source_color = vec4(0.05, 0.36, 1.0, 0.42);
 uniform float ripple_time = 0.0;
-uniform float wave_speed = 1.0;
-uniform float wave_frequency = 4.65;
+uniform float wave_speed = 1.08;
+uniform float wave_frequency = 5.35;
 uniform float intensity = 1.0;
 uniform float movement_boost = 0.0;
 
 float ring_band(float dist_to_ring, float width) {
-	return 1.0 - smoothstep(width * 0.36, width, abs(dist_to_ring));
+	return 1.0 - smoothstep(width * 0.24, width, abs(dist_to_ring));
 }
 
 void fragment() {
@@ -3499,38 +3502,39 @@ void fragment() {
 		discard;
 	}
 	float angle = atan(p.y, p.x);
-	float wobble = sin(angle * 8.0 + ripple_time * 2.4) * 0.006 + sin(angle * 13.0 - ripple_time * 1.6) * 0.003;
+	float wobble = sin(angle * 8.0 + ripple_time * 2.2) * 0.005 + sin(angle * 13.0 - ripple_time * 1.45) * 0.003;
 	float rw = max(r + wobble, 0.0);
-	float outer_fade = 1.0 - smoothstep(0.82, 1.0, rw);
+	float outer_fade = 1.0 - smoothstep(0.78, 1.0, rw);
+	float angular_gate = 0.72 + 0.28 * smoothstep(-0.35, 0.82, sin(angle * 7.0 + ripple_time * 3.1));
 	float rings = 0.0;
-	for (int i = 0; i < 4; i++) {
-		float progress = fract(ripple_time * wave_speed + float(i) * 0.25);
-		float radius = mix(0.035, 0.86, progress);
-		float width = mix(0.022, 0.052, progress);
+	for (int i = 0; i < 5; i++) {
+		float progress = fract(ripple_time * wave_speed + float(i) * 0.20);
+		float radius = progress * 0.92;
+		float width = mix(0.016, 0.048, progress);
 		float band = ring_band(rw - radius, width);
-		float trailing = ring_band(rw - max(radius - 0.060, 0.0), width * 1.85) * 0.28;
-		float fade_in = smoothstep(0.0, 0.12, progress);
-		float fade_out = pow(max(1.0 - progress, 0.0), 1.42);
-		rings += (band + trailing) * fade_in * fade_out;
+		float trailing = ring_band(rw - max(radius - 0.052, 0.0), width * 1.75) * 0.22;
+		float fade_in = smoothstep(-0.015, 0.08, progress);
+		float fade_out = pow(max(1.0 - progress, 0.0), 1.55);
+		rings += (band + trailing) * fade_in * fade_out * angular_gate;
 	}
 	float radial_wave = fract(rw * wave_frequency - ripple_time * wave_speed);
-	float waterline = ring_band(radial_wave - 0.035, 0.050) * outer_fade * 0.24;
-	float center_pulse = (1.0 - smoothstep(0.0, 0.18, rw)) * (0.18 + 0.10 * sin(ripple_time * 6.2831853 * 2.0));
-	float propulsion = rings + waterline + center_pulse * (1.0 + movement_boost * 0.65);
-	float alpha = clamp(propulsion * outer_fade * intensity, 0.0, 0.72);
+	float flow_lines = ring_band(radial_wave - 0.030, 0.040) * outer_fade * angular_gate * 0.18;
+	float center_seed = (1.0 - smoothstep(0.0, 0.055, rw)) * (0.10 + movement_boost * 0.10);
+	float propulsion = rings + flow_lines + center_seed;
+	float alpha = clamp(propulsion * outer_fade * intensity, 0.0, 0.62);
 	if (alpha < 0.008) {
 		discard;
 	}
-	vec3 color = mix(core_color.rgb, ripple_color.rgb, clamp(rings + waterline, 0.0, 1.0));
+	vec3 color = mix(core_color.rgb, ripple_color.rgb, clamp(rings + flow_lines, 0.0, 1.0));
 	ALBEDO = color;
-	EMISSION = color * (2.4 + rings * 7.8 + waterline * 3.8 + movement_boost * 1.6) * alpha;
+	EMISSION = color * (2.0 + rings * 7.4 + flow_lines * 3.2 + movement_boost * 1.4) * alpha;
 	ALPHA = alpha * ripple_color.a;
 }
 """
 	var material := ShaderMaterial.new()
 	material.shader = shader
-	material.set_shader_parameter("ripple_color", Color(0.0, 0.96, 1.0, 0.76))
-	material.set_shader_parameter("core_color", Color(0.36, 0.72, 1.0, 0.38))
+	material.set_shader_parameter("ripple_color", Color(0.0, 0.92, 1.0, 0.72))
+	material.set_shader_parameter("core_color", Color(0.05, 0.36, 1.0, 0.42))
 	material.set_shader_parameter("ripple_time", 0.0)
 	material.set_shader_parameter("wave_speed", PLAYER_PRESENTATION_RIPPLE_WAVE_SPEED)
 	material.set_shader_parameter("wave_frequency", PLAYER_PRESENTATION_RIPPLE_WAVE_FREQUENCY)
@@ -3559,18 +3563,18 @@ func _create_player_presentation_effects() -> void:
 	_gameplay_root.add_child(_player_presentation_root)
 
 	_player_spotlight = SpotLight3D.new()
-	_player_spotlight.name = "PlayerFocusedBlueCyanSpotlight"
-	_player_spotlight.light_color = Color(0.34, 0.90, 1.0, 1.0)
+	_player_spotlight.name = "PlayerFocusedWhiteSpotlight"
+	_player_spotlight.light_color = Color(1.0, 0.985, 0.94, 1.0)
 	_player_spotlight.light_energy = PLAYER_SPOTLIGHT_BASE_ENERGY
-	_player_spotlight.spot_range = 14.0
-	_player_spotlight.spot_angle = 34.0
-	_player_spotlight.spot_attenuation = 1.65
+	_player_spotlight.spot_range = 12.0
+	_player_spotlight.spot_angle = 25.0
+	_player_spotlight.spot_attenuation = 1.92
 	_player_spotlight.shadow_enabled = false
 	_player_spotlight.light_bake_mode = Light3D.BAKE_DISABLED
 	_player_presentation_root.add_child(_player_spotlight)
 
 	var beam_length := Vector3(0.0, PLAYER_SPOTLIGHT_HEIGHT, PLAYER_SPOTLIGHT_Z_OFFSET).distance_to(Vector3(0.0, 0.42, 0.0))
-	_player_spotlight_beam_material = _make_player_spotlight_beam_material(Color(0.0, 0.72, 1.0, 0.20), 4.25)
+	_player_spotlight_beam_material = _make_player_spotlight_beam_material(Color(1.0, 0.985, 0.94, 0.115), 2.85)
 	_player_spotlight_beam_sheets.clear()
 	for i in range(PLAYER_SPOTLIGHT_BEAM_SHEET_COUNT):
 		var angle := TAU * float(i) / float(PLAYER_SPOTLIGHT_BEAM_SHEET_COUNT)
@@ -3596,11 +3600,21 @@ func _create_player_presentation_effects() -> void:
 		Vector3(0.0, 0.028, 0.0)
 	)
 	_update_player_presentation_effects(0.0)
+	_set_player_presentation_visible(false)
 
 
 func _set_player_presentation_visible(visible: bool) -> void:
 	if is_instance_valid(_player_presentation_root):
 		_player_presentation_root.visible = visible
+	if is_instance_valid(_player_spotlight):
+		_player_spotlight.visible = visible
+		if not visible:
+			_player_spotlight.light_energy = 0.0
+	for sheet in _player_spotlight_beam_sheets:
+		if is_instance_valid(sheet):
+			sheet.visible = visible
+	if is_instance_valid(_player_propulsion_ripple):
+		_player_propulsion_ripple.visible = visible
 
 
 func _sync_player_presentation_visibility() -> void:
@@ -3625,9 +3639,10 @@ func _update_player_presentation_effects(delta: float) -> void:
 	var light_source := Vector3(0.0, PLAYER_SPOTLIGHT_HEIGHT, PLAYER_SPOTLIGHT_Z_OFFSET)
 	var light_target := Vector3(0.0, 0.42, 0.0)
 	if is_instance_valid(_player_spotlight):
+		_player_spotlight.light_color = Color(1.0, 0.985, 0.94, 1.0)
 		_player_spotlight.light_energy = PLAYER_SPOTLIGHT_BASE_ENERGY * vfx_multiplier * lerpf(0.94, 1.12, movement_strength)
 		_player_spotlight.spot_range = light_source.distance_to(light_target) + 2.2
-		_player_spotlight.spot_angle = lerpf(32.0, 37.0, movement_strength)
+		_player_spotlight.spot_angle = lerpf(23.5, 27.0, movement_strength)
 		_player_spotlight.position = light_source
 		_player_spotlight.look_at(_player_presentation_root.to_global(light_target), Vector3.UP)
 	_player_ripple_time = fposmod(_player_ripple_time + delta, PLAYER_PRESENTATION_RIPPLE_PERIOD * 64.0)
