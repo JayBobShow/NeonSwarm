@@ -1766,6 +1766,40 @@ func _update_tutorial_prompt(delta: float) -> void:
 		_tutorial_prompt_panel.visible = false
 
 
+func _sector_color_for_index(index: int) -> Color:
+	match clampi(index, 0, SECTOR_COUNT - 1):
+		0:
+			return Color(1.0, 0.94, 0.18)
+		1:
+			return Color(0.0, 0.96, 1.0)
+		2:
+			return Color(0.88, 0.55, 1.0)
+		_:
+			return Color(0.68, 0.92, 1.0)
+
+
+func _sector_display_title(index: int) -> String:
+	var sector := _sector_data(index)
+	return "SECTOR %02d // %s" % [clampi(index, 0, SECTOR_COUNT - 1) + 1, str(sector.get("name", "SECTOR")).to_upper()]
+
+
+func _sector_identity_text(index: int) -> String:
+	match clampi(index, 0, SECTOR_COUNT - 1):
+		0:
+			return "BASELINE SWARM PRESSURE"
+		1:
+			return "DISTORTED PRISM FORMATIONS"
+		2:
+			return "VOID PRESSURE RISING"
+		_:
+			return "OVERCLOCKED RAIL NETWORK"
+
+
+func _show_sector_entry_notice(index: int, run_start := false) -> void:
+	var prefix := "RUN START" if run_start else "SECTOR ENTRY"
+	_show_combat_notice("%s // %s // %s" % [prefix, _sector_display_title(index), _sector_identity_text(index)], _sector_color_for_index(index), 2.15)
+
+
 func _show_combat_notice(text: String, color := Color(1.0, 0.94, 0.18), duration := 1.45) -> void:
 	_elite_notice_timer = duration
 	if _combat_notice_label:
@@ -3539,12 +3573,15 @@ func _create_hud() -> void:
 	boss_row.add_child(_boss_bar)
 	_boss_panel.visible = false
 
-	_combat_notice_panel = _make_frame(NeonFramePanel.FrameKind.ALERT_RAIL, Rect2(690, 82, 540, 38), Color(1.0, 0.94, 0.18, 0.88), Color(0.0, 0.95, 1.0, 0.62), 16.0, 1.6, Vector4(16, 7, 16, 7))
+	_combat_notice_panel = _make_frame(NeonFramePanel.FrameKind.ALERT_RAIL, Rect2(560, 76, 800, 44), Color(1.0, 0.94, 0.18, 0.88), Color(0.0, 0.95, 1.0, 0.62), 16.0, 1.6, Vector4(16, 7, 16, 7))
 	_combat_notice_panel.name = "EliteWaveDirectorNoticeRail"
 	_combat_notice_panel.visible = false
 	_gameplay_hud_root.add_child(_combat_notice_panel)
 	_combat_notice_label = _make_hud_label("ELITE DETECTED")
 	_combat_notice_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_combat_notice_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_combat_notice_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_combat_notice_label.custom_minimum_size = Vector2(760, 34)
 	_combat_notice_label.add_theme_font_size_override("font_size", 15)
 	_combat_notice_label.add_theme_color_override("font_color", Color(1.0, 0.94, 0.18))
 	_combat_notice_panel.add_child(_combat_notice_label)
@@ -3577,7 +3614,7 @@ func _create_hud() -> void:
 	_game_over_panel.visible = false
 	_hud_design_root.add_child(_game_over_panel)
 	_game_over_summary_label = _game_over_panel.find_child("RunEconomySummaryLabel", true, false) as Label
-	_success_panel = _make_center_panel("RUN COMPLETE\nHYPER GRID CLEARED\nA / START: RESTART\nENTER / SPACE: RESTART", true)
+	_success_panel = _make_center_panel("RUN COMPLETE\nSECTOR 04 // HYPER GRID CLEARED\nA / START: RESTART\nENTER / SPACE: RESTART", true)
 	_success_panel.visible = false
 	_hud_design_root.add_child(_success_panel)
 	_success_summary_label = _success_panel.find_child("RunEconomySummaryLabel", true, false) as Label
@@ -4751,6 +4788,7 @@ func _start_title_run() -> void:
 	_queue_tutorial_prompt("sectors")
 	_play_sfx("ui_select", 0.08)
 	_trigger_presentation_flash(Color(0.0, 0.94, 1.0), 0.08, 0.18)
+	_show_sector_entry_notice(_sector_index, true)
 
 
 func _toggle_title_options() -> void:
@@ -5409,7 +5447,7 @@ func _open_armory_forge_confirm(action: String) -> void:
 	_armory_forge_preview_instance = preview
 	_armory_action_mode = "forge_confirm"
 	_armory_action_selected_index = 0
-	_armory_status_text = "CONFIRM %s FOR %d NEON DUST? OLD ROLLS CHANGE ONLY AFTER CONFIRM." % [_forge_action_title(action), cost]
+	_armory_status_text = "CONFIRM %s // COST %d NEON DUST // REMAINING %d // OLD ROLLS CHANGE ONLY AFTER CONFIRM" % [_forge_action_title(action), cost, _neon_dust - cost]
 	_update_armory_ui()
 	call_deferred("_focus_armory_action_choice")
 	_play_sfx("ui_select", 0.08)
@@ -5480,7 +5518,7 @@ func _confirm_armory_fusion_material() -> void:
 	_armory_forge_preview_instance = preview
 	_armory_action_mode = "fusion_confirm"
 	_armory_action_selected_index = 0
-	_armory_status_text = "CONFIRM EVOLVE / FUSE FOR %d NEON DUST? FUSION CONSUMES THE MATERIAL WEAPON." % cost
+	_armory_status_text = "CONFIRM EVOLVE / FUSE // COST %d NEON DUST // REMAINING %d // MATERIAL WILL BE CONSUMED" % [cost, _neon_dust - cost]
 	_update_armory_ui()
 	call_deferred("_focus_armory_action_choice")
 	_play_sfx("ui_select", 0.08)
@@ -5719,14 +5757,14 @@ func _activate_core_upgrade_selection() -> void:
 		return
 	if _core_upgrade_confirm_pending_id != upgrade_id:
 		_core_upgrade_confirm_pending_id = upgrade_id
-		_core_upgrade_status_text = "CONFIRM %s RANK %d -> %d FOR %d NEON DUST" % [str(definition.get("name", "UPGRADE")), rank, rank + 1, cost]
+		_core_upgrade_status_text = "CONFIRM %s RANK %d -> %d // COST %d NEON DUST // REMAINING %d" % [str(definition.get("name", "UPGRADE")), rank, rank + 1, cost, _neon_dust - cost]
 		_update_core_upgrades_ui()
 		_play_sfx("ui_select", 0.08)
 		return
 	_neon_dust = maxi(0, _neon_dust - cost)
 	_core_upgrade_ranks[upgrade_id] = rank + 1
 	_core_upgrade_confirm_pending_id = ""
-	_core_upgrade_status_text = "PURCHASED %s RANK %d // NEON DUST %d" % [str(definition.get("name", "UPGRADE")), rank + 1, _neon_dust]
+	_core_upgrade_status_text = "PURCHASED %s RANK %d // -%d NEON DUST // REMAINING %d" % [str(definition.get("name", "UPGRADE")), rank + 1, cost, _neon_dust]
 	_apply_core_upgrade_bonuses()
 	_save_weapon_inventory()
 	_update_core_upgrades_ui()
@@ -6633,7 +6671,7 @@ func _apply_pending_forge_action() -> void:
 	var action_name := _forge_action_title(_armory_forge_pending_action)
 	_armory_action_mode = "browse"
 	_clear_armory_forge_pending()
-	_armory_status_text = "%s COMPLETE // -%d NEON DUST // TOTAL %d" % [action_name, cost, _neon_dust]
+	_armory_status_text = "%s COMPLETE // %s // -%d NEON DUST // REMAINING %d" % [action_name, _weapon_progression_summary(forged), cost, _neon_dust]
 	_update_armory_ui()
 	_focus_armory_choice()
 	_update_hud()
@@ -6682,7 +6720,7 @@ func _apply_pending_fusion_action(cost: int) -> void:
 	var material_name := str(material.get("name", "WEAPON")).to_upper()
 	_armory_action_mode = "browse"
 	_clear_armory_forge_pending()
-	_armory_status_text = "EVOLVE / FUSE COMPLETE // %s CONSUMED // EVOLVED %d / %d // -%d NEON DUST" % [material_name, rank, EVOLUTION_MAX_RANK, cost]
+	_armory_status_text = "EVOLVE / FUSE COMPLETE // %s // %s CONSUMED // EVOLVED %d / %d // -%d NEON DUST // REMAINING %d" % [_weapon_progression_summary(forged), material_name, rank, EVOLUTION_MAX_RANK, cost, _neon_dust]
 	_update_armory_ui()
 	_focus_armory_choice()
 	_update_hud()
@@ -7173,7 +7211,7 @@ func _equip_pending_weapon_reward_now() -> void:
 	_rebuild_weapon_stat_bonuses()
 	_save_weapon_inventory()
 	_run_weapons_gained += 1
-	_weapon_reward_last_result_text = "EQUIPPED %s INTO E%02d // ACTIVE NOW" % [str(instance.get("name", "WEAPON")).to_upper(), open_index + 1]
+	_weapon_reward_last_result_text = "EQUIPPED %s INTO E%02d // ACTIVE THIS RUN" % [_weapon_progression_summary(instance), open_index + 1]
 	_show_weapon_reward_result(_weapon_reward_last_result_text, Color(0.0, 0.94, 1.0))
 
 
@@ -7198,7 +7236,7 @@ func _replace_pending_weapon_reward_slot(slot_index: int) -> void:
 	_rebuild_weapon_stat_bonuses()
 	_save_weapon_inventory()
 	_run_weapons_gained += 1
-	_weapon_reward_last_result_text = "REPLACED E%02d WITH %s // OLD WEAPON SENT TO STASH // ACTIVE NOW" % [slot_index + 1, str(instance.get("name", "WEAPON")).to_upper()]
+	_weapon_reward_last_result_text = "REPLACED E%02d // NEW: %s // OLD WEAPON SENT TO STASH" % [slot_index + 1, _weapon_progression_summary(instance)]
 	_show_weapon_reward_result(_weapon_reward_last_result_text, Color(1.0, 0.08, 0.86))
 
 
@@ -7217,7 +7255,7 @@ func _send_pending_weapon_reward_to_stash() -> void:
 	_remember_discovered_weapon(instance)
 	_save_weapon_inventory()
 	_run_weapons_gained += 1
-	_weapon_reward_last_result_text = "SENT %s TO STASH // ARMORY CAN EQUIP IT LATER" % str(instance.get("name", "WEAPON")).to_upper()
+	_weapon_reward_last_result_text = "STASHED %s // STORED %d / %d // INACTIVE UNTIL EQUIPPED" % [_weapon_progression_summary(instance), _stash_weapon_instances.size(), STASH_WEAPON_CAP]
 	_show_weapon_reward_result(_weapon_reward_last_result_text, Color(0.0, 0.94, 1.0))
 
 
@@ -7228,13 +7266,30 @@ func _scrap_pending_weapon_reward() -> void:
 	_grant_neon_dust(dust_amount, true)
 	_save_weapon_inventory()
 	_spawn_burst(_player_area.position, 0.92, "burst_yellow")
-	_weapon_reward_last_result_text = "SCRAPPED %s // +%d NEON DUST // WEAPON NOT STORED" % [str(_weapon_reward_pending_instance.get("name", "WEAPON")).to_upper(), dust_amount]
+	_weapon_reward_last_result_text = "SCRAPPED %s // +%d NEON DUST // TOTAL %d // WEAPON NOT STORED" % [_weapon_progression_summary(_weapon_reward_pending_instance), dust_amount, _neon_dust]
 	_show_weapon_reward_result(_weapon_reward_last_result_text, Color(1.0, 0.94, 0.18))
+
+
+func _weapon_progression_summary(instance: Dictionary) -> String:
+	if instance.is_empty():
+		return "UNKNOWN WEAPON"
+	var parts: Array[String] = [
+		str(instance.get("rarity", "Common")).to_upper(),
+		str(instance.get("name", "WEAPON")).to_upper(),
+		"PWR %.2f" % float(instance.get("power_score", WeaponCatalog.estimate_power(instance)))
+	]
+	var forge_rank := clampi(int(instance.get("forge_power_rank", 0)), 0, FORGE_POWER_MAX_RANK)
+	if forge_rank > 0:
+		parts.append("FORGE %d" % forge_rank)
+	var evolved := _evolution_rank(instance)
+	if evolved > 0:
+		parts.append("EVOLVED %d" % evolved)
+	return " // ".join(parts)
 
 
 func _show_weapon_reward_result(result_text: String, flash_color: Color) -> void:
 	_weapon_reward_mode = "result"
-	_weapon_reward_status_text = "%s\nA / ENTER: CONTINUE" % result_text
+	_weapon_reward_status_text = "RESULT: %s\nA / ENTER: CONTINUE" % result_text
 	_update_weapon_reward_ui()
 	_play_sfx("reward", 0.12)
 	_trigger_presentation_flash(flash_color, 0.09, 0.18)
@@ -8040,7 +8095,7 @@ func _update_wave_director(delta: float) -> void:
 			_null_octagon_warning_played = true
 			_null_octagon_warning_start = _survival_time
 		_set_music_state("boss")
-		_show_combat_notice("FINAL SECTOR // NULL OCTAGON PRIME INBOUND" if _sector_index >= 3 else "%s WARNING" % _boss_name_for_type(boss_type), _boss_notice_color(boss_type), 1.65)
+		_show_combat_notice("FINAL BOSS WARNING // NULL OCTAGON PRIME // RUN COMPLETE ON DEFEAT" if _sector_index >= 3 else "BOSS WARNING // %s // DEFEAT TO CLEAR SECTOR" % _boss_name_for_type(boss_type), _boss_notice_color(boss_type), 1.85)
 		_play_sfx("boss_warning", 0.40)
 		_trigger_presentation_flash(Color(0.72, 0.96, 1.0) if _sector_index >= 3 else Color(1.0, 0.08, 0.86), 0.12 if _sector_index >= 3 else 0.10, 0.26 if _sector_index >= 3 else 0.24)
 		_trigger_sector_background_reaction(0.86 if _sector_index >= 3 else 0.70, 0.90 if _sector_index >= 3 else 0.78)
@@ -8820,7 +8875,8 @@ func _grant_run_event_reward(event_type: String, position: Vector3, force_dust :
 		dust_awarded = dust_amount
 		_grant_neon_dust(dust_awarded, true)
 	var dust_text := "  +%d DUST" % dust_awarded if dust_awarded > 0 else ""
-	_show_combat_notice("%s // +%d SCORE%s" % [reward_label, score_bonus, dust_text], Color(1.0, 0.94, 0.18), 1.55)
+	var xp_total := xp_orbs * 2
+	_show_combat_notice("%s // +%d XP // +%d SCORE%s" % [reward_label, xp_total, score_bonus, dust_text], Color(1.0, 0.94, 0.18), 1.70)
 	_spawn_burst(position, 1.12, "burst_gold" if dust_awarded > 0 else "burst_cyan")
 	_play_sfx("reward", 0.12)
 	_update_hud()
@@ -8947,7 +9003,7 @@ func _spawn_sector_boss() -> void:
 	var spawn_position := _sector_boss_spawn_position()
 	_spawn_enemy(boss_type, spawn_position)
 	_spawn_burst(spawn_position, 2.35 if _is_null_boss_type(boss_type) else 1.90, _burst_key_for_enemy(boss_type))
-	_show_combat_notice("HYPER GRID FINAL BREACH // %s" % _boss_name_for_type(boss_type) if _sector_index >= 3 else "%s ARRIVAL" % _boss_name_for_type(boss_type), _boss_notice_color(boss_type), 1.70 if _sector_index >= 3 else 1.55)
+	_show_combat_notice("FINAL BOSS ARRIVAL // %s // SURVIVE AND DESTROY" % _boss_name_for_type(boss_type) if _sector_index >= 3 else "BOSS ARRIVAL // %s // REWARD UNLOCKS ON DEFEAT" % _boss_name_for_type(boss_type), _boss_notice_color(boss_type), 1.85 if _sector_index >= 3 else 1.70)
 	_spawn_timer = 1.35
 	_player_invuln = maxf(_player_invuln, 0.55)
 	_set_music_state("boss")
@@ -11412,7 +11468,7 @@ func _kill_enemy_at(index: int, exploded: bool) -> void:
 		for i in range(reward_count):
 			var angle := TAU * float(i) / float(maxi(1, reward_count))
 			_drop_xp(position + Vector3(cos(angle), 0.0, sin(angle)) * 1.2, 2)
-		_show_combat_notice("%s DOWN" % _boss_name_for_type(enemy_type), _boss_notice_color(enemy_type), 1.45)
+		_show_combat_notice("FINAL BOSS DEFEATED // RUN COMPLETE" if is_final_boss else "%s DEFEATED // SECTOR REWARD UNLOCKED" % _boss_name_for_type(enemy_type), _boss_notice_color(enemy_type), 1.70)
 	if is_instance_valid(node):
 		node.queue_free()
 	_enemies.remove_at(index)
@@ -11496,9 +11552,10 @@ func _begin_sector_clear_reward() -> void:
 	_grant_neon_dust(dust_bonus, true)
 	_sector_transition_cleanup_pending = true
 	if _level_up_title:
-		_level_up_title.text = "SECTOR %d CLEAR // %s" % [_sector_index + 1, str(sector["name"]).to_upper()]
+		_level_up_title.text = "%s CLEAR" % _sector_display_title(_sector_index)
 	if _level_up_prompt:
-		_level_up_prompt.text = "%s\n+%d NEON DUST BANKED  //  D-Pad / Left Stick: Select    A / Enter: Route Reward" % [_sector_transition_message, dust_bonus]
+		var next_text := _sector_display_title(_sector_index + 1) if _sector_index + 1 < SECTOR_COUNT else "RUN COMPLETE VECTOR"
+		_level_up_prompt.text = "BOSS DEFEATED: %s  //  REWARD UNLOCKED\n+%d NEON DUST BANKED  //  NEXT: %s  //  D-Pad / Left Stick: Select    A / Enter: Route Reward" % [str(sector.get("boss_name", "BOSS")).to_upper(), dust_bonus, next_text]
 	for i in range(_upgrade_buttons.size()):
 		var button := _upgrade_buttons[i]
 		if i < _upgrade_choices.size():
@@ -11538,12 +11595,12 @@ func _reward_choice_button_text(choice: Dictionary) -> String:
 	if str(choice.get("kind", "stat_upgrade")) == "weapon_loot":
 		var instance: Dictionary = choice.get("weapon_instance", {})
 		var rarity := str(instance.get("rarity", "Common")).to_upper()
-		return "%s\nGENERATED WEAPON SYSTEM\n%s  //  %s\nRandom weapon with rarity/stat rolls." % [
+		return "%s\nGENERATED WEAPON SYSTEM\n%s  //  %s\nChoose equip, stash, replace, or scrap next." % [
 			str(choice.get("title", "WEAPON LOOT")).to_upper(),
 			rarity,
 			str(choice.get("category", "WEAPON")).to_upper()
 		]
-	return "%s\n%s\nROUTE: %s" % [choice["title"], choice["description"], str(choice["category"]).to_upper()]
+	return "%s\nRUN UPGRADE // %s\nEFFECT: %s" % [str(choice["title"]).to_upper(), str(choice["category"]).to_upper(), str(choice["description"]).to_upper()]
 
 
 func _apply_choice_button_accent(button: Button, choice: Dictionary) -> void:
@@ -11600,6 +11657,7 @@ func _advance_to_next_sector() -> void:
 	_set_music_state("gameplay")
 	_trigger_presentation_flash(Color(0.0, 0.94, 1.0), 0.08, 0.18)
 	_trigger_sector_background_reaction(0.62, 0.82)
+	_show_sector_entry_notice(_sector_index)
 	print("Neon Swarm sector transition: sector=%d name=%s clear_condition=%s" % [_sector_index + 1, _current_sector_name(), str(_current_sector()["clear_condition"])])
 
 
@@ -11876,6 +11934,11 @@ func _apply_upgrade(upgrade: Dictionary) -> void:
 	_spawn_burst(_player_area.position, 1.04, "burst_cyan")
 	_play_sfx("reward", 0.10)
 	_trigger_presentation_flash(Color(1.0, 0.94, 0.18), 0.08, 0.16)
+	_show_combat_notice(_upgrade_result_notice_text(upgrade), Color(1.0, 0.94, 0.18), 1.70)
+
+
+func _upgrade_result_notice_text(upgrade: Dictionary) -> String:
+	return "RUN UPGRADE APPLIED // %s // %s" % [str(upgrade.get("title", "UPGRADE")).to_upper(), str(upgrade.get("description", "CURRENT RUN IMPROVED")).to_upper()]
 
 
 func _update_orbit_visual_visibility() -> void:
@@ -12032,8 +12095,10 @@ func _update_run_end_summary(success: bool) -> void:
 	var label := _success_summary_label if success else _game_over_summary_label
 	if not is_instance_valid(label):
 		return
-	label.text = "SCORE %06d\nSECTORS CLEARED %d / %d\nWEAPONS GAINED %d\nNEON DUST +%d THIS RUN  //  TOTAL %d" % [
+	label.text = "RESULT: %s\nSCORE: %06d  //  KILLS: %d\nSECTORS CLEARED: %d / %d\nWEAPONS GAINED: %d\nNEON DUST EARNED: +%d  //  CURRENT TOTAL: %d" % [
+		"RUN COMPLETE" if success else "RUN TERMINATED",
 		_score,
+		_kills,
 		_run_sectors_cleared_count(success),
 		SECTOR_COUNT,
 		_run_weapons_gained,
@@ -12186,15 +12251,7 @@ func _set_loadout_chip(key: String, value: String) -> void:
 
 
 func _sector_hud_color() -> Color:
-	match _sector_index:
-		0:
-			return Color(1.0, 0.94, 0.18)
-		1:
-			return Color(0.0, 0.96, 1.0)
-		2:
-			return Color(0.88, 0.55, 1.0)
-		_:
-			return Color(0.68, 0.92, 1.0)
+	return _sector_color_for_index(_sector_index)
 
 
 func _update_boss_hud() -> void:

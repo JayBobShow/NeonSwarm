@@ -16,6 +16,7 @@ Current approved baseline:
 - Phase 30 adds the first Wave Director foundation and elite enemy variants using existing enemy families.
 - Phase 31 adds the first boss encounter telegraph foundation for readable delayed boss attacks and phase feedback.
 - Phase 34 adds the first Run Objective / Sector Event foundation so sectors can include readable mid-run goals beyond pure survival.
+- Phase 36 adds a full-run clarity pass so sector entry, sector rewards, boss states, weapon progression, Neon Dust, death, and run-complete outcomes are easier to understand.
 
 Major development still needed:
 
@@ -457,6 +458,7 @@ Likely future phases:
 | Phase 33 | Project Safety / Git / Backup Foundation | Adds root README, recovery/backup plan, and timestamped project backup script. No gameplay content changes. |
 | Phase 34 | Run Objective / Sector Event Variety Foundation | Adds a lightweight Run Event Director plus Data Cache, Rift Surge, Elite Hunt, and Overload Shrine objectives with safe cleanup and modest rewards. |
 | Phase 35 | Sector 4 Hyper Grid Full Content Pass | Adds Rail Skimmer, Grid Splitter/Grid Fragment, Sector 4 elite variants, Hyper Grid wave director tuning, Sector 4 event pressure, and final-sector boss buildup. |
+| Phase 36 | Full Run Polish / Player Progression Clarity Pass | Adds clearer run start, sector entry, sector clear, boss, event reward, weapon progression, Forge, Neon Dust, death, and run-complete messaging without changing gameplay balance. |
 | Later approved phase | Real Audio Replacement Pass | Original authored music/SFX replacement direction. Do not start without explicit approval. |
 
 Do not start the next phase until explicitly approved.
@@ -478,6 +480,7 @@ Recommended next production direction:
 - Tune Phase 31 boss telegraph timing, attack frequency, and visual intensity through manual playtesting before adding more bosses.
 - Tune Phase 34 event frequency, reward values, and objective readability through manual playtesting before expanding event pools.
 - Tune Phase 35 Sector 4 rail dash timing, Grid Splitter fragment caps, Hyper elite frequency, and event pressure through manual playtesting before adding more late-game sectors or enemies.
+- Manually review Phase 36 notice timing/readability during a complete run, especially stacked event/boss/reward moments.
 - Expand Armory only through approved focused passes.
 - Keep tuning the four-sector prototype run while architecture work happens.
 - Add stronger boss and graphics variety only through approved focused phases.

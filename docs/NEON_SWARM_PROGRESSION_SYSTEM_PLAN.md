@@ -32,6 +32,7 @@ Already implemented:
 - Phase 31 Boss Telegraph foundation for readable delayed boss attacks, boss phase feedback, and preserved boss reward flow.
 - Phase 32 Weapon Evolution/Fusion foundation for spending Neon Dust and compatible stash material weapons to add saved evolution ranks.
 - Phase 34 Run Objective / Sector Event foundation with Data Cache, Rift Surge, Elite Hunt, and Overload Shrine mid-run goals.
+- Phase 36 full-run clarity pass for sector entry, reward results, weapon progression, Forge/Evolution spending, Neon Dust earned/spent, and death/run-complete summaries.
 
 Not implemented yet:
 
@@ -589,3 +590,19 @@ Future tuning options:
 - Track Sector 4 objective completion and Hyper elite kills in post-run summaries.
 - Add Sector 4-specific challenge goals only after Rail Skimmer/Grid Splitter readability is approved.
 - Consider a later Hyper Grid boss alternate only through a separately approved phase.
+
+## 22. Phase 36 Full-Run Progression Clarity Pass
+
+Phase 36 does not add new progression power. It improves how existing run and meta progression are communicated to the player.
+
+Implemented clarity points:
+
+- Sector entry notices name the sector number, sector name, and identity pressure.
+- Sector clear reward panels explain boss defeated, reward unlocked, Neon Dust banked, and next sector.
+- Generated weapon reward result text explains equip, replacement, stash, or scrap outcomes.
+- Weapon progression result text includes rarity, weapon name, power score, Forge rank, and Evolution rank when available.
+- Forge, Core Upgrade, and Evolution/Fusion confirmations show Neon Dust cost and remaining total before spending.
+- Event reward notices include XP, score, and Neon Dust when awarded.
+- Death and Run Complete summaries show result, score, kills, sectors cleared, weapons gained, Neon Dust earned this run, and current Neon Dust total.
+
+Future progression UI work should keep this clarity standard: every persistent reward or cost should state what changed, whether it affects the current run or saved progression, and the new total when currency is involved.
