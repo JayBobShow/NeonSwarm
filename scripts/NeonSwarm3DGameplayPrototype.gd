@@ -87,6 +87,12 @@ const SECTOR1_ARENA_KEY_LIGHT_ENERGY := 0.30
 const SECTOR1_ARENA_KEY_LIGHT_SPECULAR := 0.42
 const SECTOR1_ARENA_KEY_LIGHT_COLOR := Color(0.62, 0.78, 1.0, 1.0)
 const SECTOR1_ARENA_KEY_LIGHT_ROTATION := Vector3(-54.0, -28.0, 0.0)
+const SECTOR2_BLENDER_ARENA_SCENE_PATH := "res://art/arenas/sector_2/exported/sector_2_prism_rift_arena.glb"
+const SECTOR2_ARENA_VISUAL_LIGHT_LAYER_MASK := 1 << 18
+const SECTOR2_ARENA_KEY_LIGHT_ENERGY := 0.26
+const SECTOR2_ARENA_KEY_LIGHT_SPECULAR := 0.38
+const SECTOR2_ARENA_KEY_LIGHT_COLOR := Color(0.90, 0.48, 1.0, 1.0)
+const SECTOR2_ARENA_KEY_LIGHT_ROTATION := Vector3(-58.0, -18.0, 0.0)
 
 const PULSE_COOLDOWN := 0.30
 const PULSE_DAMAGE := 27.0
@@ -2227,10 +2233,10 @@ func _apply_sector_visual_identity() -> void:
 		_grid_axis_instance.visible = false
 	if is_instance_valid(_arena_border_instance):
 		_arena_border_instance.material_override = _materials["%s_border" % prefix]
-		_arena_border_instance.visible = _sector_index != 0
+		_arena_border_instance.visible = _sector_index != 0 and _sector_index != 1
 	if is_instance_valid(_arena_border_core_instance):
 		_arena_border_core_instance.material_override = _materials["soft_white"]
-		_arena_border_core_instance.visible = _sector_index != 0
+		_arena_border_core_instance.visible = _sector_index != 0 and _sector_index != 1
 	if is_instance_valid(_dust_batch):
 		_dust_batch.material_override = _materials["%s_dust" % prefix]
 	_apply_sector_environment_tone()
@@ -2246,10 +2252,11 @@ func _rebuild_sector_geometry_identity() -> void:
 	for child in _sector_geometry_root.get_children():
 		_sector_geometry_root.remove_child(child)
 		child.queue_free()
-	# Phase 26 Hard Reset: HD art plates carry sector identity.
-	# Legacy loose floor markers are kept as inert utilities but no longer spawned here.
+	# Blender arena kits own Sector 1 and Sector 2 presentation; legacy floor utilities remain inert.
 	if _sector_index == 0:
 		_create_sector1_neon_grid_3d_architecture()
+	elif _sector_index == 1:
+		_create_sector2_prism_rift_3d_architecture()
 
 
 func _apply_sector_environment_tone() -> void:
@@ -2303,7 +2310,8 @@ func _create_neon_grid_background_depth() -> void:
 
 
 func _create_prism_rift_background_depth() -> void:
-	_build_hd_sector_background(1)
+	# Phase 39: Sector 2 uses the Blender-authored Prism Rift arena instead of the old flat HD plate.
+	pass
 
 
 func _create_null_zone_background_depth() -> void:
@@ -2787,6 +2795,124 @@ func _set_sector1_visible_arena_material(material: StandardMaterial3D, albedo: C
 	if material.emission_enabled:
 		material.emission = emission
 		material.emission_energy_multiplier = emission_energy
+	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+
+
+func _create_sector2_prism_rift_3d_architecture() -> void:
+	if not is_instance_valid(_sector_geometry_root):
+		return
+	var root := Node3D.new()
+	root.name = "Sector2PrismRift3DArenaArchitectureRoot"
+	_sector_geometry_root.add_child(root)
+	_create_sector2_arena_readability_key_light(root)
+	_create_sector2_blender_arena_kit(root)
+
+
+func _create_sector2_arena_readability_key_light(parent: Node3D) -> void:
+	var light := DirectionalLight3D.new()
+	light.name = "Sector2ArenaMaterialReadabilityKeyLight"
+	light.light_color = SECTOR2_ARENA_KEY_LIGHT_COLOR
+	light.light_energy = SECTOR2_ARENA_KEY_LIGHT_ENERGY
+	light.light_specular = SECTOR2_ARENA_KEY_LIGHT_SPECULAR
+	light.light_cull_mask = SECTOR2_ARENA_VISUAL_LIGHT_LAYER_MASK
+	light.light_bake_mode = Light3D.BAKE_DISABLED
+	light.light_indirect_energy = 0.0
+	light.light_volumetric_fog_energy = 0.0
+	light.shadow_enabled = false
+	light.rotation_degrees = SECTOR2_ARENA_KEY_LIGHT_ROTATION
+	parent.add_child(light)
+
+
+func _create_sector2_blender_arena_kit(parent: Node3D) -> Node3D:
+	var instance := _add_blender_asset_instance(
+		parent,
+		"Blender3DSector2PrismRiftArenaModel",
+		SECTOR2_BLENDER_ARENA_SCENE_PATH,
+		1.0,
+		Vector3.ZERO,
+		0.0,
+		false
+	) as Node3D
+	if instance != null:
+		var material_visibility_cache: Dictionary = {}
+		_configure_sector2_blender_arena_visuals(instance, material_visibility_cache)
+	return instance
+
+
+func _configure_sector2_blender_arena_visuals(root: Node, material_visibility_cache: Dictionary) -> void:
+	if root is GeometryInstance3D:
+		var geometry := root as GeometryInstance3D
+		geometry.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		geometry.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
+		geometry.layers = SECTOR2_ARENA_VISUAL_LIGHT_LAYER_MASK
+	if root is MeshInstance3D:
+		_boost_sector2_imported_arena_materials(root as MeshInstance3D, material_visibility_cache)
+	for child in root.get_children():
+		_configure_sector2_blender_arena_visuals(child, material_visibility_cache)
+
+
+func _boost_sector2_imported_arena_materials(mesh_instance: MeshInstance3D, material_visibility_cache: Dictionary) -> void:
+	var mesh := mesh_instance.mesh
+	if mesh == null:
+		return
+	for surface_index in range(mesh.get_surface_count()):
+		var material := mesh_instance.get_surface_override_material(surface_index)
+		if material == null:
+			material = mesh.surface_get_material(surface_index)
+		if material is StandardMaterial3D:
+			var arena_material := material as StandardMaterial3D
+			var material_name := arena_material.resource_name
+			if material_name == "":
+				material_name = str(arena_material)
+			if not material_name.begins_with("NS_S2_"):
+				continue
+			var material_id := arena_material.get_instance_id()
+			if material_visibility_cache.has(material_id):
+				mesh_instance.set_surface_override_material(surface_index, material_visibility_cache[material_id] as Material)
+				continue
+			var visible_material := arena_material.duplicate() as StandardMaterial3D
+			_apply_sector2_arena_material_visibility(visible_material, material_name)
+			material_visibility_cache[material_id] = visible_material
+			mesh_instance.set_surface_override_material(surface_index, visible_material)
+
+
+func _apply_sector2_arena_material_visibility(material: StandardMaterial3D, material_name: String) -> void:
+	var lower_name := material_name.to_lower()
+	if lower_name.find("deep_rift_void") >= 0:
+		_set_sector2_visible_arena_material(material, Color(0.020, 0.006, 0.040, 1.0), 0.28, 0.82, Color(0.030, 0.006, 0.070, 1.0), 0.040)
+	elif lower_name.find("dark_violet_metal") >= 0:
+		_set_sector2_visible_arena_material(material, Color(0.130, 0.064, 0.176, 1.0), 0.56, 0.58, Color(0.075, 0.016, 0.150, 1.0), 0.115)
+	elif lower_name.find("rift_gunmetal") >= 0:
+		_set_sector2_visible_arena_material(material, Color(0.176, 0.112, 0.224, 1.0), 0.64, 0.46, Color(0.095, 0.028, 0.172, 1.0), 0.135)
+	elif lower_name.find("black_glass_trim") >= 0:
+		_set_sector2_visible_arena_material(material, Color(0.030, 0.012, 0.056, 1.0), 0.22, 0.76, Color(0.022, 0.004, 0.054, 1.0), 0.050)
+	elif lower_name.find("magenta_embedded_channel") >= 0:
+		_set_sector2_visible_arena_material(material, Color(0.600, 0.035, 0.520, 1.0), 0.0, 0.32, Color(0.920, 0.070, 0.780, 1.0), 0.78)
+	elif lower_name.find("violet_prism_glass") >= 0:
+		_set_sector2_visible_arena_material(material, Color(0.280, 0.108, 0.600, 0.58), 0.08, 0.18, Color(0.170, 0.060, 0.420, 1.0), 0.30, true)
+	elif lower_name.find("cyan_refraction_core") >= 0:
+		_set_sector2_visible_arena_material(material, Color(0.040, 0.560, 0.770, 1.0), 0.0, 0.26, Color(0.060, 0.820, 1.000, 1.0), 0.70)
+	elif lower_name.find("rift_sheen") >= 0:
+		_set_sector2_visible_arena_material(material, Color(0.500, 0.300, 0.760, 1.0), 0.20, 0.24, Color(0.200, 0.070, 0.360, 1.0), 0.180)
+	elif lower_name.find("outer_rift_rail") >= 0:
+		_set_sector2_visible_arena_material(material, Color(0.112, 0.052, 0.142, 1.0), 0.68, 0.52, Color(0.118, 0.030, 0.205, 1.0), 0.155)
+
+
+func _set_sector2_visible_arena_material(material: StandardMaterial3D, albedo: Color, metallic: float, roughness: float, emission: Color, emission_energy: float, glass := false) -> void:
+	material.albedo_color = albedo
+	material.metallic = metallic
+	material.roughness = roughness
+	material.metallic_specular = 0.68
+	material.emission_enabled = emission_energy > 0.0
+	if material.emission_enabled:
+		material.emission = emission
+		material.emission_energy_multiplier = emission_energy
+	if glass or albedo.a < 0.99:
+		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		material.blend_mode = BaseMaterial3D.BLEND_MODE_MIX
+		material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	else:
+		material.transparency = BaseMaterial3D.TRANSPARENCY_DISABLED
 	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 
 
