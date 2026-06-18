@@ -1,0 +1,28 @@
+# Sector 1 Neon Grid Environment Art Notes
+
+Phase 38 Hard Repair 3 rebuilds the Level 1 arena as a visual-only hard-surface metal power deck.
+
+Goals:
+
+- Read as dark aluminum/gunmetal 3D construction at the gameplay camera distance.
+- Keep gameplay locked to the existing flat X/Z plane.
+- Use the Blender source and exported GLB as the active Sector 1 arena kit.
+- Keep cyan as restrained embedded channels and rail accents.
+- Preserve player, enemy, XP, projectile, event, HUD, and Phase 37 ripple readability.
+
+Do not reintroduce:
+
+- Full-length white/cyan center cross lines.
+- Bright corner cap marker dots.
+- Continuous flat cyan grid lines across the whole floor.
+- Runtime procedural Sector 1 floor tiles over the GLB.
+- Tall interior floor objects that look like gameplay obstacles.
+- Dynamic light spam or material bloom that washes out combat reads.
+
+Current art structure:
+
+- 7x7 base layout retained for bounds alignment, but panel variants break the tile-board read.
+- Floor modules include service hatches, vents, diagonal braces, heavy access covers, macro ribs, and a central low power-deck panel.
+- Seam channels are recessed dark trenches with bridge plates and short dim cyan accents.
+- Border walls are segmented machinery modules with plinths, inset wall faces, top caps, inner curbs, brackets, and restrained cyan rail segments.
+- Corner and mid-wall anchors are built as dark machinery, not bright markers.

@@ -360,6 +360,127 @@ Manual test focus for this repair:
 - Confirm the player cannot leave the visible arena and the walls/rails match the gameplay clamp.
 - Confirm enemies, XP, bullets, event objectives, HUD, and the Phase 37 blue propulsion ripple remain readable.
 
+## Hard Repair 3 - AAA-Style Blender Environment Art Pass
+
+The previous Hard Repair 2 result was rejected because it still read as a regular 7x7 tile board from the gameplay camera. It had better geometry than the original grid, but the macro read was still too flat, too dark, too repetitive, and too much like placeholder generated art.
+
+Role breakdown:
+
+- Environment Art Director: set the target as an authored hard-surface metal power deck, not a literal grid board. Required macro floor hierarchy, recessed service trenches, raised perimeter machinery, and restrained embedded cyan.
+- Blender Hard-Surface Environment Artist: identified the missing medium-scale hierarchy. Recommended panel variants, real recessed seams with bridge plates, segmented wall modules, machinery-style corner/mid-wall anchors, stronger bevels, and visible service-deck detail.
+- Material / Lighting Artist: kept runtime camera/environment stable and moved the quality gain into material values and geometry. Recommended controlled aluminum/gunmetal values, lower cyan emission, sparse fake sheen, no white seams, no bloom increase, and no dynamic light spam.
+- Godot Technical Artist: confirmed Sector 1 already loads the GLB through the official scene, old procedural roots are suppressed, gameplay remains X/Z plane-locked, and bounds/camera should stay unchanged. Recommended disabling imported GI in addition to shadow casting.
+- QA / Readability Lead: defined the focused validation checks for GLB load, old visual suppression, no white/debug markers, no collision descendants, geometry detail counts, player clamp, Phase 37 ripple, and duplicate-node prevention.
+
+Blender source updated:
+
+- `art/arenas/sector_1/source/blender/build_sector_1_neon_grid_arena.py`
+- `art/arenas/sector_1/source/blender/sector_1_neon_grid_arena.blend`
+- `art/arenas/sector_1/source/blender/sector_1_environment_art_notes.md`
+
+Runtime GLB exported:
+
+- `art/arenas/sector_1/exported/sector_1_neon_grid_arena.glb`
+
+Blender modeling improvements:
+
+- Rebuilt the previous repeated panel recipe into a variant map with `service`, `vented`, `standard`, `brace`, `heavy`, `macro`, and `reactor` panels.
+- Increased base panel thickness to `0.42` and main panel bevels to `0.185`.
+- Increased height variation to roughly `-0.052` through `+0.046`, enough to read from the orthographic camera without implying walkable ramps.
+- Added a dark underfloor depth slab so seams/gaps read as construction depth.
+- Added macro deck covers and low service details to break the flat board read without creating tall interior obstacles.
+- Added readable service hatches, vent wells/slats, diagonal armor braces, heavy access covers, macro ribs, and a central low power-deck panel.
+- Rebuilt seam treatment as actual recessed dark trenches with raised chamfer rails and 56 bridge-plate assemblies.
+- Replaced continuous floor-grid identity with 12 short dim cyan accent pieces plus restrained rail accents.
+- Rebuilt borders as 28 segmented wall machinery modules instead of four long plain wall boxes.
+- Added 4 machinery-style corner anchor assemblies and 12 mid-wall pylons.
+- Added perimeter service trenches and outer buttresses for background depth.
+
+Imported asset counts after the pass:
+
+- 1,075 imported `GeometryInstance3D` descendants in the Sector 1 GLB model.
+- 49 base floor panel variants.
+- 16 recessed seam trenches.
+- 56 seam bridge-plate assemblies.
+- 12 short embedded cyan accents.
+- 252 segmented wall machinery pieces.
+- 32 corner machinery anchor pieces.
+- 36 mid-wall pylon pieces.
+- 4 low macro deck covers.
+- 16 perimeter service trenches.
+- 0 old `Sector1BlenderNeonSeam*` nodes.
+- 0 old `Sector1BlenderCornerPylonCyanCap*` nodes.
+- 0 `NS_S1_White_Cyan_Hot_Core` material usage.
+
+Material settings:
+
+- `NS_S1_Dark_Brushed_Aluminum_AAA`: base `(0.124, 0.132, 0.138)`, metallic `0.90`, roughness `0.40`, emission strength `0.012`.
+- `NS_S1_Raised_Gunmetal_Panel_AAA`: base `(0.164, 0.176, 0.184)`, metallic `0.92`, roughness `0.36`, emission strength `0.016`.
+- `NS_S1_Beveled_Edge_Gunmetal_AAA`: base `(0.052, 0.062, 0.076)`, metallic `0.84`, roughness `0.50`, emission strength `0.006`.
+- `NS_S1_Recessed_Dark_Depth_Metal_AAA`: base `(0.022, 0.028, 0.038)`, metallic `0.60`, roughness `0.76`, emission strength `0.002`.
+- `NS_S1_Dim_Cyan_Embedded_Channel_AAA`: base `(0.000, 0.300, 0.430)`, cyan emission strength `0.72`.
+- `NS_S1_Restrained_Cyan_Rail_Core_AAA`: base `(0.020, 0.420, 0.540)`, cyan emission strength `0.94`.
+- `NS_S1_Cool_Aluminum_Sheen_AAA`: base `(0.340, 0.430, 0.470)`, metallic `0.82`, roughness `0.22`, emission strength `0.012`.
+- `NS_S1_Blackened_Service_Trim_AAA`: base `(0.012, 0.016, 0.022)`, metallic `0.56`, roughness `0.82`, emission strength `0.001`.
+
+How top-down readability was addressed:
+
+- The pass does not rely on tiny bevels alone. It adds medium-scale silhouettes that remain visible from the `Camera3D` orthographic size `47.5`.
+- The previous uniform 7x7 read is broken by panel variants, macro covers, vent wells, diagonal braces, heavy access panels, and a central low power-deck detail.
+- Seams are darker and recessed instead of bright full-length lines.
+- Wall and pylon depth is larger and segmented so the border reads like physical machinery, not a glowing square outline.
+- Cyan accents are fewer and dimmer, preserving Phase 37 ripple readability and avoiding a return to the debug-grid look.
+
+Godot integration changes:
+
+- Sector 1 still instances the GLB through `SECTOR1_BLENDER_ARENA_SCENE_PATH` under `Blender3DSector1NeonGridArenaModel`.
+- Old Sector 1 HD background and procedural floor/grid/border/depth roots remain suppressed.
+- Generic grid and generic border overlays remain hidden for Sector 1.
+- Imported `GeometryInstance3D` nodes now have both `cast_shadow = SHADOW_CASTING_SETTING_OFF` and `gi_mode = GI_MODE_DISABLED`.
+- No new collision nodes were added.
+- No runtime camera, player movement, enemy movement, projectile, XP, event, boss, UI, save, controller, or Phase 37 ripple behavior was changed.
+
+Bounds and screen fit:
+
+- `ARENA_HALF_SIZE` remains `28.0`.
+- Player clamp remains inside the visible arena at `+/-27.0`.
+- Blender rails/walls remain aligned to the authoritative `+/-28.0` boundary.
+- `Camera3D.size` remains `47.5`.
+
+Godot docs/classes referenced:
+
+- Imported 3D scenes / GLB import pipeline.
+- `GLTFDocument` / `GLTFState` runtime GLB scene generation.
+- `MeshInstance3D` for imported mesh descendants.
+- `GeometryInstance3D` for shadow casting and GI mode controls.
+- `BaseMaterial3D` / `StandardMaterial3D` for metallic, roughness, albedo, and emission material behavior.
+- `Camera3D` for preserving orthographic camera/bounds fit.
+- 3D lights and shadows guidance for avoiding dynamic light spam and disabling unnecessary imported shadow/GI cost.
+
+Focused validation for Hard Repair 3:
+
+- `timeout 30s godot --headless --path . --script /tmp/neon_swarm_phase38_hard_repair3_validate.gd`
+- The sandboxed run hit a Godot `user://logs` crash before project code ran; the same validation passed when rerun unsandboxed so Godot could access its user log directory.
+- Validation confirmed the GLB exists and loads in the official scene.
+- Validation confirmed 1,075 imported geometry descendants, no collision descendants, shadow casting disabled, and GI disabled.
+- Validation confirmed old procedural roots and old HD Sector 1 background are inactive.
+- Validation confirmed generic grid/border overlays are hidden for Sector 1.
+- Validation confirmed old white-cross/debug marker names and material are absent.
+- Validation confirmed player clamp remains inside the visible arena at `(27.0, 1.05, 27.0)`.
+- Validation confirmed Phase 37 propulsion ripple nodes still exist.
+- Validation confirmed no duplicate Sector 1 GLB on visual rebuild and correct clear/restore behavior when switching sector identity away/back.
+
+Manual test focus for this repair:
+
+- Start Game in Sector 1.
+- Confirm the first read is an authored hard-surface aluminum/gunmetal arena deck, not a flat black tile board.
+- Confirm floor depth is visible through panel thickness, inset faces, lips, hatches, vents, braces, recessed trenches, and bridge plates.
+- Confirm cyan is restrained and embedded, with no white center cross or giant marker dots.
+- Confirm border walls, rails, corner anchors, and mid-wall pylons read as physical machinery.
+- Confirm the player cannot leave the visible arena and the border matches the clamp.
+- Confirm enemies, XP, bullets, event markers, boss warnings, HUD, and the Phase 37 ripple remain clearer than the floor.
+- Confirm pause/restart/return-to-title does not duplicate the arena model.
+
 ## Validation Results
 
 Run after implementation:
@@ -369,6 +490,7 @@ Run after implementation:
 - `godot --headless --path . scenes/Main.tscn --quit-after 3`
 - `godot --headless --path . --script /tmp/neon_swarm_phase38_sector1_glb_validate.gd`
 - `godot --headless --path . --script /tmp/neon_swarm_phase38_hard_repair2_validate.gd`
+- `godot --headless --path . --script /tmp/neon_swarm_phase38_hard_repair3_validate.gd`
 - `git diff --check`
 - `git diff --stat`
 - `git status`
@@ -388,6 +510,7 @@ Focused validation confirms:
 - The Phase 37 propulsion ripple still initializes.
 - The Hard Repair 2 focused validation confirms the old full-length Blender seam cross nodes, old white/cyan hot-core material, bright pylon cap markers, generic Sector 1 border overlay, and old procedural roots are not active.
 - The Hard Repair 2 focused validation confirms the rebuilt GLB imports with 599 mesh instances, including recessed dark seams, short cyan accents, raised panel lips, brushed grooves, and dark metal pylon caps.
+- The Hard Repair 3 focused validation confirms the AAA-style GLB imports with 1,075 geometry descendants, no collision descendants, shadow/GI disabled, old flat/procedural visuals inactive, no white cross/debug markers, player clamp intact, Phase 37 ripple nodes present, and no duplicate GLB nodes after rebuild/sector switch.
 
 ## Manual Test Checklist
 

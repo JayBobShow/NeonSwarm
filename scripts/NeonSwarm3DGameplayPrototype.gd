@@ -2675,7 +2675,9 @@ func _create_sector1_blender_arena_kit(parent: Node3D) -> Node3D:
 
 func _configure_sector1_blender_arena_visuals(root: Node) -> void:
 	if root is GeometryInstance3D:
-		(root as GeometryInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		var geometry := root as GeometryInstance3D
+		geometry.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		geometry.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
 	for child in root.get_children():
 		_configure_sector1_blender_arena_visuals(child)
 
