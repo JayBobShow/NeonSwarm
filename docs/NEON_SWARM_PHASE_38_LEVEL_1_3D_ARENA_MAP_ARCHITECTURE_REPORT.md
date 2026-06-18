@@ -821,6 +821,60 @@ Manual test focus:
 - Confirm top-center notifications/objectives still appear centered and do not collide visually with side panels.
 - Confirm enemies, XP, bullets, event objectives, player core, Phase 37 ripple, and arena bounds remain readable.
 
+## Hotfix 8 — Weapon HUD Upgrade Stat Feedback Restore
+
+User feedback:
+
+- The Phase 38 side HUD layout was close, but the right-side equipped weapon stack only showed slot, rarity, and weapon name.
+- Previous HUD behavior exposed weapon-family improvement feedback near weapon chips; that information was lost when the bottom rail was replaced.
+- This hotfix restores compact weapon stat/status feedback while keeping the approved side HUD direction.
+
+Godot docs/classes referenced:
+
+- `Control`: right-side weapon rows remain fixed HUD controls in the 1920x1080 design-space root.
+- `VBoxContainer`: the `GameplayLoadoutEightSlotColumn` still arranges all `8` weapon rows vertically.
+- `Label`: each weapon row now uses a compact three-line label for slot/status, weapon name, and stat feedback.
+- `ScrollContainer`: reviewed to confirm no gameplay weapon HUD scrolling was added.
+
+Weapon HUD audit result:
+
+- Left stat stack remains global/player run feedback only: `DMG`, `RATE`, `SPD`, and `PICKUP`.
+- Right weapon stack now owns weapon-specific feedback.
+- Old bottom weapon-family chips were hard-coded summaries for `ORBIT`, `LANCE`, `SAW`, and `MINE`.
+- Runtime weapon-instance data is available through `_equipped_weapon_instances` and `WeaponCatalog.stat_totals(instance)`, including stat rolls, modifiers, forge power stats, and evolution stats.
+- Run-specific weapon upgrades are applied in `_apply_upgrade()` and now feed the right-side row summary for affected weapon families.
+
+Right weapon row data:
+
+- Each row still shows one equipped slot and all `8` rows remain visible.
+- Row line 1: `SLOT ##`, rarity code, and current status (`READY`, `CD #.#s`, `ACTIVE`, or `OFF`).
+- Row line 2: compact weapon name.
+- Row line 3: compact stat feedback, such as `DMG +12%`, `RATE +8%`, `CD -15%`, `PIERCE +1`, `SPLIT +2`, `CHAIN +1`, `ORBIT +1`, `AREA +10%`, `SPIN +12%`, or `PWR #.##` for baseline weapons.
+- Tooltips include fuller status/stat feedback without expanding the in-game HUD.
+
+XP/run upgrade behavior:
+
+- Global upgrades such as damage, fire rate, speed, and pickup still update the left stat stack.
+- Weapon-specific upgrades now update the matching right-side weapon row immediately after `_apply_upgrade()` and `_update_hud()`.
+- Affected weapon rows briefly highlight for `1.45s` using a bounded dictionary of flash timers; no nodes are spawned.
+- Weapon loot/replacement rewards also highlight the affected equipped row after `_rebuild_weapon_stat_bonuses()`.
+
+Layout/readability safeguards:
+
+- Weapon rows were compacted to `48px` high, `32px` icons, `8px` label font, and `3px` vertical separation so the third feedback line fits without scrolling.
+- `GameplayEquippedWeaponVerticalPanel` remains in the Hotfix 7 right-side position.
+- No weapon damage, cooldown, projectile behavior, progression, save data, arena bounds, controls, or Phase 37 ripple behavior was changed.
+
+Manual test focus:
+
+- Start Game.
+- Confirm the right weapon stack still shows all `8` equipped slots without scrolling.
+- Confirm each equipped row shows slot/rarity/status, weapon name, and a compact stat or `PWR` fallback.
+- Take an XP upgrade that affects a weapon family, such as Prism Lance pierce, Ring Saw spin/radius, Hex Shatter damage/split/cooldown, Orbit count, or Nova cooldown.
+- Confirm the affected right-side weapon row updates immediately and briefly highlights.
+- Confirm global upgrades still update the left stat stack.
+- Confirm enemies, XP, bullets, event objectives, player core, Phase 37 ripple, arena bounds, and HUD readability remain intact.
+
 ## Validation Results
 
 Run after implementation:

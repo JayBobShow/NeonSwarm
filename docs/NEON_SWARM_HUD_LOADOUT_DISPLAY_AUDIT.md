@@ -120,3 +120,82 @@ Manual test checklist:
 - Confirm the side HUD feels outside or at the edge of the gameplay arena as much as practical.
 - Confirm top-center notification/objective panels do not collide with side panels.
 - Confirm enemies, XP, bullets, player core, Phase 37 ripple, event objectives, and arena boundaries remain readable.
+
+## Phase 38 Hotfix 8 — Weapon HUD Upgrade Stat Feedback Restore
+
+Scope:
+
+- Gameplay HUD only.
+- Restores weapon upgrade/stat feedback to the right-side `8`-slot weapon stack.
+- Keeps the Phase 38 side HUD layout, all `8` visible slots, and no scrolling.
+- No weapon gameplay, upgrade balance, save data, loadout capacity, Armory, Forge, Evolution/Fusion, arena bounds, or controls were changed.
+
+Godot docs/classes referenced:
+
+- `Control`: fixed side HUD placement remains in the existing design-space root.
+- `VBoxContainer`: the right weapon stack remains one vertical non-scrolling column.
+- `Label`: weapon rows now use a compact three-line label for status and stat feedback.
+- `ScrollContainer`: reviewed to confirm gameplay HUD scrolling was not reintroduced.
+
+Missing information found:
+
+- Hotfix 6/7 right-side weapon rows showed only slot number, rarity code, and weapon name.
+- The old bottom rail had weapon-family feedback chips for `ORBIT`, `LANCE`, `SAW`, and `MINE`.
+- Those old chips did not show all `8` equipped slots, but they did communicate weapon upgrades/status that the new stack needed to recover.
+
+Current data source:
+
+- Equipped rows read `_equipped_weapon_instances`.
+- Instance stat rolls, modifiers, forge stats, and evolution stats are summarized with `WeaponCatalog.stat_totals(instance)`.
+- Runtime weapon-family upgrades from XP choices are folded into the display for the affected weapon family.
+- Global/player upgrades remain on the left stat stack.
+
+Final right-side row format:
+
+- Line 1: `SLOT ##`, rarity code, and status.
+- Line 2: compact weapon name.
+- Line 3: up to two compact stat feedback items, or `PWR #.##` when no bonus stats exist.
+
+Status values:
+
+- `READY`: weapon timer is ready.
+- `CD #.#s`: weapon is cooling down.
+- `ACTIVE`: persistent orbit/saw style weapon is active.
+- `OFF`: weapon family is not enabled.
+
+Displayed stat examples:
+
+- `DMG +12%`
+- `RATE +8%`
+- `CD -15%`
+- `PROJ +1`
+- `PIERCE +1`
+- `SPLIT +2`
+- `CHAIN +1`
+- `ORBIT +1`
+- `AREA +10%`
+- `SPIN +12%`
+- `BEAM +0.08s`
+
+XP/run upgrade feedback:
+
+- `_apply_upgrade()` now marks affected weapon-family rows for a brief highlight when the upgrade is weapon-specific.
+- `_apply_weapon_reward()` also marks the affected equipped row after weapon loot/replacement changes rebuild weapon stat bonuses.
+- Highlight duration is `1.45s` and uses persistent row style updates, not spawned VFX nodes.
+
+Layout confirmation:
+
+- `GameplayLoadoutEightSlotColumn` still creates exactly `GameplayLoadoutSlot01` through `GameplayLoadoutSlot08`.
+- Weapon row height is `48px`, icon size is `32px`, and stack separation is `3px`.
+- The gameplay HUD still has no `ScrollContainer`.
+- Empty slots still show `EMPTY` and `--`.
+
+Manual test checklist:
+
+- Start Game.
+- Confirm all `8` equipped weapon slots remain visible on the right.
+- Confirm each equipped row shows status plus stat feedback or `PWR`.
+- Choose an XP upgrade that targets a weapon family and confirm the matching row updates/highlights.
+- Confirm global upgrades still change the left `DMG`, `RATE`, `SPD`, or `PICKUP` chips.
+- Confirm no HUD scrolling appears during gameplay.
+- Confirm the HUD stays outside the play area as much as practical.

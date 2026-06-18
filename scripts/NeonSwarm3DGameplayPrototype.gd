@@ -42,6 +42,7 @@ const UI_RIGHT_STICK_STASH_DEADZONE := 0.34
 const UI_RIGHT_STICK_STASH_FAST_THRESHOLD := 0.78
 const UI_RIGHT_STICK_STASH_SLOW_REPEAT := 0.24
 const UI_RIGHT_STICK_STASH_FAST_REPEAT := 0.075
+const GAMEPLAY_WEAPON_HUD_FLASH_DURATION := 1.45
 
 const ENEMY_CAP := 54
 const XP_CAP := 100
@@ -589,6 +590,7 @@ var _stat_summary_label: Label
 var _gameplay_weapon_slot_panels: Array[PanelContainer] = []
 var _gameplay_weapon_slot_icons: Array[Control] = []
 var _gameplay_weapon_slot_labels: Array[Label] = []
+var _gameplay_weapon_slot_flash_timers: Dictionary = {}
 var _presentation_flash: ColorRect
 var _presentation_flash_color := Color(0.0, 0.94, 1.0, 0.0)
 var _presentation_flash_alpha := 0.0
@@ -903,6 +905,7 @@ func _process(delta: float) -> void:
 	_update_sector_transition_effect(delta)
 	_update_right_stick_ui_scroll(delta)
 	_sync_player_presentation_visibility()
+	_update_gameplay_weapon_hud_flash_timers(delta)
 	if _title_menu_active:
 		_title_menu_nav_cooldown = maxf(0.0, _title_menu_nav_cooldown - delta)
 		if _help_visible:
@@ -1415,6 +1418,7 @@ func _apply_weapon_reward(upgrade: Dictionary) -> void:
 				_stash_weapon_instances.append(instance)
 	_remember_discovered_weapon(instance)
 	_rebuild_weapon_stat_bonuses()
+	_flash_gameplay_weapon_hud_for_definition(definition_id)
 	_save_weapon_inventory()
 	_run_weapons_gained += 1
 	_spawn_burst(_player_area.position, 1.12, "burst_cyan")
@@ -4006,7 +4010,7 @@ func _create_hud() -> void:
 	var loadout_stack := VBoxContainer.new()
 	loadout_stack.name = "GameplayLoadoutEightSlotColumn"
 	loadout_stack.alignment = BoxContainer.ALIGNMENT_CENTER
-	loadout_stack.add_theme_constant_override("separation", 4)
+	loadout_stack.add_theme_constant_override("separation", 3)
 	loadout_panel.add_child(loadout_stack)
 	_gameplay_weapon_slot_panels.clear()
 	_gameplay_weapon_slot_icons.clear()
@@ -5158,7 +5162,7 @@ func _gameplay_loadout_slot_style(fill_color: Color, border_color: Color, border
 func _add_gameplay_weapon_slot(parent: Control, slot_index: int) -> void:
 	var slot_panel := PanelContainer.new()
 	slot_panel.name = "GameplayLoadoutSlot%02d" % [slot_index + 1]
-	slot_panel.custom_minimum_size = Vector2(268, 46)
+	slot_panel.custom_minimum_size = Vector2(268, 48)
 	slot_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	slot_panel.add_theme_stylebox_override("panel", _gameplay_loadout_slot_style(Color(0.0, 0.010, 0.032, 0.78), Color(0.0, 0.82, 1.0, 0.58), 1))
 	parent.add_child(slot_panel)
@@ -5169,17 +5173,17 @@ func _add_gameplay_weapon_slot(parent: Control, slot_index: int) -> void:
 	row.add_theme_constant_override("separation", 5)
 	slot_panel.add_child(row)
 
-	var icon := _make_weapon_icon_control(Vector2(34, 34), true)
+	var icon := _make_weapon_icon_control(Vector2(32, 32), true)
 	icon.name = "GameplayLoadoutSlot%02dIcon" % [slot_index + 1]
 	if icon is NeonWeaponIcon:
 		icon.animate_preview = false
 	row.add_child(icon)
 
-	var label := _make_hud_label("SLOT %02d\nEMPTY" % [slot_index + 1])
+	var label := _make_hud_label("SLOT %02d\nEMPTY\n--" % [slot_index + 1])
 	label.name = "GameplayLoadoutSlot%02dLabel" % [slot_index + 1]
-	label.custom_minimum_size = Vector2(212, 32)
+	label.custom_minimum_size = Vector2(212, 40)
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 10)
+	label.add_theme_font_size_override("font_size", 8)
 	label.add_theme_color_override("font_color", Color(0.72, 0.92, 1.0, 0.72))
 	label.clip_text = true
 	row.add_child(label)
@@ -12434,6 +12438,7 @@ func _apply_upgrade(upgrade: Dictionary) -> void:
 	_xp_pull_speed_bonus = minf(6.0, _xp_pull_speed_bonus + float(effects.get("xp_pull_speed_add", 0.0)))
 	_enemy_xp_reward_bonus = mini(3, _enemy_xp_reward_bonus + int(effects.get("enemy_xp_bonus_add", 0)))
 	_mini_boss_reward_bonus = mini(12, _mini_boss_reward_bonus + int(effects.get("mini_boss_reward_bonus_add", 0)))
+	_flash_gameplay_weapon_hud_for_upgrade(upgrade)
 	_spawn_burst(_player_area.position, 1.04, "burst_cyan")
 	_play_sfx("reward", 0.10)
 	_trigger_presentation_flash(Color(1.0, 0.94, 0.18), 0.08, 0.16)
@@ -12749,6 +12754,237 @@ func _update_loadout_chips() -> void:
 	_update_gameplay_loadout_slots()
 
 
+func _update_gameplay_weapon_hud_flash_timers(delta: float) -> void:
+	if _gameplay_weapon_slot_flash_timers.is_empty():
+		return
+	for definition_id in _gameplay_weapon_slot_flash_timers.keys():
+		var remaining := maxf(0.0, float(_gameplay_weapon_slot_flash_timers[definition_id]) - delta)
+		if remaining <= 0.0:
+			_gameplay_weapon_slot_flash_timers.erase(definition_id)
+		else:
+			_gameplay_weapon_slot_flash_timers[definition_id] = remaining
+
+
+func _flash_gameplay_weapon_hud_for_definition(definition_id: String) -> void:
+	if definition_id == "":
+		return
+	if _equipped_weapon_index_for_definition(definition_id) < 0:
+		return
+	_gameplay_weapon_slot_flash_timers[definition_id] = GAMEPLAY_WEAPON_HUD_FLASH_DURATION
+
+
+func _flash_gameplay_weapon_hud_for_upgrade(upgrade: Dictionary) -> void:
+	if str(upgrade.get("kind", "stat_upgrade")) == "weapon_loot":
+		var instance: Dictionary = upgrade.get("weapon_instance", {})
+		_flash_gameplay_weapon_hud_for_definition(str(instance.get("definition_id", "")))
+		return
+	var effects: Dictionary = upgrade.get("effects", {})
+	var affected_definitions := {}
+	for key in effects.keys():
+		match str(key):
+			"projectile_count_add":
+				affected_definitions["pulse_blaster"] = true
+			"orbit_count_add":
+				affected_definitions["orbit_spark"] = true
+			"nova_cooldown_multiplier_add":
+				affected_definitions["nova_burst"] = true
+			"beam_duration_add":
+				affected_definitions["arc_beam"] = true
+			"mine_radius_add":
+				affected_definitions["gravity_mine"] = true
+			"prism_lance_damage_multiplier_add", "prism_lance_pierce_add":
+				affected_definitions["prism_lance"] = true
+			"ring_saw_radius_add", "ring_saw_spin_add":
+				affected_definitions["ring_saw"] = true
+			"hex_shatter_damage_multiplier_add", "hex_shatter_cooldown_multiplier_add", "hex_shatter_split_add":
+				affected_definitions["hex_shatter"] = true
+			"fractal_shard_enable", "fractal_shard_damage_multiplier_add", "fractal_shard_cooldown_multiplier_add", "fractal_shard_split_add", "fractal_shard_life_add", "fractal_shard_pierce_add":
+				affected_definitions["fractal_shard"] = true
+	for definition_id in affected_definitions.keys():
+		_flash_gameplay_weapon_hud_for_definition(str(definition_id))
+
+
+func _weapon_hud_add_bonus(totals: Dictionary, stat_id: String, value: float) -> void:
+	if absf(value) < 0.001:
+		return
+	totals[stat_id] = float(totals.get(stat_id, 0.0)) + value
+
+
+func _weapon_hud_totals_with_run_modifiers(instance: Dictionary) -> Dictionary:
+	var totals: Dictionary = WeaponCatalog.stat_totals(instance).duplicate(true)
+	var definition_id := str(instance.get("definition_id", ""))
+	match definition_id:
+		"pulse_blaster":
+			_weapon_hud_add_bonus(totals, "projectile_count_bonus", float(_projectile_count_bonus))
+		"orbit_spark":
+			_weapon_hud_add_bonus(totals, "orbit_count_bonus", float(maxi(0, _orbit_count - 1)))
+		"nova_burst":
+			_weapon_hud_add_bonus(totals, "cooldown_reduction", maxf(0.0, 1.0 - _nova_cooldown_multiplier))
+		"arc_beam":
+			_weapon_hud_add_bonus(totals, "beam_duration_bonus", _beam_duration_bonus)
+		"gravity_mine":
+			_weapon_hud_add_bonus(totals, "range_bonus", _mine_radius_bonus / GRAVITY_MINE_RADIUS)
+		"prism_lance":
+			_weapon_hud_add_bonus(totals, "damage_bonus", _prism_lance_damage_multiplier - 1.0)
+			_weapon_hud_add_bonus(totals, "pierce_bonus", float(_prism_lance_pierce_bonus))
+		"ring_saw":
+			_weapon_hud_add_bonus(totals, "range_bonus", _ring_saw_radius_bonus / RING_SAW_RADIUS)
+			_weapon_hud_add_bonus(totals, "spin_bonus", _ring_saw_spin_bonus)
+		"hex_shatter":
+			_weapon_hud_add_bonus(totals, "damage_bonus", _hex_shatter_damage_multiplier - 1.0)
+			_weapon_hud_add_bonus(totals, "cooldown_reduction", maxf(0.0, 1.0 - _hex_shatter_cooldown_multiplier))
+			_weapon_hud_add_bonus(totals, "split_count_bonus", float(_hex_shatter_split_bonus))
+		"fractal_shard":
+			_weapon_hud_add_bonus(totals, "damage_bonus", _fractal_shard_damage_multiplier - 1.0)
+			_weapon_hud_add_bonus(totals, "cooldown_reduction", maxf(0.0, 1.0 - _fractal_shard_cooldown_multiplier))
+			_weapon_hud_add_bonus(totals, "split_count_bonus", float(_fractal_shard_split_bonus))
+			_weapon_hud_add_bonus(totals, "lifetime_seconds_bonus", _fractal_shard_life_bonus)
+			_weapon_hud_add_bonus(totals, "pierce_bonus", float(_fractal_shard_pierce_bonus))
+	return totals
+
+
+func _weapon_hud_signed_percent(label: String, value: float) -> String:
+	if absf(value) < 0.005:
+		return ""
+	var sign := "+" if value >= 0.0 else "-"
+	return "%s %s%d%%" % [label, sign, int(round(absf(value) * 100.0))]
+
+
+func _weapon_hud_cooldown_percent(value: float) -> String:
+	if absf(value) < 0.005:
+		return ""
+	if value >= 0.0:
+		return "CD -%d%%" % int(round(value * 100.0))
+	return "CD +%d%%" % int(round(absf(value) * 100.0))
+
+
+func _weapon_hud_signed_int(label: String, value: float) -> String:
+	var rounded := int(round(value))
+	if rounded == 0:
+		return ""
+	var sign := "+" if rounded > 0 else "-"
+	return "%s %s%d" % [label, sign, absi(rounded)]
+
+
+func _weapon_hud_signed_seconds(label: String, value: float) -> String:
+	if absf(value) < 0.005:
+		return ""
+	var sign := "+" if value >= 0.0 else "-"
+	return "%s %s%.2fs" % [label, sign, absf(value)]
+
+
+func _weapon_hud_stat_piece(stat_id: String, value: float) -> String:
+	match stat_id:
+		"damage_bonus":
+			return _weapon_hud_signed_percent("DMG", value)
+		"fire_rate_bonus":
+			return _weapon_hud_signed_percent("RATE", value)
+		"cooldown_reduction":
+			return _weapon_hud_cooldown_percent(value)
+		"projectile_count_bonus":
+			return _weapon_hud_signed_int("PROJ", value)
+		"pierce_bonus":
+			return _weapon_hud_signed_int("PIERCE", value)
+		"split_count_bonus":
+			return _weapon_hud_signed_int("SPLIT", value)
+		"chain_count_bonus":
+			return _weapon_hud_signed_int("CHAIN", value)
+		"orbit_count_bonus":
+			return _weapon_hud_signed_int("ORBIT", value)
+		"ricochet_bonus":
+			return _weapon_hud_signed_int("BOUNCE", value)
+		"range_bonus":
+			return _weapon_hud_signed_percent("AREA", value)
+		"lifetime_bonus":
+			return _weapon_hud_signed_percent("LIFE", value)
+		"lifetime_seconds_bonus":
+			return _weapon_hud_signed_seconds("LIFE", value)
+		"projectile_speed_bonus":
+			return _weapon_hud_signed_percent("SPD", value)
+		"spin_bonus":
+			return _weapon_hud_signed_percent("SPIN", value)
+		"beam_duration_bonus":
+			return _weapon_hud_signed_seconds("BEAM", value)
+		"pickup_bonus":
+			return _weapon_hud_signed_percent("PICK", value)
+		_:
+			return ""
+
+
+func _weapon_hud_feedback_pieces(instance: Dictionary, maximum: int) -> Array[String]:
+	var totals := _weapon_hud_totals_with_run_modifiers(instance)
+	var priority := [
+		"damage_bonus",
+		"fire_rate_bonus",
+		"cooldown_reduction",
+		"projectile_count_bonus",
+		"pierce_bonus",
+		"split_count_bonus",
+		"chain_count_bonus",
+		"orbit_count_bonus",
+		"ricochet_bonus",
+		"range_bonus",
+		"lifetime_bonus",
+		"lifetime_seconds_bonus",
+		"projectile_speed_bonus",
+		"spin_bonus",
+		"beam_duration_bonus",
+		"pickup_bonus"
+	]
+	var pieces: Array[String] = []
+	for stat_id in priority:
+		if not totals.has(stat_id):
+			continue
+		var piece := _weapon_hud_stat_piece(stat_id, float(totals[stat_id]))
+		if piece == "":
+			continue
+		pieces.append(piece)
+		if pieces.size() >= maximum:
+			return pieces
+	var forge_rank := int(instance.get("forge_power_rank", 0))
+	var evolution_rank := int(instance.get("evolution_rank", 0))
+	if forge_rank > 0 and pieces.size() < maximum:
+		pieces.append("F%d" % forge_rank)
+	if evolution_rank > 0 and pieces.size() < maximum:
+		pieces.append("EV%d" % evolution_rank)
+	return pieces
+
+
+func _weapon_hud_feedback_text(instance: Dictionary) -> String:
+	var pieces := _weapon_hud_feedback_pieces(instance, 2)
+	if not pieces.is_empty():
+		return " / ".join(pieces)
+	return "PWR %.2f" % float(instance.get("power_score", 1.0))
+
+
+func _weapon_hud_status_text(definition_id: String) -> String:
+	var state: Dictionary = _weapon_state.get(definition_id, {})
+	if state.is_empty():
+		return "READY"
+	if not bool(state.get("enabled", false)):
+		return "OFF"
+	if definition_id == "orbit_spark" or definition_id == "ring_saw":
+		return "ACTIVE"
+	var timer := float(state.get("timer", 0.0))
+	if timer <= 0.05:
+		return "READY"
+	return "CD %.1fs" % timer
+
+
+func _weapon_hud_tooltip(instance: Dictionary, slot_number: int) -> String:
+	var rarity := str(instance.get("rarity", "Common"))
+	var definition_id := str(instance.get("definition_id", ""))
+	var pieces := _weapon_hud_feedback_pieces(instance, 12)
+	var feedback := " / ".join(pieces) if not pieces.is_empty() else "Baseline power %.2f" % float(instance.get("power_score", 1.0))
+	return "Slot %02d: %s (%s)\nStatus: %s\nStats: %s" % [
+		slot_number,
+		str(instance.get("name", "WEAPON")),
+		rarity,
+		_weapon_hud_status_text(definition_id),
+		feedback
+	]
+
+
 func _update_gameplay_loadout_slots() -> void:
 	for i in range(EQUIPPED_WEAPON_SLOT_CAP):
 		if i >= _gameplay_weapon_slot_panels.size() or i >= _gameplay_weapon_slot_icons.size() or i >= _gameplay_weapon_slot_labels.size():
@@ -12760,19 +12996,34 @@ func _update_gameplay_loadout_slots() -> void:
 			continue
 		if i < _equipped_weapon_instances.size():
 			var instance: Dictionary = _equipped_weapon_instances[i]
+			var definition_id := str(instance.get("definition_id", ""))
 			var rarity := str(instance.get("rarity", "Common"))
 			var accent := Color.html("#%s" % WeaponCatalog.rarity_accent_hex(rarity)) if WeaponCatalog.rarity_tiers().has(rarity) else Color(0.0, 0.95, 1.0, 0.96)
-			panel.add_theme_stylebox_override("panel", _gameplay_loadout_slot_style(Color(0.0, 0.010, 0.032, 0.82), Color(accent.r, accent.g, accent.b, 0.92), 2))
+			var flash_amount := clampf(float(_gameplay_weapon_slot_flash_timers.get(definition_id, 0.0)) / GAMEPLAY_WEAPON_HUD_FLASH_DURATION, 0.0, 1.0)
+			var fill_color := Color(0.0, 0.010, 0.032, 0.82)
+			var border_color := Color(accent.r, accent.g, accent.b, 0.92)
+			var border_width := 2
+			if flash_amount > 0.0:
+				fill_color = fill_color.lerp(Color(0.12, 0.10, 0.02, 0.94), flash_amount)
+				border_color = Color(1.0, 0.94, 0.18, 0.96)
+				border_width = 3
+			panel.add_theme_stylebox_override("panel", _gameplay_loadout_slot_style(fill_color, border_color, border_width))
 			_set_weapon_icon(icon, instance, true)
 			icon.modulate = Color(1.0, 1.0, 1.0, 0.96)
-			label.text = "SLOT %02d  %s\n%s" % [i + 1, _rarity_display_code(rarity), _compact_weapon_name(instance, 18)]
-			label.tooltip_text = "Slot %02d: %s (%s)" % [i + 1, str(instance.get("name", "WEAPON")), rarity]
-			label.add_theme_color_override("font_color", Color(0.88, 1.0, 1.0, 0.96))
+			label.text = "SLOT %02d  %s  %s\n%s\n%s" % [
+				i + 1,
+				_rarity_display_code(rarity),
+				_weapon_hud_status_text(definition_id),
+				_compact_weapon_name(instance, 18),
+				_weapon_hud_feedback_text(instance)
+			]
+			label.tooltip_text = _weapon_hud_tooltip(instance, i + 1)
+			label.add_theme_color_override("font_color", Color(1.0, 0.96, 0.62, 1.0) if flash_amount > 0.0 else Color(0.88, 1.0, 1.0, 0.96))
 		else:
 			panel.add_theme_stylebox_override("panel", _gameplay_loadout_slot_style(Color(0.0, 0.010, 0.032, 0.52), Color(0.18, 0.42, 0.52, 0.50), 1))
 			_set_weapon_icon(icon, "unknown_weapon", true)
 			icon.modulate = Color(0.46, 0.64, 0.72, 0.34)
-			label.text = "SLOT %02d\nEMPTY" % [i + 1]
+			label.text = "SLOT %02d\nEMPTY\n--" % [i + 1]
 			label.tooltip_text = "Slot %02d: Empty" % [i + 1]
 			label.add_theme_color_override("font_color", Color(0.58, 0.78, 0.86, 0.54))
 
