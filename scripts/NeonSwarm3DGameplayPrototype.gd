@@ -593,6 +593,9 @@ var _gameplay_weapon_slot_panels: Array[PanelContainer] = []
 var _gameplay_weapon_slot_icons: Array[Control] = []
 var _gameplay_weapon_slot_labels: Array[Label] = []
 var _gameplay_weapon_slot_flash_timers: Dictionary = {}
+var _run_bonus_weapon_definitions: Dictionary = {}
+var _run_bonus_weapons_panel: Control
+var _run_bonus_weapons_label: Label
 var _presentation_flash: ColorRect
 var _presentation_flash_color := Color(0.0, 0.94, 1.0, 0.0)
 var _presentation_flash_alpha := 0.0
@@ -1286,10 +1289,23 @@ func _rebuild_weapon_stat_bonuses() -> void:
 		var state: Dictionary = _weapon_state[definition_id]
 		state["enabled"] = bool(active_families.get(definition_id, false))
 		_weapon_state[definition_id] = state
-	_fractal_shard_enabled = _is_weapon_family_equipped("fractal_shard")
+	_refresh_run_weapon_activation()
 	_update_orbit_visual_visibility()
 	if is_instance_valid(_ring_saw_root):
 		_ring_saw_root.visible = _is_weapon_family_equipped("ring_saw")
+
+
+func _has_run_bonus_weapon(definition_id: String) -> bool:
+	return bool(_run_bonus_weapon_definitions.get(definition_id, false))
+
+
+func _refresh_run_weapon_activation() -> void:
+	var fractal_active := _is_weapon_family_equipped("fractal_shard") or _has_run_bonus_weapon("fractal_shard")
+	_fractal_shard_enabled = fractal_active
+	if _weapon_state.has("fractal_shard"):
+		var fractal_state: Dictionary = _weapon_state["fractal_shard"]
+		fractal_state["enabled"] = fractal_active
+		_weapon_state["fractal_shard"] = fractal_state
 
 
 func _is_weapon_family_equipped(definition_id: String) -> bool:
@@ -4020,6 +4036,20 @@ func _create_hud() -> void:
 	for slot_index in range(EQUIPPED_WEAPON_SLOT_CAP):
 		_add_gameplay_weapon_slot(loadout_stack, slot_index)
 
+	_run_bonus_weapons_panel = _make_frame(NeonFramePanel.FrameKind.RAIL, Rect2(1602, 674, 300, 58), Color(1.0, 0.94, 0.18, 0.86), Color(0.0, 0.95, 1.0, 0.62), 16.0, 1.5, Vector4(14, 7, 14, 7))
+	_run_bonus_weapons_panel.name = "GameplayRunBonusWeaponsPanel"
+	_run_bonus_weapons_panel.visible = false
+	_gameplay_hud_root.add_child(_run_bonus_weapons_panel)
+	_run_bonus_weapons_label = _make_hud_label("RUN BONUS WEAPONS\n--")
+	_run_bonus_weapons_label.name = "GameplayRunBonusWeaponsLabel"
+	_run_bonus_weapons_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_run_bonus_weapons_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_run_bonus_weapons_label.custom_minimum_size = Vector2(268, 40)
+	_run_bonus_weapons_label.add_theme_font_size_override("font_size", 10)
+	_run_bonus_weapons_label.add_theme_color_override("font_color", Color(1.0, 0.94, 0.18, 0.95))
+	_run_bonus_weapons_label.clip_text = true
+	_run_bonus_weapons_panel.add_child(_run_bonus_weapons_label)
+
 	_boss_panel = _make_frame(NeonFramePanel.FrameKind.ALERT_RAIL, Rect2(560, 24, 800, 48), Color(1.0, 0.06, 0.86, 0.92), Color(0.0, 0.95, 1.0, 0.75), 18.0, 2.0, Vector4(18, 8, 18, 8))
 	_gameplay_hud_root.add_child(_boss_panel)
 	var boss_row := HBoxContainer.new()
@@ -4743,11 +4773,15 @@ func _help_page_data() -> Array[Dictionary]:
 		},
 		{
 			"title": "WEAPON SYSTEMS",
-			"body": "WEAPONS ARE AUTOMATIC\nEquipped weapon systems fire or trigger by themselves. You do not press a separate fire button.\n\nEQUIPPED LOADOUT\nStart Game uses the weapons in your equipped slots.\n\nWEAPON ICONS\nIcons show the weapon family behavior: pulse, orbit, spear, chain, saw, well, bloom, and other geometry roles.\n\nRANDOM WEAPONS\nGenerated weapons can have rarity, random stats, and modifiers.\n\nARMORY\nUse Armory from the title screen to inspect, compare, and swap stored weapons."
+			"body": "WEAPONS ARE AUTOMATIC\nEquipped weapon systems fire or trigger by themselves. You do not press a separate fire button.\n\nEQUIPPED LOADOUT\nStart Game uses up to 8 weapons chosen from Armory. They persist with your loadout and appear in the right-side HUD.\n\nWEAPON ICONS\nIcons show the weapon family behavior: pulse, orbit, spear, chain, saw, well, bloom, and other geometry roles.\n\nRANDOM WEAPONS\nGenerated weapons can have rarity, random stats, and modifiers.\n\nARMORY\nUse Armory from the title screen to inspect, compare, and swap stored weapons."
+		},
+		{
+			"title": "EQUIPPED VS RUN WEAPONS",
+			"body": "EQUIPPED LOADOUT WEAPONS\nYour 8 equipped weapons are your starting loadout. They are chosen from Armory, shown in the right-side HUD, and persist as loadout weapons.\n\nRUN WEAPONS\nDuring a run, boss, mini-boss, or Warden rewards may add temporary run weapons. A NEW RUN WEAPON starts firing immediately when selected.\n\nLOADOUT UNCHANGED\nRun weapons do not need Armory equip and do not replace one of your 8 equipped weapons.\n\nRUN ONLY\nRun weapons help only during the current run unless a separate loot or save reward stores that weapon elsewhere."
 		},
 		{
 			"title": "SECTOR REWARDS",
-			"body": "SECTOR-CLEAR REWARDS\nAfter a sector boss or major event, choose a reward before moving on. Clearing sectors also banks a small Neon Dust bonus.\n\nGENERATED WEAPON SYSTEMS\nWeapon rewards are random weapons with rarity and stat rolls.\n\nLOOT ROUTES\nEquip Now adds to an open slot. Replace Slot swaps with an equipped weapon. Send To Stash stores it. Scrap / Skip converts the weapon into Neon Dust.\n\nENEMIES CURRENTLY DROP XP, NOT WEAPONS."
+			"body": "SECTOR-CLEAR REWARDS\nAfter a sector boss or major event, choose a reward before moving on. Clearing sectors also banks a small Neon Dust bonus.\n\nNEW RUN WEAPON\nSome boss rewards add a temporary run weapon. It starts firing now, is run-only, and does not replace your equipped loadout.\n\nGENERATED WEAPON SYSTEMS\nWeapon rewards are random weapons with rarity and stat rolls.\n\nLOOT ROUTES\nEquip Now adds to an open slot. Replace Slot swaps with an equipped weapon. Send To Stash stores it. Scrap / Skip converts the weapon into Neon Dust.\n\nENEMIES CURRENTLY DROP XP, NOT WEAPONS."
 		},
 		{
 			"title": "ARMORY / STASH",
@@ -4765,8 +4799,10 @@ func _help_icon_families_for_page(index: int) -> Array[String]:
 		3:
 			return ["pulse_blaster", "ring_saw", "tri_burst_cannon", "gravity_well", "star_pulse", "prism_chain"]
 		4:
-			return ["hex_mortar", "vector_spear", "fractal_bloom", "shield_breaker", "nova_needle", "unknown_weapon"]
+			return ["pulse_blaster", "orbit_spark", "fractal_shard", "hex_shatter", "ring_saw", "unknown_weapon"]
 		5:
+			return ["hex_mortar", "vector_spear", "fractal_bloom", "shield_breaker", "nova_needle", "unknown_weapon"]
+		6:
 			return ["pulse_blaster", "gravity_mine", "ring_saw", "fractal_shard", "star_pulse", "unknown_weapon"]
 		_:
 			return []
@@ -12162,7 +12198,14 @@ func _upgrade_choice_has_global_core_effect(choice: Dictionary) -> bool:
 
 func _upgrade_choice_is_new_run_weapon(choice: Dictionary) -> bool:
 	var effects := _upgrade_choice_effects(choice)
-	return bool(effects.get("fractal_shard_enable", false)) and not _is_weapon_family_equipped("fractal_shard")
+	return bool(effects.get("fractal_shard_enable", false)) and not _is_weapon_family_equipped("fractal_shard") and not _has_run_bonus_weapon("fractal_shard")
+
+
+func _upgrade_choice_affects_run_bonus_weapon(choice: Dictionary) -> bool:
+	for definition_id in _upgrade_choice_affected_definitions(choice):
+		if _has_run_bonus_weapon(definition_id) and not _is_weapon_family_equipped(definition_id):
+			return true
+	return false
 
 
 func _upgrade_choice_type_text(choice: Dictionary) -> String:
@@ -12170,6 +12213,8 @@ func _upgrade_choice_type_text(choice: Dictionary) -> String:
 		return "NEW WEAPON LOOT"
 	if _upgrade_choice_is_new_run_weapon(choice):
 		return "NEW RUN WEAPON"
+	if _upgrade_choice_affects_run_bonus_weapon(choice):
+		return "RUN WEAPON BUFF"
 	if not _upgrade_choice_affected_definitions(choice).is_empty():
 		return "WEAPON BUFF"
 	if _upgrade_choice_has_global_core_effect(choice):
@@ -12199,7 +12244,13 @@ func _upgrade_choice_target_text(choice: Dictionary) -> String:
 	if not equipped_slots.is_empty():
 		return "AFFECTS: %s" % " + ".join(equipped_slots)
 	if _upgrade_choice_is_new_run_weapon(choice):
-		return "AFFECTS: NEW RUN WEAPON - FRACTAL SHARD"
+		return "ADDS: FRACTAL SHARD"
+	if _upgrade_choice_affects_run_bonus_weapon(choice):
+		var names: Array[String] = []
+		for definition_id in definitions:
+			if _has_run_bonus_weapon(definition_id):
+				names.append(_weapon_display_name_for_definition(definition_id).to_upper())
+		return "AFFECTS: RUN BONUS - %s" % " + ".join(names)
 	if not definitions.is_empty():
 		var names: Array[String] = []
 		for definition_id in definitions:
@@ -12271,7 +12322,7 @@ func _upgrade_choice_impact_text(choice: Dictionary) -> String:
 		var current_hex_split := 5 + _hex_shatter_split_bonus + _weapon_int_stat_bonus("hex_shatter", "split_count_bonus", 2)
 		var added_hex_split := int(effects["hex_shatter_split_add"])
 		_append_upgrade_piece(pieces, "HEX SPLIT %d -> %d" % [current_hex_split, current_hex_split + added_hex_split])
-	if bool(effects.get("fractal_shard_enable", false)):
+	if bool(effects.get("fractal_shard_enable", false)) and not _is_weapon_family_equipped("fractal_shard") and not _has_run_bonus_weapon("fractal_shard"):
 		_append_upgrade_piece(pieces, "UNLOCK FRACTAL")
 	if effects.has("fractal_shard_damage_multiplier_add"):
 		_append_upgrade_piece(pieces, "FRACTAL DMG +%d%%" % int(round(float(effects["fractal_shard_damage_multiplier_add"]) * 100.0)))
@@ -12298,7 +12349,41 @@ func _upgrade_choice_impact_text(choice: Dictionary) -> String:
 	return " / ".join(pieces)
 
 
+func _new_run_weapon_display_name(choice: Dictionary) -> String:
+	var definitions := _upgrade_choice_affected_definitions(choice)
+	if not definitions.is_empty():
+		return _weapon_display_name_for_definition(definitions[0]).to_upper()
+	return "RUN WEAPON"
+
+
+func _new_run_weapon_gain_text(choice: Dictionary) -> String:
+	var effects := _upgrade_choice_effects(choice)
+	if effects.has("fractal_shard_split_add"):
+		var current_split := 5 + _fractal_shard_split_bonus + _weapon_int_stat_bonus("fractal_shard", "split_count_bonus", 2)
+		var added_split := int(effects["fractal_shard_split_add"])
+		return "SPLITS: %d -> %d" % [current_split, current_split + added_split]
+	if effects.has("fractal_shard_damage_multiplier_add"):
+		return "DAMAGE: +%d%%" % int(round(float(effects["fractal_shard_damage_multiplier_add"]) * 100.0))
+	if effects.has("fractal_shard_cooldown_multiplier_add"):
+		var delta := float(effects["fractal_shard_cooldown_multiplier_add"])
+		var sign := "+" if delta >= 0.0 else "-"
+		return "COOLDOWN: %s%d%%" % [sign, int(round(absf(delta) * 100.0))]
+	if effects.has("fractal_shard_life_add"):
+		return "LIFE: +%.2fs" % float(effects["fractal_shard_life_add"])
+	if effects.has("fractal_shard_pierce_add"):
+		var current_pierce := 1 + _fractal_shard_pierce_bonus + _weapon_int_stat_bonus("fractal_shard", "pierce_bonus", 1)
+		var added_pierce := int(effects["fractal_shard_pierce_add"])
+		return "PIERCE: %d -> %d" % [current_pierce, current_pierce + added_pierce]
+	return "FIRES: HEAVY SPLIT SHARD"
+
+
 func _upgrade_choice_button_text(choice: Dictionary) -> String:
+	if _upgrade_choice_is_new_run_weapon(choice):
+		return "%s\nTYPE: NEW RUN WEAPON\nADDS: %s\nSTARTS FIRING NOW\nRUN ONLY - DOES NOT REPLACE LOADOUT\n%s" % [
+			str(choice.get("title", "UPGRADE")).to_upper(),
+			_new_run_weapon_display_name(choice),
+			_new_run_weapon_gain_text(choice)
+		]
 	return "%s\n%s\nGAIN: %s\nTYPE: %s" % [
 		str(choice.get("title", "UPGRADE")).to_upper(),
 		_upgrade_choice_target_text(choice),
@@ -12706,6 +12791,7 @@ func _apply_upgrade(upgrade: Dictionary) -> void:
 	if str(upgrade.get("kind", "stat_upgrade")) == "weapon_loot":
 		_apply_weapon_reward(upgrade)
 		return
+	var was_new_run_weapon := _upgrade_choice_is_new_run_weapon(upgrade)
 	var effects: Dictionary = upgrade["effects"]
 	_damage_multiplier += float(effects.get("damage_multiplier_add", 0.0))
 	_fire_rate_multiplier += float(effects.get("fire_rate_multiplier_add", 0.0))
@@ -12728,10 +12814,11 @@ func _apply_upgrade(upgrade: Dictionary) -> void:
 	_hex_shatter_cooldown_multiplier = clampf(_hex_shatter_cooldown_multiplier + float(effects.get("hex_shatter_cooldown_multiplier_add", 0.0)), 0.46, 1.0)
 	_hex_shatter_split_bonus = mini(6, _hex_shatter_split_bonus + int(effects.get("hex_shatter_split_add", 0)))
 	if bool(effects.get("fractal_shard_enable", false)):
-		_fractal_shard_enabled = true
+		if not _is_weapon_family_equipped("fractal_shard"):
+			_run_bonus_weapon_definitions["fractal_shard"] = true
+		_refresh_run_weapon_activation()
 		if _weapon_state.has("fractal_shard"):
 			var fractal_state: Dictionary = _weapon_state["fractal_shard"]
-			fractal_state["enabled"] = true
 			fractal_state["timer"] = minf(float(fractal_state.get("timer", 0.0)), 0.28)
 			_weapon_state["fractal_shard"] = fractal_state
 	_fractal_shard_damage_multiplier += float(effects.get("fractal_shard_damage_multiplier_add", 0.0))
@@ -12746,10 +12833,14 @@ func _apply_upgrade(upgrade: Dictionary) -> void:
 	_spawn_burst(_player_area.position, 1.04, "burst_cyan")
 	_play_sfx("reward", 0.10)
 	_trigger_presentation_flash(Color(1.0, 0.94, 0.18), 0.08, 0.16)
-	_show_combat_notice(_upgrade_result_notice_text(upgrade), Color(1.0, 0.94, 0.18), 1.70)
+	_show_combat_notice(_upgrade_result_notice_text(upgrade, was_new_run_weapon), Color(1.0, 0.94, 0.18), 1.70)
 
 
-func _upgrade_result_notice_text(upgrade: Dictionary) -> String:
+func _upgrade_result_notice_text(upgrade: Dictionary, was_new_run_weapon := false) -> String:
+	if was_new_run_weapon:
+		return "NEW RUN WEAPON // FRACTAL SHARD STARTS FIRING NOW // RUN ONLY"
+	if _upgrade_choice_affects_run_bonus_weapon(upgrade):
+		return "RUN WEAPON BUFF // FRACTAL SHARD // RUN ONLY"
 	return "RUN UPGRADE APPLIED // %s // %s" % [str(upgrade.get("title", "UPGRADE")).to_upper(), str(upgrade.get("description", "CURRENT RUN IMPROVED")).to_upper()]
 
 
@@ -13040,6 +13131,7 @@ func _update_hud() -> void:
 	if _score_label:
 		_score_label.text = "SCORE       %06d" % _score
 	_update_loadout_chips()
+	_update_run_bonus_weapon_hud()
 	_update_boss_hud()
 
 
@@ -13340,6 +13432,28 @@ func _update_gameplay_loadout_slots() -> void:
 			label.text = "SLOT %02d\nEMPTY\n--" % [i + 1]
 			label.tooltip_text = "Slot %02d: Empty" % [i + 1]
 			label.add_theme_color_override("font_color", Color(0.58, 0.78, 0.86, 0.54))
+
+
+func _run_bonus_weapon_display_names() -> Array[String]:
+	var names: Array[String] = []
+	for definition_id in _run_bonus_weapon_definitions.keys():
+		var id := str(definition_id)
+		if not _has_run_bonus_weapon(id) or _is_weapon_family_equipped(id):
+			continue
+		names.append(_weapon_display_name_for_definition(id).to_upper())
+	names.sort()
+	return names
+
+
+func _update_run_bonus_weapon_hud() -> void:
+	if not is_instance_valid(_run_bonus_weapons_panel) or not is_instance_valid(_run_bonus_weapons_label):
+		return
+	var names := _run_bonus_weapon_display_names()
+	_run_bonus_weapons_panel.visible = not names.is_empty()
+	if names.is_empty():
+		_run_bonus_weapons_label.text = "RUN BONUS WEAPONS\n--"
+		return
+	_run_bonus_weapons_label.text = "RUN BONUS WEAPONS\n%s" % " / ".join(names)
 
 
 func _set_loadout_chip(key: String, value: String) -> void:

@@ -938,6 +938,66 @@ Manual test focus:
 - Confirm new weapon/fractal cards say new weapon or not-equipped clearly when no right-side slot is affected.
 - Confirm all `8` equipped weapon slots remain visible without scrolling.
 
+## Hotfix 10 — Equipped Weapons vs Run Weapons Explanation
+
+Scope:
+
+- Phase 38-only clarity hotfix for `NEW RUN WEAPON` reward cards and How To Play.
+- No Phase 39 work was started.
+- No weapon balance, loadout cap, Armory, Forge, Evolution/Fusion, Neon Dust, save schema, arena geometry, player core, Phase 37 ripple, boss reward flow, or weapon gameplay values were changed.
+
+Current audited behavior:
+
+- The current `NEW RUN WEAPON` path is the Fractal Shard run-upgrade path when Fractal Shard is not equipped in the Armory/loadout.
+- Selecting a `NEW RUN WEAPON` enables Fractal Shard during the active run and sets its runtime state so it begins firing automatically.
+- It does not append to `_equipped_weapon_instances`.
+- It does not replace any of the `8` equipped loadout weapons.
+- It does not save a new equipped/stashed weapon instance by itself.
+- Generated weapon loot remains the separate equip/replace/stash/scrap reward-console flow.
+- The right-side HUD remains the fixed `8` equipped Armory/loadout slots.
+
+Mechanic correction:
+
+- A run-only weapon is now tracked separately from equipped weapons with `_run_bonus_weapon_definitions`.
+- Runtime activation now combines equipped weapon families with current-run bonus weapon families.
+- This preserves the intended rule that a selected run weapon remains active for the run even if a later generated weapon reward or inventory refresh rebuilds equipped weapon stats.
+- The final intended mechanic is: the `8` equipped weapons are the persistent starting loadout; a `NEW RUN WEAPON` is a temporary current-run arsenal addition; it starts firing immediately; it does not require Armory equip; it does not replace loadout.
+
+Reward card wording:
+
+- New run weapon cards now use explicit player-facing copy:
+  - `TYPE: NEW RUN WEAPON`
+  - `ADDS: FRACTAL SHARD`
+  - `STARTS FIRING NOW`
+  - `RUN ONLY - DOES NOT REPLACE LOADOUT`
+  - concise effect text such as `SPLITS: 5 -> 7`
+- If Fractal Shard is already active as a run-bonus weapon, later Fractal cards identify as `RUN WEAPON BUFF` and `AFFECTS: RUN BONUS - FRACTAL SHARD`.
+
+How To Play text added:
+
+- `WEAPON SYSTEMS` now explains that up to `8` equipped weapons are chosen from Armory, persist with the loadout, and appear in the right-side HUD.
+- Added `EQUIPPED VS RUN WEAPONS`.
+- The new How To Play page explains that boss/mini-boss/Warden rewards may add temporary run weapons, `NEW RUN WEAPON` starts firing immediately, run weapons do not need Armory equip, run weapons do not replace the `8` equipped weapons, and run weapons are run-only unless another loot/save system stores them.
+- `SECTOR REWARDS` now calls out temporary run weapons separately from generated weapon loot.
+
+HUD indicator:
+
+- Added a compact hidden-by-default `GameplayRunBonusWeaponsPanel` below the right-side equipped weapon stack.
+- When a run-only weapon is active, it shows `RUN BONUS WEAPONS` plus the run-added weapon name.
+- The current run-added weapon display is `FRACTAL SHARD`.
+- No gameplay HUD scrolling was added.
+- All `8` equipped loadout slots remain visible.
+
+Manual test focus:
+
+- Start Game without Fractal Shard equipped.
+- Trigger a `NEW RUN WEAPON` Fractal Shard card and confirm the card says it starts firing now, is run-only, and does not replace loadout.
+- Select it and confirm Fractal Shard begins firing automatically.
+- Confirm the right HUD still shows the same `8` equipped loadout slots.
+- Confirm the compact `RUN BONUS WEAPONS / FRACTAL SHARD` indicator appears below the right stack.
+- Trigger another reward or rebuild path and confirm the run-only Fractal Shard remains active for the run.
+- Restart/return to title and confirm the run-only Fractal Shard is not persisted as an equipped/stashed weapon unless another existing loot/save route awarded it.
+
 ## Validation Results
 
 Run after implementation:
@@ -948,6 +1008,7 @@ Run after implementation:
 - `godot --headless --path . --script /tmp/neon_swarm_phase38_sector1_glb_validate.gd`
 - `godot --headless --path . --script /tmp/neon_swarm_phase38_hard_repair2_validate.gd`
 - `godot --headless --path . --script /tmp/neon_swarm_phase38_hard_repair3_validate.gd`
+- `godot --headless --path . --script /tmp/neon_swarm_phase38_hotfix10_validation.gd`
 - `git diff --check`
 - `git diff --stat`
 - `git status`
@@ -968,6 +1029,10 @@ Focused validation confirms:
 - The Hard Repair 2 focused validation confirms the old full-length Blender seam cross nodes, old white/cyan hot-core material, bright pylon cap markers, generic Sector 1 border overlay, and old procedural roots are not active.
 - The Hard Repair 2 focused validation confirms the rebuilt GLB imports with 599 mesh instances, including recessed dark seams, short cyan accents, raised panel lips, brushed grooves, and dark metal pylon caps.
 - The Hard Repair 3 focused validation confirms the AAA-style GLB imports with 1,075 geometry descendants, no collision descendants, shadow/GI disabled, old flat/procedural visuals inactive, no white cross/debug markers, player clamp intact, Phase 37 ripple nodes present, and no duplicate GLB nodes after rebuild/sector switch.
+- The Hotfix 10 focused validation confirms `NEW RUN WEAPON` card text includes type, starts-firing, run-only, and no-loadout-replacement language.
+- The Hotfix 10 focused validation confirms How To Play includes the equipped weapons vs run weapons explanation.
+- The Hotfix 10 focused validation confirms Fractal Shard run-bonus activation starts firing soon, does not alter equipped slot count, survives a weapon-stat rebuild, and appears in the run-bonus HUD indicator.
+- The Hotfix 10 focused validation confirms the `8` equipped weapon HUD rows still initialize, the right equipped weapon HUD contains no `ScrollContainer`, boss/generated reward flow UI initializes, and save compatibility is not broken.
 
 ## Manual Test Checklist
 

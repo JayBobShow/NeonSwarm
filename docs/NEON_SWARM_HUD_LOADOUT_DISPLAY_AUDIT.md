@@ -276,3 +276,80 @@ Manual test checklist:
 - Confirm global cards still update the left stat stack after selection.
 - Confirm weapon-specific cards still update and flash the right weapon row after selection.
 - Confirm all `8` right-side weapon rows remain visible without scrolling.
+
+## Phase 38 Hotfix 10 — Equipped Weapons vs Run Weapons Explanation
+
+Scope:
+
+- Player-facing clarity for `NEW RUN WEAPON` cards.
+- Runtime audit of run-only Fractal Shard activation.
+- How To Play explanation update.
+- Compact run-bonus HUD indicator below the right-side equipped weapon stack.
+- No weapon damage, cooldown, projectile count, loadout cap, Armory, Forge, Evolution/Fusion, Neon Dust, save format, arena, or Phase 37 ripple balance was changed.
+
+Current audited behavior:
+
+- `NEW RUN WEAPON` applies to Fractal Shard upgrade cards while Fractal Shard is not equipped from the Armory/loadout.
+- Selecting the card enables Fractal Shard for the current run and lowers its timer so it starts firing automatically shortly after selection.
+- It does not append to or replace `_equipped_weapon_instances`.
+- It does not use the generated weapon loot decision console and does not require Armory equipment.
+- It is run-only because the run-bonus state is not saved to weapon inventory.
+- Existing generated weapon rewards remain separate: they can still equip into an open slot, replace a loadout slot, go to stash, or be scrapped through the existing reward console.
+- The right-side `GameplayLoadoutEightSlotColumn` remains the fixed `8` equipped Armory/loadout slots.
+
+Hotfix 10 mechanic correction:
+
+- The run-only state is now tracked separately from equipped weapon state through `_run_bonus_weapon_definitions`.
+- `_rebuild_weapon_stat_bonuses()` now refreshes runtime activation from equipped weapons plus run-bonus weapons, so a later weapon-stat rebuild cannot silently turn off a selected run-only Fractal Shard.
+- The final intended mechanic is: equipped loadout weapons are the persistent starting arsenal; `NEW RUN WEAPON` cards add a temporary current-run weapon; the run weapon starts firing immediately; it does not replace one of the `8` equipped weapons.
+
+Reward card wording:
+
+- New run weapon cards no longer use the ambiguous `AFFECTS: NEW RUN WEAPON` style.
+- They now use compact explicit text:
+  - `TYPE: NEW RUN WEAPON`
+  - `ADDS: FRACTAL SHARD`
+  - `STARTS FIRING NOW`
+  - `RUN ONLY - DOES NOT REPLACE LOADOUT`
+  - one concise stat line such as `SPLITS: 5 -> 7`, `DAMAGE: +18%`, or `COOLDOWN: -14%`
+- If Fractal Shard is already active as a run-bonus weapon, later Fractal cards identify as `RUN WEAPON BUFF` / `AFFECTS: RUN BONUS - FRACTAL SHARD` instead of pretending to add a new weapon again.
+
+How To Play update:
+
+- `WEAPON SYSTEMS` now states that up to `8` equipped weapons are chosen from Armory, persist with the loadout, and appear in the right-side HUD.
+- A new `EQUIPPED VS RUN WEAPONS` page explains:
+  - equipped loadout weapons are the starting loadout,
+  - run weapons come from boss/mini-boss/Warden rewards during a run,
+  - `NEW RUN WEAPON` starts firing immediately,
+  - run weapons do not need Armory equip,
+  - run weapons do not replace one of the `8` equipped weapons,
+  - run weapons are run-only unless a separate loot/save reward stores them elsewhere.
+- `SECTOR REWARDS` now calls out that some boss rewards can add temporary run weapons.
+
+HUD indicator decision:
+
+- Added `GameplayRunBonusWeaponsPanel` directly below the right-side equipped weapon stack.
+- It is hidden by default and only appears when a run-only weapon is active.
+- Current display format:
+  - `RUN BONUS WEAPONS`
+  - `FRACTAL SHARD`
+- No scrolling was added.
+- The existing `8` equipped weapon slots stay visible and unchanged.
+
+Manual test checklist:
+
+- Start Game with Fractal Shard not equipped.
+- Trigger or force a Fractal Shard `NEW RUN WEAPON` card.
+- Confirm the card says `TYPE: NEW RUN WEAPON`, `STARTS FIRING NOW`, `RUN ONLY`, and `DOES NOT REPLACE LOADOUT`.
+- Select it and confirm Fractal Shard starts firing automatically.
+- Confirm the right-side equipped HUD still shows the same `8` equipped loadout slots.
+- Confirm `RUN BONUS WEAPONS / FRACTAL SHARD` appears below the right stack.
+- Take another reward that rebuilds weapon stats and confirm Fractal Shard remains active for the run.
+- Return to title/restart and confirm the run-only weapon is not added to the saved loadout unless another existing loot/save route stores it.
+
+Validation run:
+
+- `godot --headless --path . --quit-after 3`: passed.
+- `godot --headless --path . scenes/Main.tscn --quit-after 3`: passed.
+- `godot --headless --path . --script /tmp/neon_swarm_phase38_hotfix10_validation.gd`: passed with `PHASE38_HOTFIX10_RUN_WEAPON_CLARITY_PASS`.
+- Focused validation confirmed card text, How To Play text, run-bonus activation, weapon-stat rebuild persistence, `8` equipped HUD rows, no gameplay HUD scroll container, generated reward flow initialization, and no save compatibility break.

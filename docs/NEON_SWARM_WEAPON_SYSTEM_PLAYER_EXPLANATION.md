@@ -100,6 +100,14 @@ Equipped weapons:
 - They automatically run during gameplay.
 - They are what Start Game uses when a new run begins.
 
+Run weapons / bonus run arsenal:
+
+- Temporary weapons added during the current run by specific boss, mini-boss, or Warden reward cards.
+- A `NEW RUN WEAPON` starts firing immediately when selected.
+- It does not need Armory equipment.
+- It does not replace one of the 8 equipped loadout weapons.
+- It is run-only unless another separate loot/save route stores the weapon elsewhere.
+
 ## 5. How Does The Player Get A New Weapon During A Run?
 
 Current intended flow:
@@ -112,7 +120,34 @@ Current intended flow:
 6. The weapon loot decision console opens.
 7. Choose what to do with the weapon: equip, replace, stash, or scrap/skip.
 
+Separate run-weapon flow:
+
+- Some boss/mini-boss/Warden cards say `NEW RUN WEAPON`.
+- Selecting that card adds the weapon to the current run arsenal immediately.
+- It starts firing during the run.
+- It does not open the Armory equip flow.
+- It does not replace an equipped loadout slot.
+
 New weapons do not currently drop directly from regular enemies.
+
+## 5A. Equipped Weapons vs Run Weapons
+
+Your 8 equipped weapons are your starting loadout.
+
+Equipped loadout weapons:
+
+- chosen from Armory,
+- shown in the right-side gameplay HUD,
+- persistent/loadout-based,
+- active automatically when a run starts.
+
+Run weapons:
+
+- selected during a run from boss/mini-boss/Warden rewards,
+- start firing immediately,
+- do not need Armory equip,
+- do not replace the 8 equipped weapons,
+- are run-only unless a separate loot/save system awards or stores them.
 
 ## 6. When Does A Weapon Go To The Stash?
 
@@ -137,6 +172,8 @@ A weapon becomes equipped when:
 
 Once equipped, it becomes active immediately during the current run or at the start of the next run.
 
+A `NEW RUN WEAPON` is different. It becomes active for the current run without becoming equipped.
+
 ## 8. How Many Weapons Can The Player Equip Right Now?
 
 The current equipped weapon cap is 8.
@@ -153,6 +190,8 @@ The default new-save loadout already fills all 8 slots:
 - Hex Shatter
 
 This means a new generated weapon usually cannot simply become a ninth weapon. The player normally has to replace an existing equipped slot or send the new weapon to stash.
+
+A `NEW RUN WEAPON` is the exception because it is not an equipped slot. It is a temporary run-only addition and does not change the 8-slot loadout cap.
 
 ## 9. Are Equipped Weapons Automatic Or Button-Fired?
 
