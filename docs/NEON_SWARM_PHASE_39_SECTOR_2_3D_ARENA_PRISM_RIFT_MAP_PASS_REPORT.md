@@ -183,3 +183,53 @@ Manual repair test focus:
 - Take another reward/stat rebuild and confirm Fractal Shard remains active for the current run.
 - Die, restart, return to title, or complete the run and confirm the run-only weapon is cleared.
 - Clear Sector 1, enter Sector 2, and confirm the repaired Prism Rift floor has visible violet/gunmetal prism panels, raised amethyst/glass faces, bevels, and readable fractured geometry rather than a black void with neon lines.
+
+## Studio Rule Update - Blender Documentation-First Art Workflow
+
+Current Sector 2 approval status:
+
+- The Phase 39 Sector 2 Prism Rift arena remains visually rejected after the repair pass.
+- User rejection reasons: messy neon strips, weak glass/prism read, unconvincing professional floor modeling, and visual identity that still does not meet the target for Prism Rift.
+- The `NEW RUN WEAPON` autofire repair remains preserved and is not part of this art-rule update.
+
+Permanent rule added:
+
+- Every Blender asset task must complete a documentation, reference, and virtual-role checklist before modeling, scripting, exporting, or integrating art.
+- The rule applies to all Blender work and is mandatory for environment, arena, and hard-surface work.
+- Codex must read relevant official Blender Manual pages, identify the required Blender tools/workflows, review reputable tutorial/reference material for the target style, avoid copying copyrighted models/textures/layouts/designs, delegate to the correct virtual art roles, and verify the result in Blender and in Godot at actual gameplay camera distance.
+- The asset must be rejected internally if it only looks good in a report, isolated render, object count, or validation pass but does not read in gameplay.
+
+Required virtual roles for future Blender environment work:
+
+- Environment Art Director.
+- Blender Hard-Surface Environment Artist.
+- Material / Lighting Artist.
+- Godot Technical Artist.
+- Gameplay Readability QA.
+
+Required future report evidence:
+
+- Official Blender docs/manual pages referenced.
+- Outside tutorial/reference categories reviewed.
+- What was learned from those references.
+- Which virtual roles were delegated.
+- What each role approved or rejected.
+- Blender source path.
+- GLB export path.
+- In-game screenshot or manual test instructions.
+- Whether the asset reads correctly at gameplay camera distance.
+- Honest limitations and any unapproved visual risks.
+
+Documentation locations:
+
+- Primary permanent rule: `docs/NEON_SWARM_APPROVED_VISUAL_STYLE_LOCK.md`
+- Geometry approval status and risk tracking: `docs/NEON_SWARM_GEOMETRY_SHAPE_AUDIT.md`
+- Sector roadmap status: `docs/NEON_SWARM_FULL_GAME_ROADMAP.md`
+- Phase 39 rejection/studio-rule note: this report
+
+Sector 2 Prism Rift direction going forward:
+
+- Do not continue by adding random neon line overlays.
+- Do not rely on purple/magenta line work over dark floor material.
+- The next Sector 2 art repair must use reference-backed hard-surface and glass/prism workflows.
+- The target remains a readable fractured prism/glass sci-fi arena with visible floor material, readable modeled surface, professional direction, and clear gameplay-camera readability.

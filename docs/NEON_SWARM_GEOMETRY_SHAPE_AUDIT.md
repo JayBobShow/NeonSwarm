@@ -10,6 +10,7 @@ Official build only:
 - Legacy script-backed scenes in `scenes/visuals/*.tscn` remain as procedural fallback/support, not the approved final object-art direction
 - Runtime helper geometry is still used for capped trails, collision support, bursts, HUD/menu motifs, and fallback visuals
 - HUD/menu motifs are built by `scripts/ui/*.gd`
+- Every future Blender asset task must follow the permanent documentation-first art workflow in `docs/NEON_SWARM_APPROVED_VISUAL_STYLE_LOCK.md` before modeling, scripting, exporting, or integrating art.
 
 ## Object Shape Audit
 
@@ -70,7 +71,7 @@ Official build only:
 | Player/projectile ghost trails | Major VFX motif | Short translucent tube smears. | Medium-high | Keep | Useful motion read with low complexity. |
 | Arena grid/border | Major VFX motif | Rectangular grid line surfaces and neon tube border frame. | High | Keep | Frame-like arena language supports the Phase 10 HUD edge-attached layout. |
 | Sector 1: Neon Grid identity | Runtime sector motif | Phase 38 hard repair visual-only Blender arena kit: 7x7 aluminum/gunmetal beveled floor panels, inset plates, anchor details, cyan neon seams, sparse sheen strips, raised border walls aligned to `ARENA_HALF_SIZE`, top rails, corner pylons, and subtle out-of-bounds buttresses. | High | Keep | Sector 1 no longer spawns the old HD flat background plate or the intermediate procedural tile roots. The collisionless GLB is instanced under `SectorGeometryIdentityRoot`; movement remains flat on the existing X/Z gameplay plane. |
-| Sector 2: Prism Rift identity | Runtime sector motif | Phase 39 Repair visual-only Blender arena kit with readable dark-violet fractured prism deck plates, raised amethyst/glass floor faces, diagonal rift seams, restrained magenta/violet rails, cyan refraction accents, glassy prism shards, and modeled darker outer boundary treatment. | High | Keep | Repaired after rejection for black-floor readability. Sector 2 no longer spawns the old flat HD prism plate. The collisionless GLB is instanced under `SectorGeometryIdentityRoot`; movement remains flat on the existing X/Z gameplay plane and `ARENA_HALF_SIZE` remains unchanged. |
+| Sector 2: Prism Rift identity | Runtime sector motif | Phase 39 rejected Blender arena candidate with dark-violet fractured deck plates, raised amethyst/glass floor faces, diagonal rift seams, magenta/violet rails, cyan refraction accents, glassy prism shards, and modeled outer boundary treatment. | Rejected | Revise | User rejected the current visual result for messy neon strips, weak prism/glass read, and an unconvincing professionally modeled floor. Sector 2 must be rebuilt through the documentation-first Blender art workflow before another arena-art implementation. The collisionless GLB is still instanced under `SectorGeometryIdentityRoot`; movement remains flat on the existing X/Z gameplay plane and `ARENA_HALF_SIZE` remains unchanged. |
 | Sector 3: Null Zone identity | Runtime sector motif | HD 4096 octagon/hex black-glass arena plate with purple/cyan polygon route lighting and slow sparse edge runners. | High | Keep | Phase 26 Hard Reset. Null Zone identity now comes from `sector_3_null_zone_hd.png` and keeps the controlled void-floor geometry. |
 | Sector 4: Hyper Grid identity | Runtime sector motif | HD 4096 rail/stretched-diamond hyperlane arena plate with cyan/white/electric-blue lanes and fast sparse rail light runners. | High | Keep | Phase 26 Hard Reset. Hyper Grid identity now comes from `sector_4_hyper_grid_hd.png` and avoids warp rings/floating speed-diamond clutter. |
 | HUD core vitals wedge | HUD motif | Left anchored angular wedge, dark glass fill, cyan/magenta tube border, segmented magenta/cyan gauges. | High | Keep | Exact Phase 10 blueprint top-left module. |
@@ -91,7 +92,7 @@ Official build only:
 | Hexagonal prism | Shooter, Shield Node, Prism Warden crown, Hex Slicer, Hex Shatter primary, Hex Pulser, Hex Mortar | Keep with caution. Hex Mortar owns arcing artillery/burst language; XP no longer uses coin/hex identity as its active visual. |
 | Octagonal prism / octagon | Null Octagon, boss hazard motifs | Reserve for elite late-run boss and null/hazard language. Do not reuse on common enemies. |
 | Legacy sector floor markers | Previous loose triangle, fracture, octagon, speed-diamond, and rail overlay marks | Disabled for Phase 26 Hard Reset. Keep the helpers only as inert utilities; active backgrounds should use HD art plates and sparse authored light runners. |
-| Sector background depth | Sector 1 Phase 38 Blender 3D arena kit, Sector 2 Phase 39 Blender 3D Prism Rift kit, Sector 3 HD octagon/hex void plate, Sector 4 HD rail/stretched-diamond hyper plate | Keep as authored identity. For 3D arena sectors, depth comes from Blender source plus runtime GLB; for HD-plate sectors, depth comes from capped opacity, sector color grading, and sparse light runners. |
+| Sector background depth | Sector 1 Phase 38 Blender 3D arena kit, Sector 2 Phase 39 rejected Blender Prism Rift candidate, Sector 3 HD octagon/hex void plate, Sector 4 HD rail/stretched-diamond hyper plate | Keep as authored identity, but revise Sector 2. For 3D arena sectors, depth comes from Blender source plus runtime GLB; for HD-plate sectors, depth comes from capped opacity, sector color grading, and sparse light runners. |
 | Triangular prism | Player wings, Chaser fins, Spiral Drifter sails, Prism Warden fins, VFX shards, Fractal Shard split shards, Fractal Crown shard bolts, Tri-Burst Cannon bolts, Fractal Bloom splits | Keep as direction/fins/shards language. |
 | Knife shard / slicer fins | Hex Slicer, Hex Shatter split shards, Null shard burst support, Triad Fragment, Fractal Shard split shards, Orbital Saw Array blades | Use for fast, cutting threats or projectile fragmentation. Avoid giving slow enemies the same blades. |
 | Sphere / spheroid | Cores, shells, spark batches, collisions | Keep as support geometry. Avoid sphere-only identity for new enemies. |
@@ -156,19 +157,20 @@ Official build only:
 5. Torus/ring forms are heavily used; preserve role-specific motion and placement.
 6. Upgrade cards now show weapon icons for generated weapon rewards, while non-weapon stat upgrades remain text-focused.
 7. Phase 26 Hard Reset disables the rejected procedural floor/grid revamps as the active background path; future sector work should improve the HD art plates rather than reintroducing loose procedural clutter.
-8. Phase 14 adds more triangle/shard language. Future enemies should avoid more small triangular swarms unless they have a clearly different behavior and silhouette.
-9. Hex Pulser adds another hex user; future hex content should be limited until Shooter, Shield Node, Hex Slicer, Hex Shatter, and Hex Pulser are all visually rechecked together.
-10. A future 200+ weapon ecosystem should reuse the Phase 25 one-preview-per-family mapping, plus rarity frames and stat/affix UI language, before content volume grows.
-11. Stash/inventory screens must stay dense and usable without becoming a wall of identical neon cards.
-12. Story/opening/cutscene graphics should use in-engine geometric presentation so they do not clash with the official neon tube edge style.
-13. Phase 19 rarity accents are intentionally simple text/border accents; future rarity frames should add iconography without making reward cards noisy.
-14. Phase 23 adds ten active weapon families, so future weapon packs should pass a shape-overlap review before entering the active loot pool.
-15. Modifier text now exposes more affix variety than the runtime visual language can fully iconize; later UI should convert the most common modifiers into small, readable glyphs without confusing them with family preview icons.
-16. Phase 25 family preview icons were approved placeholder symbols only; Phase 27 Repair replaces the active UI path with Blender-rendered PNG icons where practical while preserving the one-icon-per-family scaling rule.
-17. Phase 26 sector backgrounds now use HD art plates plus sparse authored light runners; future final-art work should preserve the sector shape tree and keep enemies, XP, projectiles, boss warnings, HUD, and rewards clearly above the background.
-18. Phase 27 Repair 2 Blender assets should be reviewed on real displays for model scale, glow strength, and silhouette readability; if readability suffers, adjust art scale/materials before touching combat balance.
-19. Phase 30 elite markers should remain readable but restrained; do not scale elite rings into boss language, and do not use elite overlays as a substitute for future authored enemy models.
-20. Phase 31 boss telegraphs must stay readable and temporary; if telegraphs become brighter than projectiles, XP, or boss bodies, reduce telegraph material intensity before changing combat balance.
-21. Phase 34 run objective markers should stay temporary and functional; if they begin to read like background decoration or boss telegraphs, reduce frequency/scale before adding new event types.
-22. Phase 35 Rail Skimmer dash warnings should stay short, direct, and readable; if they begin to resemble boss rail sweeps, reduce scale/intensity before changing enemy behavior.
-23. Phase 35 Grid Splitter fragments must remain capped and visually small enough not to clutter Sector 4 while still reading as grid debris.
+8. Sector 2 Prism Rift remains visually rejected after Phase 39 repair; future Blender environment work must follow the documentation-first art workflow, use reference-backed hard-surface/prism material standards, and be judged at gameplay camera distance before claiming approval.
+9. Phase 14 adds more triangle/shard language. Future enemies should avoid more small triangular swarms unless they have a clearly different behavior and silhouette.
+10. Hex Pulser adds another hex user; future hex content should be limited until Shooter, Shield Node, Hex Slicer, Hex Shatter, and Hex Pulser are all visually rechecked together.
+11. A future 200+ weapon ecosystem should reuse the Phase 25 one-preview-per-family mapping, plus rarity frames and stat/affix UI language, before content volume grows.
+12. Stash/inventory screens must stay dense and usable without becoming a wall of identical neon cards.
+13. Story/opening/cutscene graphics should use in-engine geometric presentation so they do not clash with the official neon tube edge style.
+14. Phase 19 rarity accents are intentionally simple text/border accents; future rarity frames should add iconography without making reward cards noisy.
+15. Phase 23 adds ten active weapon families, so future weapon packs should pass a shape-overlap review before entering the active loot pool.
+16. Modifier text now exposes more affix variety than the runtime visual language can fully iconize; later UI should convert the most common modifiers into small, readable glyphs without confusing them with family preview icons.
+17. Phase 25 family preview icons were approved placeholder symbols only; Phase 27 Repair replaces the active UI path with Blender-rendered PNG icons where practical while preserving the one-icon-per-family scaling rule.
+18. Phase 26 sector backgrounds now use HD art plates plus sparse authored light runners; future final-art work should preserve the sector shape tree and keep enemies, XP, projectiles, boss warnings, HUD, and rewards clearly above the background.
+19. Phase 27 Repair 2 Blender assets should be reviewed on real displays for model scale, glow strength, and silhouette readability; if readability suffers, adjust art scale/materials before touching combat balance.
+20. Phase 30 elite markers should remain readable but restrained; do not scale elite rings into boss language, and do not use elite overlays as a substitute for future authored enemy models.
+21. Phase 31 boss telegraphs must stay readable and temporary; if telegraphs become brighter than projectiles, XP, or boss bodies, reduce telegraph material intensity before changing combat balance.
+22. Phase 34 run objective markers should stay temporary and functional; if they begin to read like background decoration or boss telegraphs, reduce frequency/scale before adding new event types.
+23. Phase 35 Rail Skimmer dash warnings should stay short, direct, and readable; if they begin to resemble boss rail sweeps, reduce scale/intensity before changing enemy behavior.
+24. Phase 35 Grid Splitter fragments must remain capped and visually small enough not to clutter Sector 4 while still reading as grid debris.
