@@ -267,6 +267,99 @@ Manual test focus:
 - Confirm enemies, XP, bullets, event objectives, and the Phase 37 ripple remain readable.
 - Confirm pause/restart/return-to-title do not duplicate the arena model.
 
+## Hard Repair 2 - Remove Debug Grid Look and Strengthen 3D Aluminum Arena Read
+
+The previous Blender-built result was rejected because the in-game read was still too flat and grid-board-like. The screenshot feedback called out a giant bright cross through the floor, marker-like glowing corner dots, weak visible 3D relief, and not enough aluminum/gunmetal material presence.
+
+Diagnosis:
+
+- `art/arenas/sector_1/exported/sector_1_neon_grid_arena.glb` was being loaded in the official Sector 1 runtime as `Blender3DSector1NeonGridArenaModel`.
+- The old Phase 38 procedural roots (`Sector1DarkFloorPanelFoundationRoot`, `Sector1CyanGridLineRoot`, `Sector1RaisedBorderWallRailRoot`, and `Sector1SubtleBackgroundDepthRoot`) were not active in the official Sector 1 runtime.
+- The generic Godot arena grid nodes (`ArenaGridMinorLines`, `ArenaGridMajorLines`, and `ArenaGridAxisLines`) were already hidden, but the generic `ArenaBorderColoredTube` and `ArenaBorderWhiteHotCore` still sat on top of the Sector 1 GLB before this repair.
+- The large debug-looking white/cyan cross came from the Blender GLB source itself: the previous `create_neon_seams()` generated full-length bright `Sector1BlenderNeonSeamX*` and `Sector1BlenderNeonSeamY*` bars using `NS_S1_White_Cyan_Hot_Core`.
+- The top-down orthographic gameplay camera compressed shallow floor relief, so the previous `0.16` panel thickness, `0.075` bevels, tiny inset plates, and bright emissive seams made the floor read more like a flat neon board than modeled metal.
+
+What was removed:
+
+- Full-length `Sector1BlenderNeonSeamX*` and `Sector1BlenderNeonSeamY*` bright seam bars.
+- `NS_S1_White_Cyan_Hot_Core` material usage from the Sector 1 Blender arena kit.
+- Bright `Sector1BlenderCornerPylonCyanCap*` cap markers.
+- Sector 1 runtime visibility for the generic `ArenaBorderColoredTube` and `ArenaBorderWhiteHotCore` overlay. Those generic borders still remain available for non-Sector-1 visual identities.
+
+Blender geometry changes:
+
+- Regenerated `art/arenas/sector_1/source/blender/sector_1_neon_grid_arena.blend`.
+- Re-exported `art/arenas/sector_1/exported/sector_1_neon_grid_arena.glb`.
+- Increased floor panel thickness from `0.16` to `0.34`.
+- Increased primary panel bevels from `0.075` to `0.135`.
+- Increased inset plate height and bevel so panel tops have a visible metal layer.
+- Added four raised dark metal lips per panel for physically modeled seams instead of relying on flat cyan lines.
+- Added two brushed dark groove details per panel.
+- Reduced per-panel marker clutter from four bright/dot-like anchors to two darker rectangular metal anchors.
+- Replaced full-length bright grid lines with recessed dark metal seam channels plus short, dim cyan embedded accent segments.
+- Raised border walls were increased to `1.06` height with `0.150` bevels so side faces read at gameplay zoom.
+- Corner pylons now use dark metal caps with small cyan side slits rather than bright top-dot caps.
+- Far cyan rails were thinned to keep depth accents behind the arena from overpowering the floor.
+
+Material changes:
+
+- `NS_S1_Dark_Brushed_Aluminum`: base `(0.132, 0.140, 0.146)`, metallic `0.88`, roughness `0.36`, emission strength `0.018`.
+- `NS_S1_Raised_Gunmetal_Panel`: base `(0.178, 0.190, 0.198)`, metallic `0.90`, roughness `0.32`, emission strength `0.024`.
+- `NS_S1_Beveled_Edge_Gunmetal`: base `(0.044, 0.052, 0.064)`, metallic `0.82`, roughness `0.48`, emission strength `0.014`.
+- `NS_S1_Dark_Depth_Metal`: base `(0.024, 0.030, 0.040)`, metallic `0.64`, roughness `0.72`, emission strength `0.008`.
+- `NS_S1_Dim_Cyan_Embedded_Channel`: cyan accent material, emission strength `1.05`.
+- `NS_S1_Soft_Cyan_Rail_Core`: restrained rail material, emission strength `1.45`.
+- `NS_S1_Cool_Aluminum_Sheen`: metallic highlight strip material, metallic `0.68`, roughness `0.20`, emission strength `0.045`.
+
+How 3D depth is now visible at gameplay zoom:
+
+- The floor is no longer visually dominated by continuous neon grid lines; dark raised lips, inset plates, grooves, and bevel shadows now carry the construction read.
+- The modeled GLB now has 599 mesh instances in the active imported node tree, including 196 raised panel lips, 98 brushed groove details, 16 recessed seam channels, 32 short cyan accent pieces, 4 dark pylon caps, and 0 old full-length bright seam-cross nodes.
+- Metal panels use stronger light/dark contrast and higher metallic values so the floor reads as gunmetal/aluminum rather than flat black squares.
+- The cyan language is restrained to embedded accent channels and rails so the Phase 37 blue propulsion ripple remains visible without fighting a giant floor grid.
+
+Godot integration changes:
+
+- Sector 1 still uses `_create_sector1_blender_arena_kit()` to instance the GLB under `Sector1NeonGrid3DArenaArchitectureRoot`.
+- `_configure_sector1_blender_arena_visuals()` still disables imported `GeometryInstance3D` shadow casting for performance.
+- `_apply_sector_visual_identity()` now hides the generic `ArenaBorderColoredTube` and `ArenaBorderWhiteHotCore` while `_sector_index == 0`, so the Blender border owns the Sector 1 playfield edge.
+- No new collision nodes, lights, camera movement, gameplay movement, enemy logic, projectile logic, XP logic, event logic, or UI logic were added.
+
+Bounds and screen fit:
+
+- `ARENA_HALF_SIZE` remains `28.0`.
+- The player center clamp remains inside the arena at `+/-27.0`.
+- Blender walls/rails remain aligned to `+/-28.0`, matching the authoritative gameplay boundary.
+- `Camera3D.size` remains `47.5`, preserving the Phase 38 bounds/screen-fit repair.
+
+Godot docs/classes referenced:
+
+- Imported 3D scenes / GLB import pipeline: confirms GLB scenes can be imported/instanced as 3D scene resources.
+- `MeshInstance3D`: used for the imported mesh-node runtime representation.
+- `BaseMaterial3D` / `StandardMaterial3D`: used for metallic, roughness, albedo, and emission-driven material settings.
+- `Camera3D`: used to preserve the existing orthographic camera size and bounds fit.
+- 3D lights and shadows guidance: used to keep this pass lightweight by avoiding dynamic light spam and disabling unnecessary imported shadow casting.
+
+Focused validation added/run:
+
+- Confirms the Sector 1 GLB source file exists and instances in the official scene.
+- Confirms old Phase 38 procedural Sector 1 floor/grid/border/depth roots are absent.
+- Confirms generic grid and generic arena border overlays are hidden for Sector 1.
+- Confirms old full-length Blender seam nodes and the old white/cyan hot-core material are absent.
+- Confirms the rebuilt GLB contains modeled 3D detail counts listed above.
+- Confirms player clamp still keeps the player inside the visible arena.
+- Confirms the Phase 37 propulsion ripple root still initializes.
+- Confirms reapplying sector visual identity does not duplicate the arena model and that Sector 1 GLB clears/restores correctly across sector identity changes.
+
+Manual test focus for this repair:
+
+- Start Sector 1 and confirm the giant white/cyan cross is gone.
+- Confirm the floor reads as darker aluminum/gunmetal panels with visible thickness, bevels, lips, inset plates, grooves, and restrained cyan accents.
+- Confirm corner pylons no longer look like bright debug dots.
+- Confirm the generic old white border frame is not visible over the Blender arena.
+- Confirm the player cannot leave the visible arena and the walls/rails match the gameplay clamp.
+- Confirm enemies, XP, bullets, event objectives, HUD, and the Phase 37 blue propulsion ripple remain readable.
+
 ## Validation Results
 
 Run after implementation:
@@ -275,6 +368,7 @@ Run after implementation:
 - `godot --headless --path . --quit-after 3`
 - `godot --headless --path . scenes/Main.tscn --quit-after 3`
 - `godot --headless --path . --script /tmp/neon_swarm_phase38_sector1_glb_validate.gd`
+- `godot --headless --path . --script /tmp/neon_swarm_phase38_hard_repair2_validate.gd`
 - `git diff --check`
 - `git diff --stat`
 - `git status`
@@ -292,6 +386,8 @@ Focused validation confirms:
 - Player gameplay area remains at the existing gameplay height.
 - Player/enemy/projectile/XP arrays initialize.
 - The Phase 37 propulsion ripple still initializes.
+- The Hard Repair 2 focused validation confirms the old full-length Blender seam cross nodes, old white/cyan hot-core material, bright pylon cap markers, generic Sector 1 border overlay, and old procedural roots are not active.
+- The Hard Repair 2 focused validation confirms the rebuilt GLB imports with 599 mesh instances, including recessed dark seams, short cyan accents, raised panel lips, brushed grooves, and dark metal pylon caps.
 
 ## Manual Test Checklist
 

@@ -2196,8 +2196,10 @@ func _apply_sector_visual_identity() -> void:
 		_grid_axis_instance.visible = false
 	if is_instance_valid(_arena_border_instance):
 		_arena_border_instance.material_override = _materials["%s_border" % prefix]
+		_arena_border_instance.visible = _sector_index != 0
 	if is_instance_valid(_arena_border_core_instance):
 		_arena_border_core_instance.material_override = _materials["soft_white"]
+		_arena_border_core_instance.visible = _sector_index != 0
 	if is_instance_valid(_dust_batch):
 		_dust_batch.material_override = _materials["%s_dust" % prefix]
 	_apply_sector_environment_tone()

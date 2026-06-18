@@ -12,11 +12,11 @@ EXPORT_GLB = REPO_ROOT / "art/arenas/sector_1/exported/sector_1_neon_grid_arena.
 ARENA_HALF_SIZE = 28.0
 PANEL_COUNT = 7
 PANEL_STEP = 8.0
-PANEL_SIZE = 7.18
-PANEL_THICKNESS = 0.16
-PANEL_CENTER_Z = -0.092
+PANEL_SIZE = 7.05
+PANEL_THICKNESS = 0.34
 FLOOR_TOP_Z = -0.012
-NEON_Z = 0.044
+PANEL_CENTER_Z = FLOOR_TOP_Z - PANEL_THICKNESS * 0.5
+NEON_Z = 0.062
 
 
 def clear_scene() -> None:
@@ -50,59 +50,59 @@ def make_materials() -> dict:
     return {
         "dark_aluminum": make_principled_material(
             "NS_S1_Dark_Brushed_Aluminum",
-            (0.105, 0.116, 0.125, 1.0),
-            0.82,
-            0.46,
-            (0.025, 0.075, 0.095, 1.0),
-            0.045,
+            (0.132, 0.140, 0.146, 1.0),
+            0.88,
+            0.36,
+            (0.010, 0.036, 0.046, 1.0),
+            0.018,
         ),
         "raised_gunmetal": make_principled_material(
             "NS_S1_Raised_Gunmetal_Panel",
-            (0.150, 0.164, 0.174, 1.0),
-            0.86,
-            0.39,
-            (0.030, 0.090, 0.110, 1.0),
-            0.055,
+            (0.178, 0.190, 0.198, 1.0),
+            0.90,
+            0.32,
+            (0.012, 0.044, 0.054, 1.0),
+            0.024,
         ),
         "edge_metal": make_principled_material(
             "NS_S1_Beveled_Edge_Gunmetal",
-            (0.065, 0.078, 0.092, 1.0),
-            0.76,
-            0.52,
-            (0.015, 0.050, 0.070, 1.0),
-            0.030,
+            (0.044, 0.052, 0.064, 1.0),
+            0.82,
+            0.48,
+            (0.006, 0.026, 0.034, 1.0),
+            0.014,
         ),
         "deep_metal": make_principled_material(
             "NS_S1_Dark_Depth_Metal",
-            (0.040, 0.050, 0.064, 1.0),
-            0.58,
-            0.66,
-            (0.010, 0.036, 0.055, 1.0),
-            0.020,
+            (0.024, 0.030, 0.040, 1.0),
+            0.64,
+            0.72,
+            (0.004, 0.016, 0.024, 1.0),
+            0.008,
         ),
         "cyan_neon": make_principled_material(
-            "NS_S1_Cyan_Neon_Channel",
-            (0.000, 0.740, 1.000, 1.0),
+            "NS_S1_Dim_Cyan_Embedded_Channel",
+            (0.000, 0.430, 0.620, 1.0),
             0.0,
-            0.24,
-            (0.000, 0.920, 1.000, 1.0),
-            2.60,
+            0.32,
+            (0.000, 0.700, 0.880, 1.0),
+            1.05,
         ),
         "cyan_core": make_principled_material(
-            "NS_S1_White_Cyan_Hot_Core",
-            (0.720, 0.965, 1.000, 1.0),
+            "NS_S1_Soft_Cyan_Rail_Core",
+            (0.120, 0.620, 0.760, 1.0),
             0.0,
-            0.16,
-            (0.720, 0.980, 1.000, 1.0),
-            4.20,
+            0.26,
+            (0.080, 0.780, 0.920, 1.0),
+            1.45,
         ),
         "sheen": make_principled_material(
             "NS_S1_Cool_Aluminum_Sheen",
-            (0.380, 0.560, 0.640, 1.0),
-            0.35,
-            0.18,
-            (0.060, 0.180, 0.230, 1.0),
-            0.18,
+            (0.480, 0.610, 0.660, 1.0),
+            0.68,
+            0.20,
+            (0.016, 0.052, 0.064, 1.0),
+            0.045,
         ),
     }
 
@@ -156,102 +156,177 @@ def add_cylinder_between(root, name: str, start, end, radius: float, material, v
 
 
 def create_floor_panels(root, mats: dict) -> None:
-    offset = float(PANEL_COUNT - 1) * PANEL_STEP * 0.5
-    for row in range(PANEL_COUNT):
-        for column in range(PANEL_COUNT):
-            x = -offset + float(column) * PANEL_STEP
-            y = -offset + float(row) * PANEL_STEP
-            variation = 0.006 if (row + column) % 2 == 0 else -0.004
-            mat = mats["raised_gunmetal"] if (row + column) % 3 == 1 else mats["dark_aluminum"]
-            add_box(
-                root,
-                f"Sector1BlenderFloorPanelR{row}C{column}",
-                (x, y, PANEL_CENTER_Z + variation),
-                (PANEL_SIZE, PANEL_SIZE, PANEL_THICKNESS),
-                mat,
-                0.075,
-                2,
-            )
-            add_box(
-                root,
-                f"Sector1BlenderInsetPlateR{row}C{column}",
-                (x, y, FLOOR_TOP_Z + 0.016 + variation),
-                (PANEL_SIZE - 1.28, PANEL_SIZE - 1.28, 0.028),
-                mats["raised_gunmetal"] if (row + column) % 3 != 1 else mats["dark_aluminum"],
-                0.045,
-                1,
-            )
-            if (row + column) % 2 == 0:
-                strip = add_box(
-                    root,
-                    f"Sector1BlenderSheenStripR{row}C{column}",
-                    (x - 0.74, y - 1.08, NEON_Z - 0.032),
-                    (PANEL_SIZE * 0.48, 0.085, 0.012),
-                    mats["sheen"],
-                    0.018,
-                    1,
-                )
-                strip.rotation_euler.z = math.radians(7.0)
-            for sx, sy in [(-2.72, -2.72), (2.72, -2.72), (2.72, 2.72), (-2.72, 2.72)]:
-                add_box(
-                    root,
-                    f"Sector1BlenderPanelAnchorR{row}C{column}_{sx:.0f}_{sy:.0f}",
-                    (x + sx, y + sy, FLOOR_TOP_Z + 0.044 + variation),
-                    (0.34, 0.34, 0.030),
-                    mats["edge_metal"],
-                    0.035,
-                    1,
-                )
+	offset = float(PANEL_COUNT - 1) * PANEL_STEP * 0.5
+	for row in range(PANEL_COUNT):
+		for column in range(PANEL_COUNT):
+			x = -offset + float(column) * PANEL_STEP
+			y = -offset + float(row) * PANEL_STEP
+			variation = [-0.014, -0.006, 0.006, 0.014][(row * 2 + column) % 4]
+			mat = mats["raised_gunmetal"] if (row + column) % 3 == 1 else mats["dark_aluminum"]
+			add_box(
+				root,
+				f"Sector1BlenderFloorPanelR{row}C{column}",
+				(x, y, PANEL_CENTER_Z + variation),
+				(PANEL_SIZE, PANEL_SIZE, PANEL_THICKNESS),
+				mat,
+				0.135,
+				2,
+			)
+			add_box(
+				root,
+				f"Sector1BlenderInsetPlateR{row}C{column}",
+				(x, y, FLOOR_TOP_Z + 0.038 + variation),
+				(PANEL_SIZE - 1.34, PANEL_SIZE - 1.34, 0.052),
+				mats["raised_gunmetal"] if (row + column) % 3 != 1 else mats["dark_aluminum"],
+				0.070,
+				1,
+			)
+			add_box(
+				root,
+				f"Sector1BlenderPanelNorthRaisedLipR{row}C{column}",
+				(x, y - PANEL_SIZE * 0.5 + 0.42, FLOOR_TOP_Z + 0.040 + variation),
+				(PANEL_SIZE - 1.18, 0.155, 0.044),
+				mats["edge_metal"],
+				0.026,
+				1,
+			)
+			add_box(
+				root,
+				f"Sector1BlenderPanelSouthRaisedLipR{row}C{column}",
+				(x, y + PANEL_SIZE * 0.5 - 0.42, FLOOR_TOP_Z + 0.040 + variation),
+				(PANEL_SIZE - 1.18, 0.155, 0.044),
+				mats["edge_metal"],
+				0.026,
+				1,
+			)
+			add_box(
+				root,
+				f"Sector1BlenderPanelWestRaisedLipR{row}C{column}",
+				(x - PANEL_SIZE * 0.5 + 0.42, y, FLOOR_TOP_Z + 0.042 + variation),
+				(0.155, PANEL_SIZE - 1.18, 0.044),
+				mats["edge_metal"],
+				0.026,
+				1,
+			)
+			add_box(
+				root,
+				f"Sector1BlenderPanelEastRaisedLipR{row}C{column}",
+				(x + PANEL_SIZE * 0.5 - 0.42, y, FLOOR_TOP_Z + 0.042 + variation),
+				(0.155, PANEL_SIZE - 1.18, 0.044),
+				mats["edge_metal"],
+				0.026,
+				1,
+			)
+			add_box(
+				root,
+				f"Sector1BlenderPanelBrushedGrooveAR{row}C{column}",
+				(x - 0.52, y + 1.05, FLOOR_TOP_Z + 0.070 + variation),
+				(PANEL_SIZE * 0.46, 0.052, 0.014),
+				mats["deep_metal"],
+				0.010,
+				1,
+			).rotation_euler.z = math.radians(4.0)
+			add_box(
+				root,
+				f"Sector1BlenderPanelBrushedGrooveBR{row}C{column}",
+				(x + 0.64, y - 1.18, FLOOR_TOP_Z + 0.071 + variation),
+				(PANEL_SIZE * 0.34, 0.046, 0.014),
+				mats["deep_metal"],
+				0.010,
+				1,
+			).rotation_euler.z = math.radians(-4.0)
+			if (row + column) % 3 == 0:
+				strip = add_box(
+					root,
+					f"Sector1BlenderSheenStripR{row}C{column}",
+					(x - 0.74, y - 1.08, FLOOR_TOP_Z + 0.082 + variation),
+					(PANEL_SIZE * 0.38, 0.060, 0.010),
+					mats["sheen"],
+					0.012,
+					1,
+				)
+				strip.rotation_euler.z = math.radians(7.0)
+			for sx, sy in [(-2.46, -2.46), (2.46, 2.46)]:
+				add_box(
+					root,
+					f"Sector1BlenderPanelAnchorR{row}C{column}_{sx:.0f}_{sy:.0f}",
+					(x + sx, y + sy, FLOOR_TOP_Z + 0.070 + variation),
+					(0.42, 0.24, 0.030),
+					mats["edge_metal"],
+					0.024,
+					1,
+				)
 
 
 def create_neon_seams(root, mats: dict) -> None:
-    boundaries = [-ARENA_HALF_SIZE + i * PANEL_STEP for i in range(PANEL_COUNT + 1)]
-    for index, p in enumerate(boundaries):
-        major = index in [0, len(boundaries) - 1] or index == len(boundaries) // 2
-        width = 0.135 if major else 0.080
-        height = 0.034 if major else 0.024
-        mat = mats["cyan_core"] if major else mats["cyan_neon"]
-        add_box(
-            root,
-            f"Sector1BlenderNeonSeamX{index}",
-            (0.0, p, NEON_Z),
-            (ARENA_HALF_SIZE * 2.0, width, height),
-            mat,
-            width * 0.22,
-            2,
-        )
-        add_box(
-            root,
-            f"Sector1BlenderNeonSeamY{index}",
-            (p, 0.0, NEON_Z + 0.006),
-            (width, ARENA_HALF_SIZE * 2.0, height),
-            mat,
-            width * 0.22,
-            2,
-        )
+	boundaries = [-ARENA_HALF_SIZE + i * PANEL_STEP for i in range(PANEL_COUNT + 1)]
+	for index, p in enumerate(boundaries):
+		is_perimeter = index in [0, len(boundaries) - 1]
+		channel_width = 0.150 if is_perimeter else 0.110
+		add_box(
+			root,
+			f"Sector1BlenderRecessedMetalSeamX{index}",
+			(0.0, p, FLOOR_TOP_Z + 0.040),
+			(ARENA_HALF_SIZE * 2.0, channel_width, 0.042),
+			mats["deep_metal"],
+			0.018,
+			2,
+		)
+		add_box(
+			root,
+			f"Sector1BlenderRecessedMetalSeamY{index}",
+			(p, 0.0, FLOOR_TOP_Z + 0.042),
+			(channel_width, ARENA_HALF_SIZE * 2.0, 0.042),
+			mats["deep_metal"],
+			0.018,
+			2,
+		)
+		for segment_index, segment_center in enumerate([-20.0, -8.0, 8.0, 20.0]):
+			if (index + segment_index) % 2 == 0:
+				add_box(
+					root,
+					f"Sector1BlenderEmbeddedCyanAccentX{index}_{segment_index}",
+					(segment_center, p, NEON_Z),
+					(2.10, 0.038, 0.016),
+					mats["cyan_neon"],
+					0.010,
+					1,
+				)
+			if (index + segment_index) % 2 == 1:
+				add_box(
+					root,
+					f"Sector1BlenderEmbeddedCyanAccentY{index}_{segment_index}",
+					(p, segment_center, NEON_Z + 0.004),
+					(0.038, 2.10, 0.016),
+					mats["cyan_neon"],
+					0.010,
+					1,
+				)
 
 
 def create_border_and_pylons(root, mats: dict) -> None:
     half = ARENA_HALF_SIZE
-    wall_height = 0.74
-    wall_thickness = 0.82
-    wall_center_z = 0.34
+    wall_height = 1.06
+    wall_thickness = 1.02
+    wall_center_z = 0.49
     long_size = half * 2.0 + wall_thickness
-    add_box(root, "Sector1BlenderNorthRaisedBorderWall", (0.0, -half, wall_center_z), (long_size, wall_thickness, wall_height), mats["edge_metal"], 0.090, 2)
-    add_box(root, "Sector1BlenderSouthRaisedBorderWall", (0.0, half, wall_center_z), (long_size, wall_thickness, wall_height), mats["edge_metal"], 0.090, 2)
-    add_box(root, "Sector1BlenderWestRaisedBorderWall", (-half, 0.0, wall_center_z), (wall_thickness, long_size, wall_height), mats["edge_metal"], 0.090, 2)
-    add_box(root, "Sector1BlenderEastRaisedBorderWall", (half, 0.0, wall_center_z), (wall_thickness, long_size, wall_height), mats["edge_metal"], 0.090, 2)
+    add_box(root, "Sector1BlenderNorthRaisedBorderWall", (0.0, -half, wall_center_z), (long_size, wall_thickness, wall_height), mats["edge_metal"], 0.150, 2)
+    add_box(root, "Sector1BlenderSouthRaisedBorderWall", (0.0, half, wall_center_z), (long_size, wall_thickness, wall_height), mats["edge_metal"], 0.150, 2)
+    add_box(root, "Sector1BlenderWestRaisedBorderWall", (-half, 0.0, wall_center_z), (wall_thickness, long_size, wall_height), mats["edge_metal"], 0.150, 2)
+    add_box(root, "Sector1BlenderEastRaisedBorderWall", (half, 0.0, wall_center_z), (wall_thickness, long_size, wall_height), mats["edge_metal"], 0.150, 2)
 
-    rail_z = 0.84
-    add_cylinder_between(root, "Sector1BlenderNorthCyanTopRail", (-half, -half, rail_z), (half, -half, rail_z), 0.070, mats["cyan_neon"], 18)
-    add_cylinder_between(root, "Sector1BlenderSouthCyanTopRail", (-half, half, rail_z), (half, half, rail_z), 0.070, mats["cyan_neon"], 18)
-    add_cylinder_between(root, "Sector1BlenderWestCyanTopRail", (-half, -half, rail_z), (-half, half, rail_z), 0.070, mats["cyan_neon"], 18)
-    add_cylinder_between(root, "Sector1BlenderEastCyanTopRail", (half, -half, rail_z), (half, half, rail_z), 0.070, mats["cyan_neon"], 18)
+    rail_z = 1.08
+    add_cylinder_between(root, "Sector1BlenderNorthCyanTopRail", (-half, -half, rail_z), (half, -half, rail_z), 0.048, mats["cyan_neon"], 16)
+    add_cylinder_between(root, "Sector1BlenderSouthCyanTopRail", (-half, half, rail_z), (half, half, rail_z), 0.048, mats["cyan_neon"], 16)
+    add_cylinder_between(root, "Sector1BlenderWestCyanTopRail", (-half, -half, rail_z), (-half, half, rail_z), 0.048, mats["cyan_neon"], 16)
+    add_cylinder_between(root, "Sector1BlenderEastCyanTopRail", (half, -half, rail_z), (half, half, rail_z), 0.048, mats["cyan_neon"], 16)
 
     for i, (x, y) in enumerate([(-half, -half), (half, -half), (half, half), (-half, half)]):
-        add_box(root, f"Sector1BlenderCornerPylonBase{i}", (x, y, 0.26), (1.45, 1.45, 0.52), mats["deep_metal"], 0.105, 2)
-        add_box(root, f"Sector1BlenderCornerPylonCore{i}", (x, y, 0.86), (0.92, 0.92, 1.20), mats["edge_metal"], 0.085, 2)
-        add_box(root, f"Sector1BlenderCornerPylonCyanCap{i}", (x, y, 1.52), (1.08, 1.08, 0.18), mats["cyan_core"], 0.055, 2)
+        add_box(root, f"Sector1BlenderCornerPylonBase{i}", (x, y, 0.30), (1.62, 1.62, 0.60), mats["deep_metal"], 0.125, 2)
+        add_box(root, f"Sector1BlenderCornerPylonCore{i}", (x, y, 0.96), (0.98, 0.98, 1.28), mats["edge_metal"], 0.105, 2)
+        add_box(root, f"Sector1BlenderCornerPylonMetalCap{i}", (x, y, 1.66), (1.08, 1.08, 0.18), mats["edge_metal"], 0.060, 2)
+        add_box(root, f"Sector1BlenderCornerPylonCyanSideSlitX{i}", (x, y + (0.56 if y < 0.0 else -0.56), 1.18), (0.56, 0.040, 0.12), mats["cyan_neon"], 0.010, 1)
+        add_box(root, f"Sector1BlenderCornerPylonCyanSideSlitY{i}", (x + (0.56 if x < 0.0 else -0.56), y, 1.18), (0.040, 0.56, 0.12), mats["cyan_neon"], 0.010, 1)
 
 
 def create_depth_and_detail(root, mats: dict) -> None:
@@ -261,10 +336,10 @@ def create_depth_and_detail(root, mats: dict) -> None:
         add_box(root, f"Sector1BlenderSouthOuterButtress{i}", (p, depth, 0.18), (7.6, 0.44, 0.34), mats["deep_metal"], 0.060, 1)
         add_box(root, f"Sector1BlenderWestOuterButtress{i}", (-depth, p, 0.18), (0.44, 7.6, 0.34), mats["deep_metal"], 0.060, 1)
         add_box(root, f"Sector1BlenderEastOuterButtress{i}", (depth, p, 0.18), (0.44, 7.6, 0.34), mats["deep_metal"], 0.060, 1)
-    add_cylinder_between(root, "Sector1BlenderNorthFarCyanRail", (-22.0, -depth, 0.48), (22.0, -depth, 0.48), 0.038, mats["cyan_neon"], 14)
-    add_cylinder_between(root, "Sector1BlenderSouthFarCyanRail", (-22.0, depth, 0.48), (22.0, depth, 0.48), 0.038, mats["cyan_neon"], 14)
-    add_cylinder_between(root, "Sector1BlenderWestFarCyanRail", (-depth, -22.0, 0.48), (-depth, 22.0, 0.48), 0.038, mats["cyan_neon"], 14)
-    add_cylinder_between(root, "Sector1BlenderEastFarCyanRail", (depth, -22.0, 0.48), (depth, 22.0, 0.48), 0.038, mats["cyan_neon"], 14)
+    add_cylinder_between(root, "Sector1BlenderNorthFarCyanRail", (-22.0, -depth, 0.48), (22.0, -depth, 0.48), 0.026, mats["cyan_neon"], 12)
+    add_cylinder_between(root, "Sector1BlenderSouthFarCyanRail", (-22.0, depth, 0.48), (22.0, depth, 0.48), 0.026, mats["cyan_neon"], 12)
+    add_cylinder_between(root, "Sector1BlenderWestFarCyanRail", (-depth, -22.0, 0.48), (-depth, 22.0, 0.48), 0.026, mats["cyan_neon"], 12)
+    add_cylinder_between(root, "Sector1BlenderEastFarCyanRail", (depth, -22.0, 0.48), (depth, 22.0, 0.48), 0.026, mats["cyan_neon"], 12)
 
 
 def setup_scene() -> None:
