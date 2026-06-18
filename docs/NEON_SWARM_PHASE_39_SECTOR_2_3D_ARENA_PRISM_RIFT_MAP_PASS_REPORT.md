@@ -233,3 +233,113 @@ Sector 2 Prism Rift direction going forward:
 - Do not rely on purple/magenta line work over dark floor material.
 - The next Sector 2 art repair must use reference-backed hard-surface and glass/prism workflows.
 - The target remains a readable fractured prism/glass sci-fi arena with visible floor material, readable modeled surface, professional direction, and clear gameplay-camera readability.
+
+## Hard Repair 2 - Blender-Documented Prism Rift Arena Rebuild
+
+Current approval status:
+
+- The prior Sector 2 arena was rejected for messy neon strips, too-flat composition, weak glass/prism material read, and an unconvincing professional floor model.
+- Hard Repair 2 rebuilds the active Sector 2 GLB as a new user-review candidate.
+- This report does not claim final user visual approval; manual gameplay review is still required.
+- The approved `NEW RUN WEAPON` autofire fix was preserved and revalidated.
+
+Official Blender docs/manual pages referenced before implementation:
+
+- Bevel Modifier: https://docs.blender.org/manual/en/latest/modeling/modifiers/generate/bevel.html
+- Weighted Normal Modifier: https://docs.blender.org/manual/en/latest/modeling/modifiers/normals/weighted_normal.html
+- Mesh Normals: https://docs.blender.org/manual/en/latest/modeling/meshes/editing/mesh/normals.html
+- Principled BSDF: https://docs.blender.org/manual/en/latest/render/shader_nodes/shader/principled.html
+- glTF 2.0 import/export: https://docs.blender.org/manual/en/latest/addons/import_export/scene_gltf2.html
+- Blender Python `bpy.ops.export_scene`: https://docs.blender.org/api/current/bpy.ops.export_scene.html
+- Blender Python `bpy.ops.mesh`: https://docs.blender.org/api/current/bpy.ops.mesh.html
+
+Outside workflow/reference categories reviewed:
+
+- Modular game-environment construction and sci-fi modular-set planning through Polycount's modular environment reference index.
+- Hard-surface normal/bevel workflow and normal-map modeling categories through Polycount modeling references.
+- PBR material concepts for roughness, metallic response, and specular highlights.
+- Level/environment design readability concepts for keeping art subordinate to gameplay clarity.
+- Prism/glass/crystal reference was used only for visual vocabulary: layered transparent faces, edge tint, inner highlights, and controlled refraction language.
+
+What was learned and applied:
+
+- Bevels must exist as real geometry or modifiers with exported normals; panel count alone does not create a professional read.
+- Weighted normals and smooth face settings are needed so bevels read from the gameplay camera instead of looking like flat rectangles.
+- Prism/glass panels need readable face albedo and edge tint; alpha must not make the floor disappear.
+- Modular floor panels need support structure, seams, anchors, and purposeful trim, not random line overlays.
+- Neon should be short embedded channel detail or boundary energy, not long diagonal strips crossing the whole arena.
+
+Role delegation summary:
+
+- Environment Art Director: set the target as a broken prism/glass sci-fi deck inside a neon rift; rejected the old purple-line/grid solution and required a non-Sector-1 composition.
+- Blender Hard-Surface Environment Artist: rebuilt the mesh with thick gunmetal support plates, bevels, weighted normals, side faces, raised glass plates, trims, seams, curbs, corner anchors, and outer prism fins.
+- Material / Lighting Artist: replaced near-black/purple-flat reads with visible dark gunmetal, amethyst/violet glass, edge tint, recessed seam, and controlled magenta/cyan channel materials.
+- Godot Technical Artist: kept the same Sector 2-only GLB path, added Sector 2-only HR2 material overrides and slightly stronger Sector 2 visual-layer/ambient light, kept the old flat Sector 2 plate suppressed, and added no gameplay collision.
+- Gameplay Readability QA: checked the Blender gameplay-camera preview at `/tmp/sector2_hr2_prism_rift_preview.png`; validation still checks official scene initialization, HUD, ripple, arena loading, and run-weapon behavior. Final visual approval remains a manual gameplay review item.
+
+Blender modeling changes:
+
+- Replaced the previous long-line/hex-readability composition with `Sector2PrismRiftHardRepair2BlenderArenaKitRoot`.
+- Added `Sector2HR2GunmetalSupportPanelR*C*` deck plates with real thickness, side faces, bevels, and weighted normals.
+- Added `Sector2HR2VisiblePrismGlassPanelR*C*` raised violet/amethyst glass insets above the support deck.
+- Added raised non-glowing trim pieces, recessed mechanical seam beds, a central diamond prism lens, short embedded neon channel slots, angular boundary rails, corner anchors, and controlled outer prism fins.
+- Removed the generator's previous `PrimaryRift*`, `SparseHexReadabilityRoute*`, and long diagonal neon-tube composition.
+
+Material/glass/prism changes:
+
+- New HR2 Blender materials:
+  - `NS_S2_HR2_Deep_Amethyst_Void_AAA`
+  - `NS_S2_HR2_Gunmetal_Support_AAA`
+  - `NS_S2_HR2_Dark_Violet_Subframe_AAA`
+  - `NS_S2_HR2_Dark_Recessed_Seam_AAA`
+  - `NS_S2_HR2_Violet_Prism_Glass_AAA`
+  - `NS_S2_HR2_Frosted_Amethyst_Glass_AAA`
+  - `NS_S2_HR2_Beveled_Edge_Tint_AAA`
+  - `NS_S2_HR2_Embedded_Magenta_Channel_AAA`
+  - `NS_S2_HR2_Cyan_Prism_Core_AAA`
+  - `NS_S2_HR2_Boundary_Rail_AAA`
+  - `NS_S2_HR2_Soft_Prism_Sheen_AAA`
+- Glass materials use readable violet/amethyst face values with alpha kept high enough to preserve floor visibility.
+- Magenta/cyan emission was kept controlled and localized to short embedded channels and contained central/boundary details.
+- Godot material overrides recognize the `NS_S2_HR2_*` names and preserve the intended metallic, roughness, alpha, and emission values at runtime.
+
+Godot integration changes:
+
+- Sector 2 continues loading `res://art/arenas/sector_2/exported/sector_2_prism_rift_arena.glb` only when `_sector_index == 1`.
+- Sector 1, Sector 3, and Sector 4 sector presentation paths are unchanged.
+- Sector 2 old flat background/procedural background path remains suppressed by `_create_prism_rift_background_depth() -> pass`.
+- Imported Sector 2 arena meshes still have shadows and GI disabled and use the Sector 2 visual light layer.
+- Sector 2 readability key light changed from `0.36` to `0.42`; ambient light changed from `0.32` to `0.36`.
+- No mesh collision or gameplay collision was added; movement remains flat on the existing X/Z gameplay plane.
+
+Blender source/export paths:
+
+- Blender source: `art/arenas/sector_2/source/blender/sector_2_prism_rift_arena.blend`
+- Blender generator: `art/arenas/sector_2/source/blender/build_sector_2_prism_rift_arena.py`
+- Runtime GLB: `art/arenas/sector_2/exported/sector_2_prism_rift_arena.glb`
+- Source art notes: `art/arenas/sector_2/source/blender/sector_2_environment_art_notes.md`
+
+Run weapon autofire preservation:
+
+- No run-weapon gameplay code was changed in Hard Repair 2.
+- Focused validation rechecks that a `NEW RUN WEAPON` Fractal Shard reward activates `_run_bonus_weapon_definitions`, enables `_weapon_state["fractal_shard"]`, primes autofire, fires without replacing the eight equipped loadout weapons, survives stat rebuild, clears on death, and clears through the shared run-bonus cleanup helper used by run start/restart/title/run-complete paths.
+
+Validation results:
+
+- `godot --headless --path . --quit-after 3`: PASS.
+- `godot --headless --path . scenes/Main.tscn --quit-after 3`: PASS.
+- `/tmp/neon_swarm_phase39_hr2_validation.gd`: PASS with `PHASE39_HR2_VALIDATION_PASS`.
+- Focused validation confirmed Sector 2 GLB existence/runtime load in Sector 2, Sector 2 clearing outside Sector 2, old Prism Rift flat/procedural visuals staying inactive, HR2 material family presence, visible floor/glass material brightness, restrained neon channel count, HUD 8-slot loadout initialization without gameplay HUD scroll containers, and run-weapon autofire preservation.
+- `git diff --check`: PASS.
+- Manual visual approval remains pending at actual gameplay camera distance.
+
+Manual Hard Repair 2 test checklist:
+
+- Run `godot --path /home/jason/GodotProjects/NeonSwarm scenes/Main.tscn`.
+- Clear Sector 1 and enter Sector 2.
+- Confirm Sector 2 reads as a broken prism/glass sci-fi deck inside a neon rift, not a purple grid with random neon lines.
+- Confirm floor panels have visible dark gunmetal support, raised glass/prism insets, bevels, side faces, and mechanical seams.
+- Confirm magenta/cyan neon reads as embedded channel accent detail, not spaghetti lines.
+- Confirm player, enemies, XP, projectiles, boss telegraphs, events, Phase 37 ripple, and HUD remain readable.
+- Confirm the visible boundary matches the playable arena and the player does not appear outside it.
+- Select a `NEW RUN WEAPON` reward with all eight equipped slots full and confirm Fractal Shard fires immediately as a run bonus without replacing the loadout.

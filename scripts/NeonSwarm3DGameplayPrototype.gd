@@ -89,9 +89,9 @@ const SECTOR1_ARENA_KEY_LIGHT_COLOR := Color(0.62, 0.78, 1.0, 1.0)
 const SECTOR1_ARENA_KEY_LIGHT_ROTATION := Vector3(-54.0, -28.0, 0.0)
 const SECTOR2_BLENDER_ARENA_SCENE_PATH := "res://art/arenas/sector_2/exported/sector_2_prism_rift_arena.glb"
 const SECTOR2_ARENA_VISUAL_LIGHT_LAYER_MASK := 1 << 18
-const SECTOR2_ARENA_KEY_LIGHT_ENERGY := 0.36
-const SECTOR2_ARENA_KEY_LIGHT_SPECULAR := 0.48
-const SECTOR2_ARENA_KEY_LIGHT_COLOR := Color(0.96, 0.62, 1.0, 1.0)
+const SECTOR2_ARENA_KEY_LIGHT_ENERGY := 0.42
+const SECTOR2_ARENA_KEY_LIGHT_SPECULAR := 0.52
+const SECTOR2_ARENA_KEY_LIGHT_COLOR := Color(0.98, 0.68, 1.0, 1.0)
 const SECTOR2_ARENA_KEY_LIGHT_ROTATION := Vector3(-58.0, -18.0, 0.0)
 
 const PULSE_COOLDOWN := 0.30
@@ -2317,8 +2317,8 @@ func _apply_sector_environment_tone() -> void:
 			_world_environment_data.ambient_light_energy = 0.34
 		1:
 			_world_environment_data.background_color = Color(0.010, 0.000, 0.024, 1.0)
-			_world_environment_data.ambient_light_color = Color(0.090, 0.038, 0.118, 1.0)
-			_world_environment_data.ambient_light_energy = 0.32
+			_world_environment_data.ambient_light_color = Color(0.105, 0.048, 0.135, 1.0)
+			_world_environment_data.ambient_light_energy = 0.36
 		2:
 			_world_environment_data.background_color = Color(0.0, 0.0, 0.010, 1.0)
 			_world_environment_data.ambient_light_color = Color(0.018, 0.008, 0.038, 1.0)
@@ -2926,7 +2926,29 @@ func _boost_sector2_imported_arena_materials(mesh_instance: MeshInstance3D, mate
 
 func _apply_sector2_arena_material_visibility(material: StandardMaterial3D, material_name: String) -> void:
 	var lower_name := material_name.to_lower()
-	if lower_name.find("deep_rift_void") >= 0:
+	if lower_name.find("hr2_deep_amethyst_void") >= 0:
+		_set_sector2_visible_arena_material(material, Color(0.074, 0.034, 0.116, 1.0), 0.30, 0.78, Color(0.035, 0.010, 0.070, 1.0), 0.020)
+	elif lower_name.find("hr2_gunmetal_support") >= 0:
+		_set_sector2_visible_arena_material(material, Color(0.292, 0.224, 0.352, 1.0), 0.66, 0.38, Color(0.090, 0.035, 0.145, 1.0), 0.060)
+	elif lower_name.find("hr2_dark_violet_subframe") >= 0:
+		_set_sector2_visible_arena_material(material, Color(0.178, 0.108, 0.248, 1.0), 0.58, 0.50, Color(0.060, 0.020, 0.110, 1.0), 0.045)
+	elif lower_name.find("hr2_dark_recessed_seam") >= 0:
+		_set_sector2_visible_arena_material(material, Color(0.050, 0.026, 0.076, 1.0), 0.36, 0.84, Color(0.018, 0.004, 0.042, 1.0), 0.012)
+	elif lower_name.find("hr2_violet_prism_glass") >= 0:
+		_set_sector2_visible_arena_material(material, Color(0.440, 0.290, 0.630, 0.90), 0.05, 0.18, Color(0.145, 0.060, 0.270, 1.0), 0.105, true)
+	elif lower_name.find("hr2_frosted_amethyst_glass") >= 0:
+		_set_sector2_visible_arena_material(material, Color(0.540, 0.365, 0.740, 0.88), 0.08, 0.30, Color(0.170, 0.070, 0.310, 1.0), 0.115, true)
+	elif lower_name.find("hr2_beveled_edge_tint") >= 0:
+		_set_sector2_visible_arena_material(material, Color(0.650, 0.430, 0.930, 1.0), 0.12, 0.24, Color(0.210, 0.080, 0.390, 1.0), 0.145)
+	elif lower_name.find("hr2_embedded_magenta_channel") >= 0:
+		_set_sector2_visible_arena_material(material, Color(0.650, 0.070, 0.520, 1.0), 0.02, 0.34, Color(0.900, 0.080, 0.720, 1.0), 0.300)
+	elif lower_name.find("hr2_cyan_prism_core") >= 0:
+		_set_sector2_visible_arena_material(material, Color(0.070, 0.500, 0.680, 1.0), 0.02, 0.32, Color(0.070, 0.760, 0.940, 1.0), 0.240)
+	elif lower_name.find("hr2_boundary_rail") >= 0:
+		_set_sector2_visible_arena_material(material, Color(0.240, 0.158, 0.310, 1.0), 0.72, 0.36, Color(0.100, 0.034, 0.180, 1.0), 0.070)
+	elif lower_name.find("hr2_soft_prism_sheen") >= 0:
+		_set_sector2_visible_arena_material(material, Color(0.575, 0.385, 0.795, 1.0), 0.10, 0.20, Color(0.190, 0.070, 0.360, 1.0), 0.120)
+	elif lower_name.find("deep_rift_void") >= 0:
 		_set_sector2_visible_arena_material(material, Color(0.058, 0.022, 0.090, 1.0), 0.28, 0.78, Color(0.038, 0.010, 0.080, 1.0), 0.030)
 	elif lower_name.find("dark_violet_metal") >= 0:
 		_set_sector2_visible_arena_material(material, Color(0.250, 0.140, 0.335, 1.0), 0.50, 0.50, Color(0.090, 0.026, 0.155, 1.0), 0.090)
