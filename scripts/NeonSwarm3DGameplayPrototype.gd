@@ -89,9 +89,9 @@ const SECTOR1_ARENA_KEY_LIGHT_COLOR := Color(0.62, 0.78, 1.0, 1.0)
 const SECTOR1_ARENA_KEY_LIGHT_ROTATION := Vector3(-54.0, -28.0, 0.0)
 const SECTOR2_BLENDER_ARENA_SCENE_PATH := "res://art/arenas/sector_2/exported/sector_2_prism_rift_arena.glb"
 const SECTOR2_ARENA_VISUAL_LIGHT_LAYER_MASK := 1 << 18
-const SECTOR2_ARENA_KEY_LIGHT_ENERGY := 0.42
-const SECTOR2_ARENA_KEY_LIGHT_SPECULAR := 0.52
-const SECTOR2_ARENA_KEY_LIGHT_COLOR := Color(0.98, 0.68, 1.0, 1.0)
+const SECTOR2_ARENA_KEY_LIGHT_ENERGY := 0.46
+const SECTOR2_ARENA_KEY_LIGHT_SPECULAR := 0.54
+const SECTOR2_ARENA_KEY_LIGHT_COLOR := Color(0.98, 0.70, 1.0, 1.0)
 const SECTOR2_ARENA_KEY_LIGHT_ROTATION := Vector3(-58.0, -18.0, 0.0)
 
 const PULSE_COOLDOWN := 0.30
@@ -2317,8 +2317,8 @@ func _apply_sector_environment_tone() -> void:
 			_world_environment_data.ambient_light_energy = 0.34
 		1:
 			_world_environment_data.background_color = Color(0.010, 0.000, 0.024, 1.0)
-			_world_environment_data.ambient_light_color = Color(0.105, 0.048, 0.135, 1.0)
-			_world_environment_data.ambient_light_energy = 0.36
+			_world_environment_data.ambient_light_color = Color(0.118, 0.054, 0.148, 1.0)
+			_world_environment_data.ambient_light_energy = 0.40
 		2:
 			_world_environment_data.background_color = Color(0.0, 0.0, 0.010, 1.0)
 			_world_environment_data.ambient_light_color = Color(0.018, 0.008, 0.038, 1.0)
@@ -2926,7 +2926,27 @@ func _boost_sector2_imported_arena_materials(mesh_instance: MeshInstance3D, mate
 
 func _apply_sector2_arena_material_visibility(material: StandardMaterial3D, material_name: String) -> void:
 	var lower_name := material_name.to_lower()
-	if lower_name.find("hr2_deep_amethyst_void") >= 0:
+	if lower_name.find("hr3_dark_rift_backplane") >= 0:
+		_set_sector2_visible_arena_material(material, Color(0.066, 0.042, 0.100, 1.0), 0.24, 0.78, Color(0.026, 0.006, 0.056, 1.0), 0.024)
+	elif lower_name.find("hr3_black_gunmetal_frame") >= 0:
+		_set_sector2_visible_arena_material(material, Color(0.144, 0.118, 0.186, 1.0), 0.74, 0.36, Color(0.056, 0.018, 0.100, 1.0), 0.066)
+	elif lower_name.find("hr3_beveled_graphite_panel") >= 0:
+		_set_sector2_visible_arena_material(material, Color(0.226, 0.188, 0.286, 1.0), 0.62, 0.42, Color(0.078, 0.030, 0.138, 1.0), 0.086)
+	elif lower_name.find("hr3_recessed_black_groove") >= 0:
+		_set_sector2_visible_arena_material(material, Color(0.030, 0.022, 0.046, 1.0), 0.44, 0.86, Color(0.010, 0.002, 0.026, 1.0), 0.010)
+	elif lower_name.find("hr3_amethyst_prism_glass") >= 0:
+		_set_sector2_visible_arena_material(material, Color(0.500, 0.225, 0.735, 0.88), 0.04, 0.16, Color(0.185, 0.052, 0.360, 1.0), 0.150, true)
+	elif lower_name.find("hr3_deep_violet_glass") >= 0:
+		_set_sector2_visible_arena_material(material, Color(0.315, 0.142, 0.500, 0.92), 0.06, 0.24, Color(0.108, 0.028, 0.235, 1.0), 0.100, true)
+	elif lower_name.find("hr3_magenta_glass_rim") >= 0:
+		_set_sector2_visible_arena_material(material, Color(0.850, 0.095, 0.780, 1.0), 0.04, 0.24, Color(0.980, 0.080, 0.850, 1.0), 0.360)
+	elif lower_name.find("hr3_pink_fracture_core") >= 0:
+		_set_sector2_visible_arena_material(material, Color(1.000, 0.270, 0.930, 1.0), 0.00, 0.30, Color(1.000, 0.170, 0.920, 1.0), 0.520)
+	elif lower_name.find("hr3_violet_glass_sheen") >= 0:
+		_set_sector2_visible_arena_material(material, Color(0.635, 0.350, 0.880, 0.82), 0.04, 0.18, Color(0.220, 0.075, 0.410, 1.0), 0.145, true)
+	elif lower_name.find("hr3_cyan_micro_accent") >= 0:
+		_set_sector2_visible_arena_material(material, Color(0.070, 0.540, 0.730, 1.0), 0.02, 0.32, Color(0.060, 0.760, 0.960, 1.0), 0.230)
+	elif lower_name.find("hr2_deep_amethyst_void") >= 0:
 		_set_sector2_visible_arena_material(material, Color(0.074, 0.034, 0.116, 1.0), 0.30, 0.78, Color(0.035, 0.010, 0.070, 1.0), 0.020)
 	elif lower_name.find("hr2_gunmetal_support") >= 0:
 		_set_sector2_visible_arena_material(material, Color(0.292, 0.224, 0.352, 1.0), 0.66, 0.38, Color(0.090, 0.035, 0.145, 1.0), 0.060)

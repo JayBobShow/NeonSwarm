@@ -463,6 +463,7 @@ Likely future phases:
 | Phase 36 | Full Run Polish / Player Progression Clarity Pass | Adds clearer run start, sector entry, sector clear, boss, event reward, weapon progression, Forge, Neon Dust, death, and run-complete messaging without changing gameplay balance. |
 | Phase 37 | Player Propulsion Ripple Presentation | Removes rejected spotlight work and preserves the active blue/cyan shader ripple under the player as visual-only presentation. |
 | Phase 38 | Level 1 3D Arena Map Architecture Prototype | Adds and hard-repairs Sector 1-only visual 3D map architecture with a Blender source/GLB pipeline: aluminum/gunmetal beveled floor panels, cyan seams, camera/bounds fit, raised border walls, neon rails, corner pylons, and subtle depth pieces while preserving flat gameplay. |
+| Phase 39 | Sector 2 3D Prism Rift Arena Map Architecture Prototype | In progress/user-review pending: rebuilds Sector 2 as a Blender source/GLB Prism Rift arena. Hard Repair 3 uses the user-owned original floor reference for large readable octagonal glass panels, dark machined grid structure, contained magenta/violet fracture detail, Sector 2-only runtime integration, and preserved flat gameplay. |
 | Later approved phase | Real Audio Replacement Pass | Original authored music/SFX replacement direction. Do not start without explicit approval. |
 
 Do not start the next phase until explicitly approved.
@@ -486,6 +487,7 @@ Recommended next production direction:
 - Tune Phase 35 Sector 4 rail dash timing, Grid Splitter fragment caps, Hyper elite frequency, and event pressure through manual playtesting before adding more late-game sectors or enemies.
 - Manually review Phase 36 notice timing/readability during a complete run, especially stacked event/boss/reward moments.
 - Manually validate the Phase 38 Sector 1 3D arena prototype for border clarity, readability under swarm pressure, and Phase 37 ripple visibility before expanding the architecture system to other sectors.
+- Manually validate the Phase 39 Hard Repair 3 Sector 2 Prism Rift arena against `art/reference/user_original_art/sector2_user_original_floor_reference.jpg` before treating the Sector 2 visual direction as approved.
 - Expand Armory only through approved focused passes.
 - Keep tuning the four-sector prototype run while architecture work happens.
 - Add stronger boss and graphics variety only through approved focused phases.

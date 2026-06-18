@@ -10,11 +10,10 @@ SOURCE_BLEND = REPO_ROOT / "art/arenas/sector_2/source/blender/sector_2_prism_ri
 EXPORT_GLB = REPO_ROOT / "art/arenas/sector_2/exported/sector_2_prism_rift_arena.glb"
 
 ARENA_HALF_SIZE = 28.0
-DECK_HALF_SIZE = 27.35
+FLOOR_HALF_SIZE = 27.15
+CELL_PITCH = 10.45
+CELL_SPAN = 9.42
 FLOOR_TOP_Z = 0.0
-SUPPORT_THICKNESS = 0.34
-GLASS_THICKNESS = 0.060
-CHANNEL_Z = 0.122
 
 
 def clear_scene() -> None:
@@ -62,97 +61,91 @@ def make_principled_material(
 
 def make_materials() -> dict:
     return {
-        "void": make_principled_material(
-            "NS_S2_HR2_Deep_Amethyst_Void_AAA",
-            (0.070, 0.032, 0.110, 1.0),
-            0.30,
-            0.78,
-            (0.035, 0.010, 0.070, 1.0),
-            0.020,
-        ),
-        "gunmetal": make_principled_material(
-            "NS_S2_HR2_Gunmetal_Support_AAA",
-            (0.285, 0.218, 0.345, 1.0),
-            0.66,
-            0.38,
-            (0.090, 0.035, 0.145, 1.0),
-            0.060,
-        ),
-        "dark_metal": make_principled_material(
-            "NS_S2_HR2_Dark_Violet_Subframe_AAA",
-            (0.175, 0.105, 0.245, 1.0),
-            0.58,
-            0.50,
-            (0.060, 0.020, 0.110, 1.0),
-            0.045,
-        ),
-        "seam": make_principled_material(
-            "NS_S2_HR2_Dark_Recessed_Seam_AAA",
-            (0.048, 0.025, 0.074, 1.0),
-            0.36,
-            0.84,
-            (0.018, 0.004, 0.042, 1.0),
-            0.012,
-        ),
-        "prism_glass": make_principled_material(
-            "NS_S2_HR2_Violet_Prism_Glass_AAA",
-            (0.430, 0.285, 0.620, 1.0),
-            0.05,
-            0.18,
-            (0.145, 0.060, 0.270, 1.0),
-            0.105,
-            0.90,
-            0.18,
-        ),
-        "frosted_glass": make_principled_material(
-            "NS_S2_HR2_Frosted_Amethyst_Glass_AAA",
-            (0.535, 0.360, 0.735, 1.0),
-            0.08,
-            0.30,
-            (0.170, 0.070, 0.310, 1.0),
-            0.115,
-            0.88,
-            0.12,
-        ),
-        "edge_tint": make_principled_material(
-            "NS_S2_HR2_Beveled_Edge_Tint_AAA",
-            (0.650, 0.430, 0.930, 1.0),
-            0.12,
+        "rift_backplane": make_principled_material(
+            "NS_S2_HR3_Dark_Rift_Backplane_AAA",
+            (0.064, 0.040, 0.096, 1.0),
             0.24,
-            (0.210, 0.080, 0.390, 1.0),
+            0.78,
+            (0.026, 0.006, 0.056, 1.0),
+            0.024,
+        ),
+        "black_frame": make_principled_material(
+            "NS_S2_HR3_Black_Gunmetal_Frame_AAA",
+            (0.138, 0.112, 0.178, 1.0),
+            0.74,
+            0.36,
+            (0.056, 0.018, 0.100, 1.0),
+            0.066,
+        ),
+        "graphite_panel": make_principled_material(
+            "NS_S2_HR3_Beveled_Graphite_Panel_AAA",
+            (0.220, 0.182, 0.278, 1.0),
+            0.62,
+            0.42,
+            (0.078, 0.030, 0.138, 1.0),
+            0.086,
+        ),
+        "dark_groove": make_principled_material(
+            "NS_S2_HR3_Recessed_Black_Groove_AAA",
+            (0.026, 0.020, 0.042, 1.0),
+            0.44,
+            0.86,
+            (0.010, 0.002, 0.026, 1.0),
+            0.010,
+        ),
+        "amethyst_glass": make_principled_material(
+            "NS_S2_HR3_Amethyst_Prism_Glass_AAA",
+            (0.470, 0.205, 0.700, 1.0),
+            0.04,
+            0.16,
+            (0.180, 0.052, 0.350, 1.0),
             0.145,
+            0.88,
+            0.22,
         ),
-        "magenta_channel": make_principled_material(
-            "NS_S2_HR2_Embedded_Magenta_Channel_AAA",
-            (0.650, 0.070, 0.520, 1.0),
-            0.02,
-            0.34,
-            (0.900, 0.080, 0.720, 1.0),
-            0.300,
+        "deep_violet_glass": make_principled_material(
+            "NS_S2_HR3_Deep_Violet_Glass_AAA",
+            (0.280, 0.120, 0.460, 1.0),
+            0.06,
+            0.24,
+            (0.100, 0.028, 0.220, 1.0),
+            0.095,
+            0.92,
+            0.16,
         ),
-        "cyan_channel": make_principled_material(
-            "NS_S2_HR2_Cyan_Prism_Core_AAA",
-            (0.070, 0.500, 0.680, 1.0),
+        "magenta_rim": make_principled_material(
+            "NS_S2_HR3_Magenta_Glass_Rim_AAA",
+            (0.850, 0.095, 0.780, 1.0),
+            0.04,
+            0.24,
+            (0.980, 0.080, 0.850, 1.0),
+            0.360,
+        ),
+        "pink_crack": make_principled_material(
+            "NS_S2_HR3_Pink_Fracture_Core_AAA",
+            (1.000, 0.270, 0.930, 1.0),
+            0.00,
+            0.30,
+            (1.000, 0.170, 0.920, 1.0),
+            0.520,
+        ),
+        "violet_sheen": make_principled_material(
+            "NS_S2_HR3_Violet_Glass_Sheen_AAA",
+            (0.610, 0.330, 0.860, 1.0),
+            0.04,
+            0.18,
+            (0.220, 0.075, 0.410, 1.0),
+            0.145,
+            0.82,
+            0.10,
+        ),
+        "cyan_micro": make_principled_material(
+            "NS_S2_HR3_Cyan_Micro_Accent_AAA",
+            (0.070, 0.540, 0.730, 1.0),
             0.02,
             0.32,
-            (0.070, 0.760, 0.940, 1.0),
-            0.240,
-        ),
-        "boundary": make_principled_material(
-            "NS_S2_HR2_Boundary_Rail_AAA",
-            (0.235, 0.155, 0.305, 1.0),
-            0.72,
-            0.36,
-            (0.100, 0.034, 0.180, 1.0),
-            0.070,
-        ),
-        "sheen": make_principled_material(
-            "NS_S2_HR2_Soft_Prism_Sheen_AAA",
-            (0.575, 0.385, 0.795, 1.0),
-            0.10,
-            0.20,
-            (0.190, 0.070, 0.360, 1.0),
-            0.120,
+            (0.060, 0.760, 0.960, 1.0),
+            0.230,
         ),
     }
 
@@ -173,7 +166,7 @@ def add_bevel_and_weighted_normals(obj, amount: float, segments: int = 1) -> Non
         bevel.affect = "EDGES"
         bevel.harden_normals = True
     smooth_mesh_faces(obj)
-    weighted = obj.modifiers.new("weighted_normals_for_prism_faces", "WEIGHTED_NORMAL")
+    weighted = obj.modifiers.new("weighted_normals_for_reference_floor_faces", "WEIGHTED_NORMAL")
     weighted.keep_sharp = True
     if hasattr(weighted, "weight"):
         weighted.weight = 50
@@ -203,25 +196,6 @@ def add_bar_between(root, name: str, start, end, width: float, height: float, z:
     mid = start_v + direction * 0.5
     angle = math.atan2(direction.y, direction.x)
     return add_box(root, name, (mid.x, mid.y, z), (length, width, height), material, bevel, segments, angle)
-
-
-def add_cylinder_between(root, name: str, start, end, radius: float, material, vertices: int = 10):
-    start_v = Vector(start)
-    end_v = Vector(end)
-    direction = end_v - start_v
-    length = direction.length
-    if length <= 0.001:
-        return None
-    mid = start_v + direction * 0.5
-    bpy.ops.mesh.primitive_cylinder_add(vertices=vertices, radius=radius, depth=length, location=mid)
-    obj = bpy.context.object
-    obj.name = name
-    obj.data.name = f"{name}_Mesh"
-    obj.rotation_euler = direction.to_track_quat("Z", "Y").to_euler()
-    obj.data.materials.append(material)
-    add_bevel_and_weighted_normals(obj, 0.004, 1)
-    obj.parent = root
-    return obj
 
 
 def add_poly_prism(
@@ -257,240 +231,217 @@ def add_poly_prism(
     return obj
 
 
-def inset_points(points, scale: float, x_bias: float = 0.0, y_bias: float = 0.0):
-    center_x = sum(point[0] for point in points) / float(len(points)) + x_bias
-    center_y = sum(point[1] for point in points) / float(len(points)) + y_bias
+def octagon_points(center_x: float, center_y: float, width: float, height: float, cut: float):
+    x0 = center_x - width * 0.5
+    x1 = center_x + width * 0.5
+    y0 = center_y - height * 0.5
+    y1 = center_y + height * 0.5
+    cut = min(cut, width * 0.30, height * 0.30)
     return [
-        (center_x + (point[0] - center_x) * scale, center_y + (point[1] - center_y) * scale)
-        for point in points
+        (x0 + cut, y0),
+        (x1 - cut, y0),
+        (x1, y0 + cut),
+        (x1, y1 - cut),
+        (x1 - cut, y1),
+        (x0 + cut, y1),
+        (x0, y1 - cut),
+        (x0, y0 + cut),
     ]
 
 
-def offset_points(points, x_offset: float, y_offset: float):
-    return [(x + x_offset, y + y_offset) for x, y in points]
+def inset_points(points, scale: float):
+    cx = sum(point[0] for point in points) / float(len(points))
+    cy = sum(point[1] for point in points) / float(len(points))
+    return [(cx + (x - cx) * scale, cy + (y - cy) * scale) for x, y in points]
 
 
 def create_understructure(root, mats: dict) -> None:
-    add_box(root, "Sector2HR2ContinuousAmethystVoidBelowDeck", (0.0, 0.0, -0.410), (58.6, 58.6, 0.38), mats["void"], 0.160, 2)
-    add_box(root, "Sector2HR2SunkenCentralGunmetalRib", (0.0, 0.0, -0.125), (20.6, 10.4, 0.15), mats["dark_metal"], 0.100, 2, math.radians(45.0))
-    for index, y in enumerate([-22.4, -13.4, -4.5, 4.5, 13.4, 22.4]):
-        add_bar_between(root, f"Sector2HR2VisibleUndercarriageCrossbeam{index}", (-25.8, y), (25.8, y), 0.32, 0.115, -0.125, mats["dark_metal"], 0.028, 1)
-    for index, x in enumerate([-22.4, -13.4, -4.5, 4.5, 13.4, 22.4]):
-        add_bar_between(root, f"Sector2HR2VisibleUndercarriageLongitudinalBeam{index}", (x, -25.8), (x, 25.8), 0.30, 0.105, -0.145, mats["dark_metal"], 0.026, 1)
+    add_box(root, "Sector2HR3ReferenceDarkRiftUndertray", (0.0, 0.0, -0.410), (58.6, 58.6, 0.40), mats["rift_backplane"], 0.160, 2)
+    add_box(root, "Sector2HR3ContinuousBlackGunmetalFloorBed", (0.0, 0.0, -0.110), (55.2, 55.2, 0.26), mats["black_frame"], 0.105, 2)
+    for i, coord in enumerate([-23.2, -11.6, 0.0, 11.6, 23.2]):
+        add_bar_between(root, f"Sector2HR3UnderlitLongitudinalRib{i}", (coord, -27.0), (coord, 27.0), 0.30, 0.090, -0.030, mats["dark_groove"], 0.020, 1)
+        add_bar_between(root, f"Sector2HR3UnderlitCrossRib{i}", (-27.0, coord), (27.0, coord), 0.30, 0.090, -0.035, mats["dark_groove"], 0.020, 1)
 
 
-def fractured_cell_points(x0: float, x1: float, y0: float, y1: float, row: int, col: int):
-    width = x1 - x0
-    height = y1 - y0
-    shift_a = ((row * 13 + col * 7) % 5 - 2) * 0.055
-    shift_b = ((row * 5 + col * 11) % 5 - 2) * 0.048
-    cut = 0.12 + ((row + col) % 4) * 0.025
-    return [
-        (x0 + width * (0.06 + max(0.0, shift_a)), y0 + height * (0.04 + max(0.0, -shift_b))),
-        (x1 - width * (0.07 + max(0.0, -shift_a)), y0 + height * (0.08 + max(0.0, shift_b))),
-        (x1 - width * (0.03 + cut * 0.20), y1 - height * (0.10 + cut * 0.16)),
-        (x0 + width * (0.12 + cut * 0.08), y1 - height * (0.05 + cut * 0.12)),
+def create_mechanical_grid(root, mats: dict) -> None:
+    grid_coords = [-15.675, -5.225, 5.225, 15.675]
+    for i, coord in enumerate(grid_coords):
+        add_bar_between(root, f"Sector2HR3HeavyVerticalBlackFrameRail{i}", (coord, -26.6), (coord, 26.6), 0.560, 0.170, 0.090, mats["black_frame"], 0.055, 1)
+        add_bar_between(root, f"Sector2HR3HeavyHorizontalBlackFrameRail{i}", (-26.6, coord), (26.6, coord), 0.560, 0.170, 0.086, mats["black_frame"], 0.055, 1)
+        add_bar_between(root, f"Sector2HR3RecessedVerticalReferenceGroove{i}", (coord + 0.36, -26.1), (coord + 0.36, 26.1), 0.065, 0.030, 0.205, mats["dark_groove"], 0.006, 1)
+        add_bar_between(root, f"Sector2HR3RecessedHorizontalReferenceGroove{i}", (-26.1, coord - 0.36), (26.1, coord - 0.36), 0.065, 0.030, 0.204, mats["dark_groove"], 0.006, 1)
+    for ix, x in enumerate(grid_coords):
+        for iy, y in enumerate(grid_coords):
+            add_box(root, f"Sector2HR3MachinedGridIntersectionBlock{ix}_{iy}", (x, y, 0.235), (1.18, 1.18, 0.22), mats["black_frame"], 0.060, 1, math.radians(45.0 if (ix + iy) % 2 == 0 else 0.0))
+            add_box(root, f"Sector2HR3TinyCyanServiceNotch{ix}_{iy}", (x, y, 0.370), (0.38, 0.050, 0.032), mats["cyan_micro"], 0.006, 1, math.radians(90.0 if (ix + iy) % 2 == 0 else 0.0))
+
+
+def add_corner_armor(root, prefix: str, cx: float, cy: float, span: float, mats: dict, top_z: float) -> None:
+    corner_size = span * 0.195
+    positions = [
+        (-1.0, -1.0, 45.0),
+        (1.0, -1.0, -45.0),
+        (1.0, 1.0, 45.0),
+        (-1.0, 1.0, -45.0),
     ]
+    for index, (sx, sy, angle) in enumerate(positions):
+        add_box(
+            root,
+            f"{prefix}CornerGraphiteArmorPlate{index}",
+            (cx + sx * span * 0.405, cy + sy * span * 0.405, top_z),
+            (corner_size, corner_size * 0.52, 0.115),
+            mats["graphite_panel"],
+            0.030,
+            1,
+            math.radians(angle),
+        )
 
 
-def create_fractured_deck(root, mats: dict) -> None:
-    boundaries = [-DECK_HALF_SIZE, -18.25, -9.05, 0.0, 9.05, 18.25, DECK_HALF_SIZE]
-    for row in range(6):
-        for col in range(6):
-            x0 = boundaries[col] + 0.32
-            x1 = boundaries[col + 1] - 0.32
-            y0 = boundaries[row] + 0.32
-            y1 = boundaries[row + 1] - 0.32
-            points = fractured_cell_points(x0, x1, y0, y1, row, col)
-            lift = [-0.026, -0.010, 0.010, 0.024][(row + col * 2) % 4]
-            top_material = mats["gunmetal"] if (row + col) % 3 != 1 else mats["dark_metal"]
-            side_material = mats["dark_metal"] if (row + col) % 2 == 0 else mats["seam"]
-            add_poly_prism(
-                root,
-                f"Sector2HR2GunmetalSupportPanelR{row}C{col}",
-                points,
-                FLOOR_TOP_Z + lift,
-                SUPPORT_THICKNESS + ((row * 7 + col) % 3) * 0.020,
-                top_material,
-                side_material,
-                0.075,
-                2,
-            )
-
-            glass_scale = 0.60 + ((row * 3 + col * 5) % 4) * 0.030
-            glass_points = inset_points(points, glass_scale)
-            if (row * 3 + col) % 5 == 0:
-                glass_points = offset_points(glass_points, 0.18 if col < 3 else -0.18, -0.12 if row < 3 else 0.12)
-            glass_material = mats["prism_glass"] if (row + col) % 2 == 0 else mats["frosted_glass"]
-            add_poly_prism(
-                root,
-                f"Sector2HR2VisiblePrismGlassPanelR{row}C{col}",
-                glass_points,
-                FLOOR_TOP_Z + lift + 0.106,
-                GLASS_THICKNESS,
-                glass_material,
-                mats["edge_tint"],
-                0.040,
-                1,
-            )
-
-            # Raised lips are short mechanical edges, not glowing decoration.
-            lip_pairs = [(0, 1), (2, 3)] if (row + col) % 2 == 0 else [(1, 2), (3, 0)]
-            for lip_index, (a, b) in enumerate(lip_pairs):
-                p0 = points[a]
-                p1 = points[b]
-                add_bar_between(
-                    root,
-                    f"Sector2HR2RaisedPrismTrimR{row}C{col}_{lip_index}",
-                    p0,
-                    p1,
-                    0.090,
-                    0.070,
-                    FLOOR_TOP_Z + lift + 0.105,
-                    mats["boundary"] if lip_index == 0 else mats["dark_metal"],
-                    0.018,
-                    1,
-                )
-
-            if (row + col) % 4 == 0:
-                c_x = sum(p[0] for p in glass_points) / len(glass_points)
-                c_y = sum(p[1] for p in glass_points) / len(glass_points)
-                angle = math.radians(90 if row % 2 == 0 else 0)
-                add_box(
-                    root,
-                    f"Sector2HR2ShortEmbeddedPrismSheenR{row}C{col}",
-                    (c_x, c_y, FLOOR_TOP_Z + lift + 0.153),
-                    (1.45, 0.045, 0.020),
-                    mats["sheen"],
-                    0.008,
-                    1,
-                    angle,
-                )
-
-
-def create_recessed_seams_and_channels(root, mats: dict) -> None:
-    for index, coord in enumerate([-18.25, -9.05, 0.0, 9.05, 18.25]):
-        add_bar_between(root, f"Sector2HR2RecessedVerticalMechanicalSeam{index}", (coord, -26.8), (coord, 26.8), 0.210, 0.070, 0.038, mats["seam"], 0.016, 1)
-        add_bar_between(root, f"Sector2HR2RecessedHorizontalMechanicalSeam{index}", (-26.8, coord), (26.8, coord), 0.210, 0.070, 0.036, mats["seam"], 0.016, 1)
-
-    channel_specs = [
-        ("NorthWestShortMagenta", (-13.6, -15.8), (-8.4, -15.8), "magenta_channel"),
-        ("NorthEastShortCyan", (8.0, -14.6), (14.2, -14.6), "cyan_channel"),
-        ("SouthWestShortCyan", (-14.2, 14.0), (-8.0, 14.0), "cyan_channel"),
-        ("SouthEastShortMagenta", (8.4, 15.4), (13.6, 15.4), "magenta_channel"),
-        ("WestMidShortMagenta", (-21.4, -4.6), (-21.4, 3.6), "magenta_channel"),
-        ("EastMidShortCyan", (21.4, -3.8), (21.4, 4.8), "cyan_channel"),
-        ("CentralNorthRiftSocket", (-3.8, -5.7), (3.8, -5.7), "magenta_channel"),
-        ("CentralSouthRiftSocket", (-3.8, 5.7), (3.8, 5.7), "cyan_channel"),
-    ]
-    for name, start, end, material_key in channel_specs:
+def add_panel_rims(root, prefix: str, points, z: float, mats: dict, bright: bool) -> None:
+    rim_material = mats["magenta_rim"] if bright else mats["graphite_panel"]
+    for index in range(len(points)):
+        start = points[index]
+        end = points[(index + 1) % len(points)]
         add_bar_between(
             root,
-            f"Sector2HR2EmbeddedNeonChannel{name}",
+            f"{prefix}RaisedOctagonalGlassRim{index}",
             start,
             end,
-            0.105,
-            0.035,
-            CHANNEL_Z,
-            mats[material_key],
-            0.010,
+            0.135 if bright else 0.118,
+            0.060,
+            z,
+            rim_material,
+            0.016,
             1,
         )
 
-    diamond = [(0.0, -8.8, CHANNEL_Z + 0.016), (8.8, 0.0, CHANNEL_Z + 0.016), (0.0, 8.8, CHANNEL_Z + 0.016), (-8.8, 0.0, CHANNEL_Z + 0.016)]
-    for index in range(len(diamond)):
-        material = mats["magenta_channel"] if index % 2 == 0 else mats["cyan_channel"]
-        add_cylinder_between(root, f"Sector2HR2CentralPrismSocketShortTube{index}", diamond[index], diamond[(index + 1) % len(diamond)], 0.024, material, 8)
+
+def add_contained_fractures(root, prefix: str, cx: float, cy: float, panel_w: float, panel_h: float, variant: int, mats: dict, top_z: float) -> None:
+    center = (cx + ((variant % 3) - 1) * panel_w * 0.055, cy + (((variant + 1) % 3) - 1) * panel_h * 0.050)
+    crack_sets = [
+        [(-0.36, -0.18), (-0.08, -0.04), (0.25, -0.34), (0.38, 0.04), (0.10, 0.31), (-0.24, 0.28)],
+        [(-0.30, 0.24), (-0.05, 0.02), (0.22, 0.26), (0.36, -0.12), (0.02, -0.30), (-0.34, -0.08)],
+        [(-0.22, -0.31), (0.02, -0.03), (0.34, -0.24), (0.20, 0.20), (-0.12, 0.31), (-0.38, 0.05)],
+    ]
+    points = crack_sets[variant % len(crack_sets)]
+    for index, point in enumerate(points):
+        if index % 2 == 0:
+            start = center
+            end = (cx + point[0] * panel_w, cy + point[1] * panel_h)
+        else:
+            prev = points[index - 1]
+            start = (cx + prev[0] * panel_w, cy + prev[1] * panel_h)
+            end = (cx + point[0] * panel_w, cy + point[1] * panel_h)
+        add_bar_between(
+            root,
+            f"{prefix}ContainedReferenceGlassCrack{index}",
+            start,
+            end,
+            0.043 if index % 2 == 0 else 0.032,
+            0.020,
+            top_z,
+            mats["pink_crack"],
+            0.004,
+            1,
+        )
 
 
-def create_central_prism_core(root, mats: dict) -> None:
-    outer = [(0.0, -6.6), (6.6, 0.0), (0.0, 6.6), (-6.6, 0.0)]
-    inner = inset_points(outer, 0.58)
-    add_poly_prism(root, "Sector2HR2CentralRaisedGunmetalDiamondFrame", outer, 0.145, 0.160, mats["boundary"], mats["dark_metal"], 0.080, 2)
-    add_poly_prism(root, "Sector2HR2CentralFrostedPrismGlassLens", inner, 0.238, 0.070, mats["frosted_glass"], mats["edge_tint"], 0.050, 1)
-    add_bar_between(root, "Sector2HR2CentralLensNorthAnchorGroove", (-3.7, -2.0), (3.7, -2.0), 0.078, 0.040, 0.325, mats["seam"], 0.008, 1)
-    add_bar_between(root, "Sector2HR2CentralLensSouthAnchorGroove", (-3.7, 2.0), (3.7, 2.0), 0.078, 0.040, 0.325, mats["seam"], 0.008, 1)
-    add_box(root, "Sector2HR2CentralContainedMagentaRefractionSlot", (0.0, 0.0, 0.350), (3.8, 0.055, 0.040), mats["magenta_channel"], 0.008, 1, math.radians(45.0))
-    add_box(root, "Sector2HR2CentralContainedCyanRefractionSlot", (0.0, 0.0, 0.355), (3.1, 0.050, 0.036), mats["cyan_channel"], 0.008, 1, math.radians(-45.0))
-
-
-def add_boundary_segment(root, name: str, center: float, side: str, mats: dict) -> None:
-    half = ARENA_HALF_SIZE
-    if side in ["north", "south"]:
-        sign = -1.0 if side == "north" else 1.0
-        y = sign * half
-        add_box(root, f"{name}OuterGunmetalFooting", (center, y + sign * 0.52, 0.18), (7.35, 1.14, 0.36), mats["dark_metal"], 0.080, 1)
-        add_box(root, f"{name}RaisedAngularBoundaryRail", (center, y + sign * 0.18, 0.62), (6.62, 0.48, 0.82), mats["boundary"], 0.095, 2)
-        add_box(root, f"{name}InsetAmethystGlassArmorFace", (center, y - sign * 0.105, 0.73), (4.72, 0.060, 0.44), mats["prism_glass"], 0.025, 1)
-        add_box(root, f"{name}InnerLowGunmetalCurb", (center, y - sign * 0.54, 0.175), (6.90, 0.36, 0.34), mats["gunmetal"], 0.050, 1)
-        slot_material = mats["magenta_channel"] if int(abs(center)) % 16 == 0 else mats["cyan_channel"]
-        add_box(root, f"{name}ShortEmbeddedBoundaryEnergySlot", (center, y - sign * 0.76, 0.46), (1.22, 0.050, 0.052), slot_material, 0.008, 1)
-    else:
-        sign = -1.0 if side == "west" else 1.0
-        x = sign * half
-        add_box(root, f"{name}OuterGunmetalFooting", (x + sign * 0.52, center, 0.18), (1.14, 7.35, 0.36), mats["dark_metal"], 0.080, 1)
-        add_box(root, f"{name}RaisedAngularBoundaryRail", (x + sign * 0.18, center, 0.62), (0.48, 6.62, 0.82), mats["boundary"], 0.095, 2)
-        add_box(root, f"{name}InsetAmethystGlassArmorFace", (x - sign * 0.105, center, 0.73), (0.060, 4.72, 0.44), mats["prism_glass"], 0.025, 1)
-        add_box(root, f"{name}InnerLowGunmetalCurb", (x - sign * 0.54, center, 0.175), (0.36, 6.90, 0.34), mats["gunmetal"], 0.050, 1)
-        slot_material = mats["cyan_channel"] if int(abs(center)) % 16 == 0 else mats["magenta_channel"]
-        add_box(root, f"{name}ShortEmbeddedBoundaryEnergySlot", (x - sign * 0.76, center, 0.46), (0.050, 1.22, 0.052), slot_material, 0.008, 1)
-
-
-def add_corner_anchor(root, name: str, x: float, y: float, mats: dict) -> None:
-    sx = math.copysign(1.0, x)
-    sy = math.copysign(1.0, y)
-    add_box(root, f"{name}LayeredCornerSupportBaseX", (x - sx * 0.58, y, 0.28), (1.55, 3.10, 0.52), mats["dark_metal"], 0.090, 1)
-    add_box(root, f"{name}LayeredCornerSupportBaseY", (x, y - sy * 0.58, 0.28), (3.10, 1.55, 0.52), mats["dark_metal"], 0.090, 1)
-    add_box(root, f"{name}CutPrismAnchorCore", (x - sx * 0.15, y - sy * 0.15, 0.88), (1.15, 1.15, 1.14), mats["boundary"], 0.080, 2, math.radians(45.0))
-    tri = [(x, y + sy * 0.92), (x - sx * 0.82, y - sy * 0.46), (x + sx * 0.82, y - sy * 0.46)]
-    add_poly_prism(root, f"{name}ReadableAmethystPrismCap", tri, 1.50, 0.18, mats["frosted_glass"], mats["edge_tint"], 0.040, 1)
-
-
-def add_prism_fin(root, name: str, location, radius: float, height: float, mats: dict, rotation_z: float) -> None:
-    bpy.ops.mesh.primitive_cone_add(vertices=4, radius1=radius, radius2=radius * 0.18, depth=height, location=location)
-    obj = bpy.context.object
-    obj.name = name
-    obj.data.name = f"{name}_Mesh"
-    obj.rotation_euler.z = rotation_z
-    obj.data.materials.append(mats["frosted_glass"])
-    add_bevel_and_weighted_normals(obj, 0.020, 1)
-    obj.parent = root
-    add_cylinder_between(
+def add_glass_sheen(root, prefix: str, cx: float, cy: float, panel_w: float, panel_h: float, variant: int, mats: dict, top_z: float) -> None:
+    angle = math.radians([22.0, -18.0, 35.0, -32.0][variant % 4])
+    offset_x = [0.14, -0.18, 0.02, 0.20][variant % 4] * panel_w
+    offset_y = [-0.10, 0.15, -0.18, 0.08][variant % 4] * panel_h
+    add_box(
         root,
-        f"{name}ContainedCyanPrismEdge",
-        (location[0], location[1], location[2] - height * 0.28),
-        (location[0], location[1], location[2] + height * 0.25),
-        radius * 0.055,
-        mats["cyan_channel"],
-        4,
+        f"{prefix}SoftReferenceVioletGlassReflection",
+        (cx + offset_x, cy + offset_y, top_z),
+        (panel_w * 0.44, 0.070, 0.024),
+        mats["violet_sheen"],
+        0.010,
+        1,
+        angle,
     )
 
 
-def create_boundary_and_outer_prisms(root, mats: dict) -> None:
-    segment_centers = [-24.0, -16.0, -8.0, 0.0, 8.0, 16.0, 24.0]
-    for side in ["north", "south", "west", "east"]:
-        for index, center in enumerate(segment_centers):
-            add_boundary_segment(root, f"Sector2HR2Boundary_{side}_{index}_", center, side, mats)
+def create_floor_bay(root, row: int, col: int, cx: float, cy: float, mats: dict) -> None:
+    prefix = f"Sector2HR3ReferenceFloorBayR{row}C{col}_"
+    central = row == 2 and col == 2
+    glass_variants = {
+        (0, 0), (0, 2), (0, 4),
+        (1, 1), (1, 3),
+        (2, 0), (2, 2), (2, 3),
+        (3, 1), (3, 4),
+        (4, 0), (4, 2), (4, 4),
+    }
+    dark_glass_variants = {(0, 1), (1, 4), (2, 4), (3, 0), (4, 3)}
+    is_bright_glass = (row, col) in glass_variants
+    is_dark_glass = (row, col) in dark_glass_variants
+    top_z = FLOOR_TOP_Z + 0.095 + ((row * 3 + col * 5) % 3) * 0.008
 
-    for index, (x, y) in enumerate([
-        (-ARENA_HALF_SIZE, -ARENA_HALF_SIZE),
-        (ARENA_HALF_SIZE, -ARENA_HALF_SIZE),
-        (ARENA_HALF_SIZE, ARENA_HALF_SIZE),
-        (-ARENA_HALF_SIZE, ARENA_HALF_SIZE),
-    ]):
-        add_corner_anchor(root, f"Sector2HR2CornerAnchor{index}_", x, y, mats)
+    add_box(root, f"{prefix}MachinedSquareBasePlate", (cx, cy, top_z - 0.030), (CELL_SPAN, CELL_SPAN, 0.200), mats["black_frame"], 0.070, 1)
+    add_corner_armor(root, prefix, cx, cy, CELL_SPAN, mats, top_z + 0.105)
 
-    fin_specs = [
-        ("NorthWestTall", -31.0, -23.0, 0.78, 0.38, 1.46, -0.30),
-        ("NorthWestLow", -29.4, -25.7, 0.54, 0.25, 0.88, 0.42),
-        ("NorthEastTall", 30.8, -22.4, 0.76, 0.36, 1.40, 0.22),
-        ("SouthWestTall", -30.4, 22.7, 0.74, 0.36, 1.38, -0.16),
-        ("SouthEastTall", 31.1, 23.5, 0.80, 0.40, 1.52, 0.34),
-        ("NorthSmall", -5.8, -31.0, 0.50, 0.24, 0.86, 0.05),
-        ("SouthSmall", 6.6, 31.0, 0.52, 0.25, 0.90, -0.08),
-    ]
-    for name, x, y, z, radius, height, rotation in fin_specs:
-        add_prism_fin(root, f"Sector2HR2OuterGlassPrismFin{name}", (x, y, z), radius, height, mats, rotation)
+    outer_points = octagon_points(cx, cy, CELL_SPAN * 0.755, CELL_SPAN * 0.710, CELL_SPAN * 0.125)
+    if is_bright_glass or is_dark_glass:
+        under_points = inset_points(outer_points, 1.055)
+        add_poly_prism(root, f"{prefix}MagentaUnderGlassGlowShelf", under_points, top_z + 0.148, 0.036, mats["magenta_rim"], mats["black_frame"], 0.030, 1)
+        glass_material = mats["amethyst_glass"] if is_bright_glass else mats["deep_violet_glass"]
+        add_poly_prism(root, f"{prefix}RaisedOctagonalPrismGlassFace", outer_points, top_z + 0.250, 0.105 if central else 0.082, glass_material, mats["magenta_rim"], 0.052, 2)
+        add_panel_rims(root, prefix, outer_points, top_z + 0.330, mats, True)
+        add_glass_sheen(root, prefix, cx, cy, CELL_SPAN * 0.58, CELL_SPAN * 0.52, row * 5 + col, mats, top_z + 0.398)
+        if is_bright_glass:
+            add_contained_fractures(root, prefix, cx, cy, CELL_SPAN * 0.56, CELL_SPAN * 0.50, row * 5 + col, mats, top_z + 0.414)
+        if central:
+            add_box(root, f"{prefix}DesignedCentralReferenceHotCore", (cx, cy, top_z + 0.438), (CELL_SPAN * 0.28, 0.060, 0.034), mats["pink_crack"], 0.008, 1, math.radians(45.0))
+            add_box(root, f"{prefix}DesignedCentralReferenceCyanCounterline", (cx, cy, top_z + 0.444), (CELL_SPAN * 0.22, 0.050, 0.030), mats["cyan_micro"], 0.006, 1, math.radians(-45.0))
+    else:
+        panel_points = inset_points(outer_points, 0.970)
+        add_poly_prism(root, f"{prefix}DarkBeveledOpaqueReferencePanel", panel_points, top_z + 0.184, 0.070, mats["graphite_panel"], mats["dark_groove"], 0.048, 2)
+        add_panel_rims(root, prefix, panel_points, top_z + 0.250, mats, False)
+        if (row + col) % 2 == 0:
+            add_glass_sheen(root, prefix, cx, cy, CELL_SPAN * 0.50, CELL_SPAN * 0.45, row * 5 + col, mats, top_z + 0.302)
+
+    # Small inset groove clusters echo the reference's black machined channels without becoming route lines.
+    groove_offsets = [(-0.34, -0.50), (0.34, 0.50)] if (row + col) % 2 == 0 else [(-0.50, 0.34), (0.50, -0.34)]
+    for index, (gx, gy) in enumerate(groove_offsets):
+        add_box(
+            root,
+            f"{prefix}ShortMachinedInsetGroove{index}",
+            (cx + gx * CELL_SPAN, cy + gy * CELL_SPAN, top_z + 0.190),
+            (CELL_SPAN * 0.22, 0.040, 0.026),
+            mats["dark_groove"],
+            0.005,
+            1,
+            math.radians(0.0 if index == 0 else 90.0),
+        )
+
+
+def create_reference_floor(root, mats: dict) -> None:
+    centers = [-2.0 * CELL_PITCH, -CELL_PITCH, 0.0, CELL_PITCH, 2.0 * CELL_PITCH]
+    for row, cy in enumerate(centers):
+        for col, cx in enumerate(centers):
+            create_floor_bay(root, row, col, cx, cy, mats)
+
+
+def create_boundary(root, mats: dict) -> None:
+    half = ARENA_HALF_SIZE
+    for index, center in enumerate([-22.5, -11.25, 0.0, 11.25, 22.5]):
+        slot_material = mats["magenta_rim"] if index % 2 == 0 else mats["cyan_micro"]
+        add_box(root, f"Sector2HR3NorthReferenceRaisedBoundaryRail{index}", (center, -half + 0.22, 0.500), (9.8, 0.58, 0.70), mats["black_frame"], 0.080, 1)
+        add_box(root, f"Sector2HR3SouthReferenceRaisedBoundaryRail{index}", (center, half - 0.22, 0.500), (9.8, 0.58, 0.70), mats["black_frame"], 0.080, 1)
+        add_box(root, f"Sector2HR3WestReferenceRaisedBoundaryRail{index}", (-half + 0.22, center, 0.500), (0.58, 9.8, 0.70), mats["black_frame"], 0.080, 1)
+        add_box(root, f"Sector2HR3EastReferenceRaisedBoundaryRail{index}", (half - 0.22, center, 0.500), (0.58, 9.8, 0.70), mats["black_frame"], 0.080, 1)
+        add_box(root, f"Sector2HR3NorthShortEmbeddedBoundaryGlow{index}", (center, -half + 0.86, 0.690), (2.00, 0.055, 0.046), slot_material, 0.008, 1)
+        add_box(root, f"Sector2HR3SouthShortEmbeddedBoundaryGlow{index}", (center, half - 0.86, 0.690), (2.00, 0.055, 0.046), slot_material, 0.008, 1)
+        add_box(root, f"Sector2HR3WestShortEmbeddedBoundaryGlow{index}", (-half + 0.86, center, 0.690), (0.055, 2.00, 0.046), slot_material, 0.008, 1)
+        add_box(root, f"Sector2HR3EastShortEmbeddedBoundaryGlow{index}", (half - 0.86, center, 0.690), (0.055, 2.00, 0.046), slot_material, 0.008, 1)
+
+    for index, (x, y) in enumerate([(-half, -half), (half, -half), (half, half), (-half, half)]):
+        sx = math.copysign(1.0, x)
+        sy = math.copysign(1.0, y)
+        add_box(root, f"Sector2HR3CornerHeavyReferenceClamp{index}A", (x - sx * 0.72, y, 0.590), (1.50, 3.30, 0.86), mats["black_frame"], 0.090, 1)
+        add_box(root, f"Sector2HR3CornerHeavyReferenceClamp{index}B", (x, y - sy * 0.72, 0.590), (3.30, 1.50, 0.86), mats["black_frame"], 0.090, 1)
+        cap_points = octagon_points(x - sx * 0.70, y - sy * 0.70, 1.55, 1.55, 0.34)
+        add_poly_prism(root, f"Sector2HR3CornerInsetAmethystReferenceCap{index}", cap_points, 1.135, 0.130, mats["deep_violet_glass"], mats["magenta_rim"], 0.036, 1)
 
 
 def setup_scene() -> None:
@@ -498,69 +449,79 @@ def setup_scene() -> None:
     bpy.context.preferences.filepaths.save_version = 0
     bpy.context.scene.unit_settings.system = "METRIC"
     bpy.context.scene.render.engine = "CYCLES"
-    bpy.context.scene.world = bpy.data.worlds.new("NS_Sector2_HR2_Prism_Rift_World") if bpy.context.scene.world is None else bpy.context.scene.world
-    bpy.context.scene.world.color = (0.012, 0.002, 0.030)
+    bpy.context.scene.world = bpy.data.worlds.new("NS_Sector2_HR3_UserReference_Prism_Rift_World") if bpy.context.scene.world is None else bpy.context.scene.world
+    bpy.context.scene.world.color = (0.010, 0.002, 0.025)
 
-    root = bpy.data.objects.new("Sector2PrismRiftHardRepair2BlenderArenaKitRoot", None)
+    root = bpy.data.objects.new("Sector2PrismRiftHardRepair3UserReferenceArenaKitRoot", None)
     root.empty_display_type = "CUBE"
-    root["neon_swarm_asset"] = "phase_39_hard_repair_2_sector_2_prism_rift_blender_arena"
+    root["neon_swarm_asset"] = "phase_39_hard_repair_3_sector_2_user_original_floor_reference_arena"
     root["gameplay_half_size"] = ARENA_HALF_SIZE
-    root["art_direction"] = "broken prism glass sci-fi deck with built gunmetal support, raised glass panels, recessed seams, and restrained embedded neon"
+    root["primary_reference"] = "art/reference/user_original_art/sector2_user_original_floor_reference.jpg"
+    root["art_direction"] = "premium modular octagonal prism-glass floor bays in a dark machined gunmetal grid with contained magenta fractures"
     bpy.context.collection.objects.link(root)
 
     mats = make_materials()
     create_understructure(root, mats)
-    create_fractured_deck(root, mats)
-    create_recessed_seams_and_channels(root, mats)
-    create_central_prism_core(root, mats)
-    create_boundary_and_outer_prisms(root, mats)
+    create_mechanical_grid(root, mats)
+    create_reference_floor(root, mats)
+    create_boundary(root, mats)
 
     camera_data = bpy.data.cameras.new("ReferenceGameplayCamera")
     camera = bpy.data.objects.new("ReferenceGameplayCamera", camera_data)
     camera.location = (0.0, -34.0, 33.0)
-    camera.rotation_euler = (math.radians(54.0), 0.0, 0.0)
-    camera_data.type = "ORTHO"
-    camera_data.ortho_scale = 47.5
+    camera.rotation_euler = (math.radians(52.0), 0.0, 0.0)
+    camera.data.lens = 24.0
     bpy.context.collection.objects.link(camera)
+    bpy.context.scene.camera = camera
 
     light_data = bpy.data.lights.new("ReferenceSoftPrismPreviewAreaLight", "AREA")
     light = bpy.data.objects.new("ReferenceSoftPrismPreviewAreaLight", light_data)
-    light.location = (0.0, -8.0, 14.0)
-    light_data.energy = 420.0
-    light_data.size = 18.0
+    light.location = (-8.0, -16.0, 20.0)
+    light.rotation_euler = (math.radians(58.0), 0.0, math.radians(-20.0))
+    light.data.energy = 420.0
+    light.data.size = 18.0
     bpy.context.collection.objects.link(light)
 
+    fill_data = bpy.data.lights.new("ReferenceMagentaGlassFillLight", "POINT")
+    fill = bpy.data.objects.new("ReferenceMagentaGlassFillLight", fill_data)
+    fill.location = (9.0, 10.0, 9.0)
+    fill.data.energy = 95.0
+    fill.data.color = (0.88, 0.18, 1.0)
+    bpy.context.collection.objects.link(fill)
 
-def export_assets() -> None:
-    SOURCE_BLEND.parent.mkdir(parents=True, exist_ok=True)
+
+def export_glb() -> None:
     EXPORT_GLB.parent.mkdir(parents=True, exist_ok=True)
-    bpy.ops.wm.save_as_mainfile(filepath=str(SOURCE_BLEND))
-    bpy.ops.object.select_all(action="SELECT")
+    kwargs = {
+        "filepath": str(EXPORT_GLB),
+        "export_format": "GLB",
+        "export_apply": True,
+        "export_normals": True,
+        "export_materials": "EXPORT",
+        "export_cameras": False,
+        "export_lights": False,
+        "export_animations": False,
+        "export_extras": True,
+    }
     try:
-        bpy.ops.export_scene.gltf(
-            filepath=str(EXPORT_GLB),
-            export_format="GLB",
-            use_selection=True,
-            export_apply=True,
-            export_cameras=False,
-            export_lights=False,
-            export_extras=True,
-            export_normals=True,
-            export_materials="EXPORT",
-        )
+        bpy.ops.export_scene.gltf(**kwargs)
     except TypeError:
-        bpy.ops.export_scene.gltf(
-            filepath=str(EXPORT_GLB),
-            export_format="GLB",
-            use_selection=True,
-            export_cameras=False,
-            export_lights=False,
-            export_extras=True,
-        )
-    print(f"saved_blend={SOURCE_BLEND}")
-    print(f"exported_glb={EXPORT_GLB}")
+        kwargs.pop("export_extras", None)
+        bpy.ops.export_scene.gltf(**kwargs)
+
+
+def save_blend() -> None:
+    SOURCE_BLEND.parent.mkdir(parents=True, exist_ok=True)
+    bpy.ops.wm.save_as_mainfile(filepath=str(SOURCE_BLEND))
+
+
+def main() -> None:
+    setup_scene()
+    save_blend()
+    export_glb()
+    print(f"Saved Sector 2 HR3 Prism Rift user-reference arena source: {SOURCE_BLEND}")
+    print(f"Exported Sector 2 HR3 Prism Rift user-reference arena GLB: {EXPORT_GLB}")
 
 
 if __name__ == "__main__":
-    setup_scene()
-    export_assets()
+    main()

@@ -343,3 +343,122 @@ Manual Hard Repair 2 test checklist:
 - Confirm player, enemies, XP, projectiles, boss telegraphs, events, Phase 37 ripple, and HUD remain readable.
 - Confirm the visible boundary matches the playable arena and the player does not appear outside it.
 - Select a `NEW RUN WEAPON` reward with all eight equipped slots full and confirm Fractal Shard fires immediately as a run bonus without replacing the loadout.
+
+## Hard Repair 3 - User Original Floor Reference Rebuild
+
+Current approval status:
+
+- The Hard Repair 2 Sector 2 arena remained visually rejected because it still read as messy neon strips and did not convincingly match the desired glass/prism hard-surface floor.
+- Hard Repair 3 rebuilds the active Sector 2 Blender source and GLB using the user-owned original floor reference as the primary target.
+- This pass does not paste the reference as a flat image. It rebuilds the reference language as modeled Blender geometry.
+- This report does not claim final visual approval; the user still needs to review Sector 2 in the official gameplay camera.
+- The approved `NEW RUN WEAPON` autofire fix was preserved; no run-weapon gameplay code changed in Hard Repair 3.
+
+Reference files and folders checked:
+
+- `art/reference/user_original_art/sector2_user_original_floor_reference.jpg`
+- `art/reference/README.md`
+- `art/reference/sector_2_prism_rift/README.md`
+- `docs/NEON_SWARM_APPROVED_VISUAL_STYLE_LOCK.md`
+
+Official Blender docs/manual pages referenced before implementation:
+
+- Bevel Modifier: https://docs.blender.org/manual/en/latest/modeling/modifiers/generate/bevel.html
+- Weighted Normal Modifier: https://docs.blender.org/manual/en/latest/modeling/modifiers/normals/weighted_normal.html
+- Mesh Normals: https://docs.blender.org/manual/en/latest/modeling/meshes/editing/mesh/normals.html
+- Principled BSDF: https://docs.blender.org/manual/en/latest/render/shader_nodes/shader/principled.html
+- Blender Materials: https://docs.blender.org/manual/en/latest/render/materials/index.html
+- glTF 2.0 import/export: https://docs.blender.org/manual/en/latest/addons/import_export/scene_gltf2.html
+- Transform basics: https://docs.blender.org/manual/en/latest/scene_layout/object/editing/transform/introduction.html
+- Blender Python `bpy.ops.export_scene`: https://docs.blender.org/api/current/bpy.ops.export_scene.html
+
+Outside workflow/reference categories reviewed:
+
+- Modular sci-fi environment kit construction.
+- Hard-surface paneling and bevel/normal readability.
+- PBR roughness, metallic, and specular response concepts.
+- Prism/glass/crystal material vocabulary for edge tint, inner highlights, and controlled transparency.
+- Top-down gameplay readability and avoiding debug-grid or glow-only floors.
+- These references were used only for workflow/art-standard learning; the user-owned floor reference is the actual visual direction and no third-party model, texture, layout, or design was copied.
+
+What was learned and applied:
+
+- The user reference relies on readable large floor faces first, then dark machined grid structure, then controlled magenta/violet glass accents.
+- Large octagonal prism/glass panels with beveled rims read better from the gameplay camera than many thin random line strips.
+- Weighted normals and bevels are required so top faces and edges read as modeled hard-surface pieces instead of flat purple cards.
+- Glass/prism albedo and alpha must stay visible; alpha cannot make the floor disappear into black.
+- The center needs a contained designed focal panel, not long diagonal routes crossing the arena.
+
+Role delegation summary:
+
+- Environment Art Director: set the user-owned floor reference as the primary target, rejected the previous random neon-strip read, and required a premium modular prism deck rather than a Sector 1 recolor.
+- Blender Hard-Surface Environment Artist: rebuilt the asset as a 5x5 floor kit with thick machined base plates, heavy black grid rails, beveled octagonal glass panels, raised rims, corner armor plates, inset grooves, and contained fracture lines.
+- Material / Lighting Artist: tuned dark gunmetal, graphite, amethyst glass, deep violet glass, magenta rim, pink fracture, violet sheen, and cyan micro-accent materials so the floor remains visible and does not collapse into black.
+- Godot Technical Artist: kept the existing Sector 2-only GLB path and runtime loader, added HR3 material override recognition, slightly raised Sector 2 ambient/key light values, preserved collisionless visual geometry, and left Sector 1/3/4 paths unchanged.
+- Gameplay Readability QA: reviewed the Blender gameplay-camera preview at `/tmp/sector2_hr3_user_reference_preview.png`; final approval still requires a manual gameplay run through Sector 2.
+
+Blender modeling changes:
+
+- Replaced `Sector2PrismRiftHardRepair2BlenderArenaKitRoot` with `Sector2PrismRiftHardRepair3UserReferenceArenaKitRoot`.
+- Added custom metadata pointing to `art/reference/user_original_art/sector2_user_original_floor_reference.jpg`.
+- Built a 5x5 modular arena floor with large reference-style octagonal glass bays, dark machined support plates, raised magenta/violet glass rims, corner armor plates, recessed black grooves, mechanical grid intersections, and contained glass fracture marks.
+- Rebuilt the center as a deliberate hot-core prism panel with a short cyan counterline instead of a messy route-line crossing.
+- Rebuilt arena boundary pieces as raised dark reference rails with short embedded glow slots and corner clamps.
+- Removed the HR2 long diagonal/rift-route composition from the generator output.
+
+Material/glass/prism changes:
+
+- New HR3 Blender materials:
+  - `NS_S2_HR3_Dark_Rift_Backplane_AAA`
+  - `NS_S2_HR3_Black_Gunmetal_Frame_AAA`
+  - `NS_S2_HR3_Beveled_Graphite_Panel_AAA`
+  - `NS_S2_HR3_Recessed_Black_Groove_AAA`
+  - `NS_S2_HR3_Amethyst_Prism_Glass_AAA`
+  - `NS_S2_HR3_Deep_Violet_Glass_AAA`
+  - `NS_S2_HR3_Magenta_Glass_Rim_AAA`
+  - `NS_S2_HR3_Pink_Fracture_Core_AAA`
+  - `NS_S2_HR3_Violet_Glass_Sheen_AAA`
+  - `NS_S2_HR3_Cyan_Micro_Accent_AAA`
+- Glass panels use visible violet/amethyst face colors with high enough alpha to preserve the floor silhouette.
+- Magenta/pink emission is concentrated on raised rims and contained fracture cores rather than random line overlays.
+- Cyan is reduced to small technical accent notches and a central counterline.
+
+Godot integration changes:
+
+- Sector 2 continues loading `res://art/arenas/sector_2/exported/sector_2_prism_rift_arena.glb` only when `_sector_index == 1`.
+- Sector 2 old flat background/procedural background path remains suppressed by `_create_prism_rift_background_depth() -> pass`.
+- Imported Sector 2 arena meshes still have shadows/GI disabled and use the Sector 2 visual light layer.
+- Added HR3 material override cases in `_apply_sector2_arena_material_visibility()`.
+- Raised Sector 2 visual-layer key light from `0.42` to `0.46`, key specular from `0.52` to `0.54`, and ambient energy from `0.36` to `0.40`.
+- No gameplay collision or movement-plane change was added.
+
+Blender source/export paths:
+
+- Blender source: `art/arenas/sector_2/source/blender/sector_2_prism_rift_arena.blend`
+- Blender generator: `art/arenas/sector_2/source/blender/build_sector_2_prism_rift_arena.py`
+- Runtime GLB: `art/arenas/sector_2/exported/sector_2_prism_rift_arena.glb`
+- Source art notes: `art/arenas/sector_2/source/blender/sector_2_environment_art_notes.md`
+- Blender preview render: `/tmp/sector2_hr3_user_reference_preview.png`
+
+Run weapon autofire preservation:
+
+- No run-weapon gameplay code was changed in Hard Repair 3.
+- Focused validation rechecks that a `NEW RUN WEAPON` Fractal Shard reward is classified as a new run weapon, activates `_run_bonus_weapon_definitions`, enables `_weapon_state["fractal_shard"]`, primes autofire, fires from `_update_weapons()`, does not replace the eight equipped loadout weapons, survives stat rebuild, shows in the run bonus HUD, and clears on death/shared cleanup.
+
+Validation results:
+
+- `godot --headless --path . --quit-after 3`: PASS.
+- `godot --headless --path . scenes/Main.tscn --quit-after 3`: PASS.
+- `/tmp/neon_swarm_phase39_hr3_validation.gd`: PASS with `PHASE39_HR3_VALIDATION_PASS`.
+- Focused validation confirmed the Sector 2 GLB exists, loads only in Sector 2, clears outside Sector 2, suppresses the old flat Prism Rift background/procedural cells, imports the HR3 user-reference object family, keeps no arena collision nodes, imports visible HR3 material families, keeps the eight-slot equipped weapon HUD without scroll containers, initializes the Phase 37 ripple, and preserves `NEW RUN WEAPON` autofire/run-bonus cleanup behavior.
+- Manual visual approval remains pending at actual gameplay camera distance.
+
+Manual Hard Repair 3 test checklist:
+
+- Run `godot --path /home/jason/GodotProjects/NeonSwarm scenes/Main.tscn`.
+- Clear Sector 1 and enter Sector 2.
+- Confirm the floor follows `art/reference/user_original_art/sector2_user_original_floor_reference.jpg`: large visible octagonal glass panels, dark machined grid, magenta/violet raised rims, contained crack detail, and deliberate center composition.
+- Confirm it does not read as a flat pasted image, a black void, a purple line grid, or random neon spaghetti.
+- Confirm player, enemies, XP, projectiles, boss telegraphs, events, Phase 37 ripple, and HUD remain readable.
+- Confirm the visible boundary matches the playable arena and the player does not appear outside it.
+- Select a `NEW RUN WEAPON` reward with all eight equipped slots full and confirm Fractal Shard fires immediately as a run bonus without replacing the loadout.
