@@ -70,14 +70,16 @@ const PLAYER_PRESENTATION_RIPPLE_RADIUS := 2.72
 const PLAYER_PRESENTATION_RIPPLE_WAVE_SPEED := 1.08
 const PLAYER_PRESENTATION_RIPPLE_WAVE_FREQUENCY := 5.35
 const PLAYER_PRESENTATION_FLOOR_Y := 0.092
-const SECTOR1_ARENA_PANEL_COUNT := 5
-const SECTOR1_ARENA_PANEL_STEP := 10.8
-const SECTOR1_ARENA_PANEL_SIZE := 9.96
-const SECTOR1_ARENA_PANEL_THICKNESS := 0.12
-const SECTOR1_ARENA_PANEL_BASE_Y := -0.072
-const SECTOR1_ARENA_GRID_Y := 0.034
-const SECTOR1_ARENA_RAIL_HALF_SIZE := ARENA_HALF_SIZE + 1.08
-const SECTOR1_ARENA_DEPTH_HALF_SIZE := ARENA_HALF_SIZE + 5.25
+const GAMEPLAY_CAMERA_SIZE := 47.5
+const GAMEPLAY_CAMERA_POSITION := Vector3(0.0, 31.0, 24.0)
+const SECTOR1_ARENA_PANEL_COUNT := 7
+const SECTOR1_ARENA_PANEL_STEP := 8.0
+const SECTOR1_ARENA_PANEL_SIZE := 7.36
+const SECTOR1_ARENA_PANEL_THICKNESS := 0.16
+const SECTOR1_ARENA_PANEL_BASE_Y := -0.096
+const SECTOR1_ARENA_GRID_Y := 0.044
+const SECTOR1_ARENA_RAIL_HALF_SIZE := ARENA_HALF_SIZE
+const SECTOR1_ARENA_DEPTH_HALF_SIZE := ARENA_HALF_SIZE + 3.0
 
 const PULSE_COOLDOWN := 0.30
 const PULSE_DAMAGE := 27.0
@@ -1911,6 +1913,20 @@ func _apply_fullscreen_setting() -> void:
 		DisplayServer.window_set_mode(target)
 
 
+func _make_sector1_aluminum_material(material_name: String, albedo: Color, metallic: float, roughness: float, emission_color: Color, emission_energy: float) -> StandardMaterial3D:
+	var material := StandardMaterial3D.new()
+	material.resource_name = material_name
+	material.albedo_color = albedo
+	material.metallic = metallic
+	material.roughness = roughness
+	material.metallic_specular = 0.58
+	material.emission_enabled = emission_energy > 0.0
+	if material.emission_enabled:
+		material.emission = emission_color
+		material.emission_energy_multiplier = emission_energy
+	return material
+
+
 func _create_materials() -> void:
 	_materials["white"] = Kit.make_emissive_material(Color(1.0, 0.99, 0.86, 1.0), 6.8, false)
 	_materials["soft_white"] = Kit.make_emissive_material(Color(0.90, 0.98, 1.0, 0.64), 3.5, true)
@@ -1934,11 +1950,11 @@ func _create_materials() -> void:
 	_materials["sector1_floor_core"] = Kit.make_emissive_material(Color(0.86, 1.0, 1.0, 0.72), 3.2, true)
 	_materials["sector1_floor_edge"] = Kit.make_emissive_material(Color(0.0, 0.76, 1.0, 0.42), 1.42, true)
 	_materials["sector1_floor_atmosphere"] = Kit.make_emissive_material(Color(0.0, 0.24, 0.62, 0.038), 0.22, true)
-	_materials["sector1_arena_panel_dark"] = Kit.make_neon_body_material(Color(0.010, 0.024, 0.060, 1.0), 0.26)
-	_materials["sector1_arena_panel_lift"] = Kit.make_neon_body_material(Color(0.012, 0.036, 0.082, 1.0), 0.34)
-	_materials["sector1_arena_wall_body"] = Kit.make_neon_body_material(Color(0.010, 0.030, 0.074, 1.0), 0.32)
-	_materials["sector1_arena_depth_body"] = Kit.make_neon_body_material(Color(0.008, 0.020, 0.052, 1.0), 0.22)
-	_materials["sector1_arena_soft_pool"] = Kit.make_emissive_material(Color(0.0, 0.36, 0.72, 0.070), 0.34, true)
+	_materials["sector1_arena_panel_dark"] = _make_sector1_aluminum_material("Sector1DarkBrushedAluminumPanel", Color(0.115, 0.125, 0.135, 1.0), 0.78, 0.47, Color(0.06, 0.20, 0.26, 1.0), 0.055)
+	_materials["sector1_arena_panel_lift"] = _make_sector1_aluminum_material("Sector1RaisedGunmetalPanel", Color(0.155, 0.170, 0.178, 1.0), 0.82, 0.42, Color(0.08, 0.26, 0.32, 1.0), 0.075)
+	_materials["sector1_arena_wall_body"] = _make_sector1_aluminum_material("Sector1GunmetalBorderWall", Color(0.080, 0.096, 0.112, 1.0), 0.72, 0.54, Color(0.04, 0.15, 0.20, 1.0), 0.050)
+	_materials["sector1_arena_depth_body"] = _make_sector1_aluminum_material("Sector1DarkAluminumDepthPlate", Color(0.044, 0.056, 0.074, 1.0), 0.48, 0.72, Color(0.02, 0.10, 0.15, 1.0), 0.035)
+	_materials["sector1_arena_sheen"] = Kit.make_emissive_material(Color(0.58, 0.90, 1.0, 0.115), 0.46, true)
 	_materials["sector2_grid_minor"] = Kit.make_emissive_material(Color(0.20, 0.06, 0.44, 0.16), 0.42, true)
 	_materials["sector2_grid_major"] = Kit.make_emissive_material(Color(1.0, 0.05, 0.86, 0.28), 0.90, true)
 	_materials["sector2_grid_axis"] = Kit.make_emissive_material(Color(0.0, 0.92, 1.0, 0.34), 1.00, true)
@@ -2098,8 +2114,8 @@ func _create_camera() -> void:
 	_camera = Camera3D.new()
 	_camera.name = "GameplayCamera"
 	_camera.projection = Camera3D.PROJECTION_ORTHOGONAL
-	_camera.size = 35.0
-	_camera.position = Vector3(0.0, 31.0, 24.0)
+	_camera.size = GAMEPLAY_CAMERA_SIZE
+	_camera.position = GAMEPLAY_CAMERA_POSITION
 	_camera_base_position = _camera.position
 	_camera.current = true
 	add_child(_camera)
@@ -2248,7 +2264,8 @@ func _rebuild_sector_background_identity() -> void:
 
 
 func _create_neon_grid_background_depth() -> void:
-	_build_hd_sector_background(0)
+	# Phase 38 hotfix: Sector 1 uses the 3D aluminum arena floor instead of the older flat HD plate.
+	pass
 
 
 func _create_prism_rift_background_depth() -> void:
@@ -2682,16 +2699,14 @@ func _sector1_add_rect_loop(parent: Node3D, node_name: String, half_size: float,
 
 func _create_sector1_floor_panel_foundation(parent: Node3D) -> void:
 	var panel_root := _create_sector1_child_root(parent, "Sector1DarkFloorPanelFoundationRoot")
-	var pool_mesh := PlaneMesh.new()
-	pool_mesh.size = Vector2(ARENA_HALF_SIZE * 1.78, ARENA_HALF_SIZE * 1.78)
-	Kit.add_mesh(panel_root, "Sector1SoftReadableFloorEnergyUnderlay", pool_mesh, _materials["sector1_arena_soft_pool"], Vector3(0.0, -0.030, 0.0))
 	var panel_mesh := Kit.box_mesh(Vector3(SECTOR1_ARENA_PANEL_SIZE, SECTOR1_ARENA_PANEL_THICKNESS, SECTOR1_ARENA_PANEL_SIZE))
+	var sheen_mesh := Kit.box_mesh(Vector3(SECTOR1_ARENA_PANEL_SIZE * 0.48, 0.010, SECTOR1_ARENA_PANEL_SIZE * 0.050))
 	var offset := float(SECTOR1_ARENA_PANEL_COUNT - 1) * SECTOR1_ARENA_PANEL_STEP * 0.5
 	for row in range(SECTOR1_ARENA_PANEL_COUNT):
 		for column in range(SECTOR1_ARENA_PANEL_COUNT):
 			var x := -offset + float(column) * SECTOR1_ARENA_PANEL_STEP
 			var z := -offset + float(row) * SECTOR1_ARENA_PANEL_STEP
-			var variation := 0.010 if (row + column) % 2 == 0 else -0.004
+			var variation := 0.004 if (row + column) % 2 == 0 else -0.004
 			var material_key := "sector1_arena_panel_lift" if (row + column) % 3 == 1 else "sector1_arena_panel_dark"
 			var panel := Kit.add_mesh(
 				panel_root,
@@ -2700,11 +2715,20 @@ func _create_sector1_floor_panel_foundation(parent: Node3D) -> void:
 				_materials[material_key],
 				Vector3(x, SECTOR1_ARENA_PANEL_BASE_Y + variation, z)
 			)
+			if (row + column) % 4 == 0:
+				var sheen := Kit.add_mesh(
+					panel_root,
+					"Sector1AluminumReflectionStreakR%dC%d" % [row, column],
+					sheen_mesh,
+					_materials["sector1_arena_sheen"],
+					Vector3(x - SECTOR1_ARENA_PANEL_SIZE * 0.12, SECTOR1_ARENA_GRID_Y - 0.022, z - SECTOR1_ARENA_PANEL_SIZE * 0.18)
+				)
+				sheen.rotation.y = 0.18 if (row + column) % 2 == 0 else -0.18
 			if (row + column) % 3 == 1:
 				_sector1_arena_panel_motion.append({
 					"node": panel,
 					"base": panel.position,
-					"amplitude": 0.010,
+					"amplitude": 0.0035,
 					"speed": 0.34 + float((row + column) % 2) * 0.08,
 					"phase": float(row * 7 + column * 5) * 0.31
 				})

@@ -54,7 +54,7 @@ Current and planned sectors:
 
 | Sector | Name | Status | Role | Geometry Identity |
 | --- | --- | --- | --- | --- |
-| 1 | Neon Grid | Implemented with Phase 26 Hard Reset HD background plate plus Phase 38 visual-only 3D arena architecture prototype | Opening sector, teaches movement, XP, rewards, and boss clear flow. | HD square/rectangle cyan-blue arena plate with connected circuit paths, sparse light runners, dark 3D floor plates, raised visual border walls, and cyan neon rails. |
+| 1 | Neon Grid | Implemented with Phase 38 visual-only 3D aluminum arena architecture prototype after disabling the old Sector 1 HD plate | Opening sector, teaches movement, XP, rewards, and boss clear flow. | 7x7 aluminum/gunmetal floor tile grid with cyan tube seams, raised visual border walls aligned to the gameplay boundary, neon rails, and subtle depth pieces. |
 | 2 | Prism Rift | Implemented with Phase 26 Hard Reset HD background plate | Middle pressure, fractures, stronger enemy mixes, Fractal Crown event. | HD diamond/triangle prism plate with magenta/purple/cyan angular route lighting. |
 | 3 | Null Zone | Implemented with Phase 26 Hard Reset HD background plate | Darker late-run escalation and Null Octagon gatekeeper. | HD octagon/hex black-glass plate with slow purple/cyan polygon edge lighting. |
 | 4 | Hyper Grid | Phase 35 active content pass implemented | Late-game/final-sector pressure using Rail Skimmer dash enemies, Grid Splitters, Hyper Grid elite variants, stronger event pressure, and Null Octagon Prime final buildup. | HD rail/stretched-diamond hyperlane plate with fast cyan/white lane runners. |
@@ -462,7 +462,7 @@ Likely future phases:
 | Phase 35 | Sector 4 Hyper Grid Full Content Pass | Adds Rail Skimmer, Grid Splitter/Grid Fragment, Sector 4 elite variants, Hyper Grid wave director tuning, Sector 4 event pressure, and final-sector boss buildup. |
 | Phase 36 | Full Run Polish / Player Progression Clarity Pass | Adds clearer run start, sector entry, sector clear, boss, event reward, weapon progression, Forge, Neon Dust, death, and run-complete messaging without changing gameplay balance. |
 | Phase 37 | Player Propulsion Ripple Presentation | Removes rejected spotlight work and preserves the active blue/cyan shader ripple under the player as visual-only presentation. |
-| Phase 38 | Level 1 3D Arena Map Architecture Prototype | Adds Sector 1-only visual 3D map architecture: dark floor panels, cyan linework, raised border walls, neon rails, and subtle depth pieces while preserving flat gameplay. |
+| Phase 38 | Level 1 3D Arena Map Architecture Prototype | Adds and hotfixes Sector 1-only visual 3D map architecture: aluminum/gunmetal floor tiles, cyan seams, camera/bounds fit, raised border walls, neon rails, and subtle depth pieces while preserving flat gameplay. |
 | Later approved phase | Real Audio Replacement Pass | Original authored music/SFX replacement direction. Do not start without explicit approval. |
 
 Do not start the next phase until explicitly approved.
