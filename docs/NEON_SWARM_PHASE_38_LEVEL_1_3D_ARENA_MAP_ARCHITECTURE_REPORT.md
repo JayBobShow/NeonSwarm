@@ -763,6 +763,64 @@ Manual test focus:
 - Confirm top-center notification/objective panels still appear only as temporary notifications.
 - Confirm enemies, XP, bullets, event objectives, player core, Phase 37 ripple, and arena bounds remain readable.
 
+## Hotfix 7 — HUD Panel Spacing and Play-Area Protection
+
+User feedback:
+
+- The Phase 38 Hotfix 6 HUD direction was close: left vertical stat stack and right vertical `8`-slot equipped weapon stack.
+- The remaining issue was panel spacing. The side HUD panels were too wide and the side stacks started too close under the top panels, making the HUD read as overlapping and too far into the playable field.
+- This pass kept the approved HUD direction and only tightened spacing, sizing, and side placement.
+
+Godot docs/classes referenced:
+
+- `Control`: reviewed for fixed panel placement, `PRESET_TOP_LEFT`, full-rect HUD roots, size/position, and mouse filtering. The gameplay HUD still uses a 1920x1080 design-space `Control` root scaled to the viewport.
+- `VBoxContainer`: reviewed because the stat and weapon stacks should stay as vertical automatic layouts, with explicit row spacing and minimum sizes.
+- `ScrollContainer`: reviewed to confirm the gameplay HUD should not use scrolling. Scrolling remains menu-only.
+
+Delegation summary:
+
+- HUD/UX Layout Lead confirmed the concept should remain unchanged and identified side panel width and vertical stack starts as the main play-area intrusion.
+- Godot UI Technical Lead confirmed the correct fix was fixed `Control` rect adjustment plus compact `VBoxContainer` row sizing, not a new menu/scrolling system.
+- Readability QA confirmed top-center notification rails were not hard-overlapping side panels, but their tight vertical gaps could read crowded because of the neon frame glow.
+
+Final spacing solution:
+
+- `GameplayCoreVitalsPanel` moved from `Rect2(24, 28, 360, 132)` to `Rect2(18, 28, 300, 132)`.
+- Core health and XP bars were reduced from `314px` to `252px` so they fit the narrower vitals panel.
+- `GameplayStatsReadoutPanel` moved from `Rect2(24, 176, 236, 226)` to `Rect2(18, 198, 226, 224)`, leaving a clean vertical gap below Core Vitals even after Godot container minimum-size expansion.
+- `GameplayRunTelemetryPanel` moved from `Rect2(1536, 28, 360, 132)` to `Rect2(1602, 28, 300, 132)`.
+- Telemetry typography was compacted: timer font `36 -> 28`, telemetry row font `12 -> 10`, and telemetry column separation `4px -> 1px`.
+- `GameplayEquippedWeaponVerticalPanel` moved from `Rect2(1536, 176, 360, 542)` to `Rect2(1602, 190, 300, 438)`, leaving a clean `30px` vertical gap below telemetry and reducing bottom footprint.
+- The right stack still creates exactly `8` equipped weapon rows with no scroll.
+- Weapon row minimum size changed from `318x50` to `268x46`, icon size from `38x38` to `34x34`, and row separation from `5px` to `4px`.
+
+Top-center notification spacing:
+
+- Boss rail remained centered.
+- Combat notice moved from `Rect2(560, 76, 800, 44)` to `Rect2(560, 82, 800, 40)`.
+- Run-event objective panel moved from `Rect2(520, 124, 880, 104)` to `Rect2(540, 132, 840, 88)`.
+- Event test rail moved from `Rect2(610, 238, 700, 72)` to `Rect2(640, 230, 640, 60)`.
+- These changes add visible breathing room between temporary top-center rails while keeping them away from the left/right HUD columns.
+
+Play-area protection:
+
+- Side panels are now narrower and pushed outward toward the screen edges.
+- The central gameplay arena has more horizontal breathing room.
+- The stat and weapon stacks no longer begin immediately below the top panels.
+- All `8` equipped weapon slots remain visible and represented.
+- The gameplay HUD still does not use `ScrollContainer`.
+- No weapon behavior, progression, arena bounds, ripple, player controls, save format, Armory, Forge, Evolution/Fusion, Neon Dust, events, bosses, Wave Director, or enemy systems were changed.
+
+Manual test focus:
+
+- Start Game in Sector 1.
+- Confirm the Core Vitals panel and left stat stack do not overlap.
+- Confirm the telemetry panel and right equipped weapon stack do not overlap.
+- Confirm all `8` equipped weapon slots are visible on the right side without scrolling.
+- Confirm the left and right side HUD panels frame the central arena instead of sitting heavily on top of it.
+- Confirm top-center notifications/objectives still appear centered and do not collide visually with side panels.
+- Confirm enemies, XP, bullets, event objectives, player core, Phase 37 ripple, and arena bounds remain readable.
+
 ## Validation Results
 
 Run after implementation:

@@ -3923,7 +3923,7 @@ func _create_hud() -> void:
 	_place_design_control(_gameplay_hud_root, Rect2(Vector2.ZERO, HUD_DESIGN_SIZE))
 	_hud_design_root.add_child(_gameplay_hud_root)
 
-	var core_panel := _make_frame(NeonFramePanel.FrameKind.LEFT_WEDGE, Rect2(24, 28, 360, 132), Color(0.0, 0.95, 1.0, 0.96), Color(1.0, 0.05, 0.86, 0.78), 26.0, 2.2, Vector4(20, 10, 22, 10))
+	var core_panel := _make_frame(NeonFramePanel.FrameKind.LEFT_WEDGE, Rect2(18, 28, 300, 132), Color(0.0, 0.95, 1.0, 0.96), Color(1.0, 0.05, 0.86, 0.78), 24.0, 2.2, Vector4(18, 10, 18, 10))
 	core_panel.name = "GameplayCoreVitalsPanel"
 	_gameplay_hud_root.add_child(core_panel)
 	var core_column := VBoxContainer.new()
@@ -3935,13 +3935,13 @@ func _create_hud() -> void:
 	core_column.add_child(core_title_row)
 	var brand_label := _make_hud_label("NEON SWARM")
 	brand_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	brand_label.add_theme_font_size_override("font_size", 22)
+	brand_label.add_theme_font_size_override("font_size", 20)
 	brand_label.add_theme_color_override("font_color", Color(0.90, 1.0, 1.0))
 	core_title_row.add_child(brand_label)
 	_level_label = _make_hud_label("LV 01")
 	_level_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_level_label.custom_minimum_size = Vector2(72, 24)
-	_level_label.add_theme_font_size_override("font_size", 18)
+	_level_label.custom_minimum_size = Vector2(62, 24)
+	_level_label.add_theme_font_size_override("font_size", 16)
 	_level_label.add_theme_color_override("font_color", Color(1.0, 0.94, 0.18))
 	core_title_row.add_child(_level_label)
 
@@ -3953,24 +3953,24 @@ func _create_hud() -> void:
 	_health_text_label = _make_hud_label("HEALTH  100 / 100")
 	_health_text_label.add_theme_font_size_override("font_size", 11)
 	core_column.add_child(_health_text_label)
-	_health_bar = _make_bar("HEALTH", Color(1.0, 0.06, 0.20, 0.96), PLAYER_MAX_HEALTH, Vector2(314, 14), Color(1.0, 0.06, 0.86, 0.72))
+	_health_bar = _make_bar("HEALTH", Color(1.0, 0.06, 0.20, 0.96), PLAYER_MAX_HEALTH, Vector2(252, 14), Color(1.0, 0.06, 0.86, 0.72))
 	_health_bar.set("segment_count", 18)
 	core_column.add_child(_health_bar)
 	_xp_text_label = _make_hud_label("SYNC XP 000 / 010")
 	_xp_text_label.add_theme_font_size_override("font_size", 11)
 	core_column.add_child(_xp_text_label)
-	_xp_bar = _make_bar("XP", Color(0.0, 0.86, 1.0, 0.96), float(_xp_required), Vector2(314, 14), Color(0.0, 0.95, 1.0, 0.78))
+	_xp_bar = _make_bar("XP", Color(0.0, 0.86, 1.0, 0.96), float(_xp_required), Vector2(252, 14), Color(0.0, 0.95, 1.0, 0.78))
 	_xp_bar.set("segment_count", 18)
 	core_column.add_child(_xp_bar)
-	var telemetry_panel := _make_frame(NeonFramePanel.FrameKind.RIGHT_WEDGE, Rect2(1536, 28, 360, 132), Color(1.0, 0.06, 0.86, 0.88), Color(0.0, 0.88, 1.0, 0.70), 26.0, 2.2, Vector4(22, 10, 20, 10))
+	var telemetry_panel := _make_frame(NeonFramePanel.FrameKind.RIGHT_WEDGE, Rect2(1602, 28, 300, 132), Color(1.0, 0.06, 0.86, 0.88), Color(0.0, 0.88, 1.0, 0.70), 24.0, 2.2, Vector4(18, 10, 18, 10))
 	telemetry_panel.name = "GameplayRunTelemetryPanel"
 	_gameplay_hud_root.add_child(telemetry_panel)
 	var telemetry_column := VBoxContainer.new()
-	telemetry_column.add_theme_constant_override("separation", 4)
+	telemetry_column.add_theme_constant_override("separation", 1)
 	telemetry_panel.add_child(telemetry_column)
 	_timer_label = _make_hud_label("00:00")
 	_timer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_timer_label.add_theme_font_size_override("font_size", 36)
+	_timer_label.add_theme_font_size_override("font_size", 28)
 	_timer_label.add_theme_color_override("font_color", Color.WHITE)
 	telemetry_column.add_child(_timer_label)
 	_sector_label = _make_hud_label("SECTOR 01   NEON GRID")
@@ -3983,10 +3983,10 @@ func _create_hud() -> void:
 	_audio_label = _make_hud_label("AUDIO       ONLINE")
 	for label in [_sector_label, _kills_label, _score_label, _enemy_label, _audio_label]:
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		label.add_theme_font_size_override("font_size", 12)
+		label.add_theme_font_size_override("font_size", 10)
 		telemetry_column.add_child(label)
 
-	var stat_panel := _make_frame(NeonFramePanel.FrameKind.RAIL, Rect2(24, 176, 236, 226), Color(0.0, 0.95, 1.0, 0.88), Color(1.0, 0.06, 0.86, 0.68), 20.0, 1.8, Vector4(16, 12, 16, 12))
+	var stat_panel := _make_frame(NeonFramePanel.FrameKind.RAIL, Rect2(18, 198, 226, 224), Color(0.0, 0.95, 1.0, 0.88), Color(1.0, 0.06, 0.86, 0.68), 20.0, 1.8, Vector4(15, 12, 15, 12))
 	stat_panel.name = "GameplayStatsReadoutPanel"
 	_gameplay_hud_root.add_child(stat_panel)
 	var stat_stack := VBoxContainer.new()
@@ -4000,13 +4000,13 @@ func _create_hud() -> void:
 	_add_loadout_chip(stat_stack, "SPD", "speed", "speed", Color(0.0, 0.95, 1.0, 0.90))
 	_add_loadout_chip(stat_stack, "PICKUP", "pickup", "pickup", Color(1.0, 0.90, 0.08, 0.90))
 
-	var loadout_panel := _make_frame(NeonFramePanel.FrameKind.RAIL, Rect2(1536, 176, 360, 542), Color(0.0, 0.95, 1.0, 0.90), Color(1.0, 0.06, 0.86, 0.72), 20.0, 1.8, Vector4(18, 12, 18, 12))
+	var loadout_panel := _make_frame(NeonFramePanel.FrameKind.RAIL, Rect2(1602, 190, 300, 438), Color(0.0, 0.95, 1.0, 0.90), Color(1.0, 0.06, 0.86, 0.72), 20.0, 1.8, Vector4(14, 10, 14, 10))
 	loadout_panel.name = "GameplayEquippedWeaponVerticalPanel"
 	_gameplay_hud_root.add_child(loadout_panel)
 	var loadout_stack := VBoxContainer.new()
 	loadout_stack.name = "GameplayLoadoutEightSlotColumn"
 	loadout_stack.alignment = BoxContainer.ALIGNMENT_CENTER
-	loadout_stack.add_theme_constant_override("separation", 5)
+	loadout_stack.add_theme_constant_override("separation", 4)
 	loadout_panel.add_child(loadout_stack)
 	_gameplay_weapon_slot_panels.clear()
 	_gameplay_weapon_slot_icons.clear()
@@ -4030,7 +4030,7 @@ func _create_hud() -> void:
 	boss_row.add_child(_boss_bar)
 	_boss_panel.visible = false
 
-	_combat_notice_panel = _make_frame(NeonFramePanel.FrameKind.ALERT_RAIL, Rect2(560, 76, 800, 44), Color(1.0, 0.94, 0.18, 0.88), Color(0.0, 0.95, 1.0, 0.62), 16.0, 1.6, Vector4(16, 7, 16, 7))
+	_combat_notice_panel = _make_frame(NeonFramePanel.FrameKind.ALERT_RAIL, Rect2(560, 82, 800, 40), Color(1.0, 0.94, 0.18, 0.88), Color(0.0, 0.95, 1.0, 0.62), 16.0, 1.6, Vector4(16, 6, 16, 6))
 	_combat_notice_panel.name = "EliteWaveDirectorNoticeRail"
 	_combat_notice_panel.visible = false
 	_gameplay_hud_root.add_child(_combat_notice_panel)
@@ -4038,12 +4038,12 @@ func _create_hud() -> void:
 	_combat_notice_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_combat_notice_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_combat_notice_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_combat_notice_label.custom_minimum_size = Vector2(760, 34)
+	_combat_notice_label.custom_minimum_size = Vector2(760, 30)
 	_combat_notice_label.add_theme_font_size_override("font_size", 15)
 	_combat_notice_label.add_theme_color_override("font_color", Color(1.0, 0.94, 0.18))
 	_combat_notice_panel.add_child(_combat_notice_label)
 
-	_run_event_objective_panel = _make_frame(NeonFramePanel.FrameKind.ALERT_RAIL, Rect2(520, 124, 880, 104), Color(0.0, 0.96, 1.0, 0.90), Color(1.0, 0.94, 0.18, 0.72), 22.0, 2.0, Vector4(22, 10, 22, 10))
+	_run_event_objective_panel = _make_frame(NeonFramePanel.FrameKind.ALERT_RAIL, Rect2(540, 132, 840, 88), Color(0.0, 0.96, 1.0, 0.90), Color(1.0, 0.94, 0.18, 0.72), 20.0, 2.0, Vector4(20, 9, 20, 9))
 	_run_event_objective_panel.name = "RunEventObjectiveInstructionPanel"
 	_run_event_objective_panel.visible = false
 	_gameplay_hud_root.add_child(_run_event_objective_panel)
@@ -4054,7 +4054,7 @@ func _create_hud() -> void:
 	_run_event_objective_label.add_theme_color_override("font_color", Color(0.88, 1.0, 1.0))
 	_run_event_objective_panel.add_child(_run_event_objective_label)
 
-	_run_event_test_panel = _make_frame(NeonFramePanel.FrameKind.ALERT_RAIL, Rect2(610, 238, 700, 72), Color(1.0, 0.94, 0.18, 0.90), Color(0.0, 0.95, 1.0, 0.70), 18.0, 1.8, Vector4(18, 8, 18, 8))
+	_run_event_test_panel = _make_frame(NeonFramePanel.FrameKind.ALERT_RAIL, Rect2(640, 230, 640, 60), Color(1.0, 0.94, 0.18, 0.90), Color(0.0, 0.95, 1.0, 0.70), 18.0, 1.8, Vector4(18, 8, 18, 8))
 	_run_event_test_panel.name = "Phase34RunEventTestModeRail"
 	_run_event_test_panel.visible = false
 	_gameplay_hud_root.add_child(_run_event_test_panel)
@@ -5149,8 +5149,8 @@ func _add_loadout_chip(parent: Control, title: String, key: String, icon: String
 
 func _gameplay_loadout_slot_style(fill_color: Color, border_color: Color, border_width: int) -> StyleBoxFlat:
 	var style := _button_style(fill_color, border_color, border_width, 6)
-	style.content_margin_top = 4
-	style.content_margin_bottom = 4
+	style.content_margin_top = 3
+	style.content_margin_bottom = 3
 	style.content_margin_right = 6
 	return style
 
@@ -5158,7 +5158,7 @@ func _gameplay_loadout_slot_style(fill_color: Color, border_color: Color, border
 func _add_gameplay_weapon_slot(parent: Control, slot_index: int) -> void:
 	var slot_panel := PanelContainer.new()
 	slot_panel.name = "GameplayLoadoutSlot%02d" % [slot_index + 1]
-	slot_panel.custom_minimum_size = Vector2(318, 50)
+	slot_panel.custom_minimum_size = Vector2(268, 46)
 	slot_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	slot_panel.add_theme_stylebox_override("panel", _gameplay_loadout_slot_style(Color(0.0, 0.010, 0.032, 0.78), Color(0.0, 0.82, 1.0, 0.58), 1))
 	parent.add_child(slot_panel)
@@ -5169,7 +5169,7 @@ func _add_gameplay_weapon_slot(parent: Control, slot_index: int) -> void:
 	row.add_theme_constant_override("separation", 5)
 	slot_panel.add_child(row)
 
-	var icon := _make_weapon_icon_control(Vector2(38, 38), true)
+	var icon := _make_weapon_icon_control(Vector2(34, 34), true)
 	icon.name = "GameplayLoadoutSlot%02dIcon" % [slot_index + 1]
 	if icon is NeonWeaponIcon:
 		icon.animate_preview = false
@@ -5177,7 +5177,7 @@ func _add_gameplay_weapon_slot(parent: Control, slot_index: int) -> void:
 
 	var label := _make_hud_label("SLOT %02d\nEMPTY" % [slot_index + 1])
 	label.name = "GameplayLoadoutSlot%02dLabel" % [slot_index + 1]
-	label.custom_minimum_size = Vector2(250, 34)
+	label.custom_minimum_size = Vector2(212, 32)
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size", 10)
 	label.add_theme_color_override("font_color", Color(0.72, 0.92, 1.0, 0.72))
