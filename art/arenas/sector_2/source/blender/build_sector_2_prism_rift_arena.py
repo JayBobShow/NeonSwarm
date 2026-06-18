@@ -53,60 +53,77 @@ def make_materials() -> dict:
     return {
         "deep_void": make_principled_material(
             "NS_S2_Deep_Rift_Void_AAA",
-            (0.018, 0.006, 0.036, 1.0),
+            (0.050, 0.020, 0.082, 1.0),
             0.28,
             0.82,
-            (0.024, 0.006, 0.060, 1.0),
-            0.035,
+            (0.038, 0.010, 0.080, 1.0),
+            0.028,
         ),
         "dark_violet_metal": make_principled_material(
             "NS_S2_Dark_Violet_Metal_AAA",
-            (0.118, 0.062, 0.168, 1.0),
-            0.56,
-            0.58,
-            (0.070, 0.014, 0.135, 1.0),
-            0.115,
+            (0.245, 0.135, 0.330, 1.0),
+            0.50,
+            0.50,
+            (0.090, 0.026, 0.155, 1.0),
+            0.090,
         ),
         "rift_gunmetal": make_principled_material(
             "NS_S2_Rift_Gunmetal_AAA",
-            (0.162, 0.108, 0.210, 1.0),
-            0.64,
-            0.46,
-            (0.090, 0.026, 0.160, 1.0),
-            0.135,
+            (0.305, 0.198, 0.380, 1.0),
+            0.58,
+            0.40,
+            (0.115, 0.040, 0.190, 1.0),
+            0.110,
         ),
         "black_glass_trim": make_principled_material(
             "NS_S2_Black_Glass_Trim_AAA",
-            (0.028, 0.012, 0.052, 1.0),
+            (0.075, 0.034, 0.110, 1.0),
             0.22,
-            0.76,
-            (0.020, 0.004, 0.050, 1.0),
-            0.050,
+            0.64,
+            (0.032, 0.008, 0.066, 1.0),
+            0.045,
+        ),
+        "prism_floor_face": make_principled_material(
+            "NS_S2_Readable_Prism_Floor_Face_AAA",
+            (0.380, 0.235, 0.500, 1.0),
+            0.28,
+            0.34,
+            (0.135, 0.050, 0.250, 1.0),
+            0.120,
+        ),
+        "amethyst_glass_face": make_principled_material(
+            "NS_S2_Amethyst_Glass_Floor_Face_AAA",
+            (0.455, 0.270, 0.640, 1.0),
+            0.12,
+            0.22,
+            (0.160, 0.070, 0.310, 1.0),
+            0.150,
+            0.84,
         ),
         "magenta_channel": make_principled_material(
             "NS_S2_Magenta_Embedded_Channel_AAA",
-            (0.600, 0.035, 0.520, 1.0),
+            (0.540, 0.050, 0.470, 1.0),
             0.0,
             0.32,
-            (0.920, 0.070, 0.780, 1.0),
-            0.82,
+            (0.800, 0.060, 0.690, 1.0),
+            0.44,
         ),
         "violet_glass": make_principled_material(
             "NS_S2_Violet_Prism_Glass_AAA",
-            (0.270, 0.110, 0.620, 1.0),
+            (0.410, 0.185, 0.700, 1.0),
             0.08,
             0.18,
-            (0.170, 0.060, 0.420, 1.0),
-            0.34,
-            0.62,
+            (0.190, 0.070, 0.430, 1.0),
+            0.24,
+            0.72,
         ),
         "cyan_core": make_principled_material(
             "NS_S2_Cyan_Refraction_Core_AAA",
-            (0.040, 0.560, 0.770, 1.0),
+            (0.050, 0.470, 0.650, 1.0),
             0.0,
             0.26,
-            (0.060, 0.820, 1.000, 1.0),
-            0.74,
+            (0.060, 0.700, 0.900, 1.0),
+            0.38,
         ),
         "rift_sheen": make_principled_material(
             "NS_S2_Rift_Sheen_AAA",
@@ -118,11 +135,11 @@ def make_materials() -> dict:
         ),
         "outer_rail": make_principled_material(
             "NS_S2_Outer_Rift_Rail_AAA",
-            (0.104, 0.050, 0.132, 1.0),
+            (0.205, 0.116, 0.255, 1.0),
             0.68,
-            0.52,
-            (0.110, 0.030, 0.190, 1.0),
-            0.165,
+            0.44,
+            (0.130, 0.044, 0.220, 1.0),
+            0.115,
         ),
     }
 
@@ -202,6 +219,15 @@ def add_triangle_glass_shard(root, name: str, center, radius: float, top_z: floa
     return add_poly_plate(root, name, points, top_z, thickness, material, 0.030, 1)
 
 
+def inset_points(points, scale: float):
+    center_x = sum(point[0] for point in points) / float(len(points))
+    center_y = sum(point[1] for point in points) / float(len(points))
+    return [
+        (center_x + (point[0] - center_x) * scale, center_y + (point[1] - center_y) * scale)
+        for point in points
+    ]
+
+
 def create_underfloor(root, mats: dict) -> None:
     add_box(root, "Sector2PrismRiftContinuousDarkUnderfloorSlab", (0.0, 0.0, -0.365), (58.4, 58.4, 0.34), mats["deep_void"], 0.120, 2)
     add_box(root, "Sector2PrismRiftCentralSunkenRiftWell", (0.0, 0.0, -0.148), (18.4, 9.2, 0.120), mats["black_glass_trim"], 0.090, 2, math.radians(-28.0))
@@ -231,6 +257,10 @@ def create_fractured_floor(root, mats: dict) -> None:
                 plate_b = [(x0, y0), (x1, y1), (x0, y1 - 0.26)]
             add_poly_plate(root, f"Sector2FracturedPrismDeckR{row}C{col}A", plate_a, FLOOR_TOP_Z + lift, BASE_THICKNESS, material, 0.070, 2)
             add_poly_plate(root, f"Sector2FracturedPrismDeckR{row}C{col}B", plate_b, FLOOR_TOP_Z + lift + 0.012, BASE_THICKNESS * 0.88, material, 0.060, 2)
+            face_material_a = mats["prism_floor_face"] if (row + col) % 3 != 1 else mats["amethyst_glass_face"]
+            face_material_b = mats["amethyst_glass_face"] if (row + col) % 3 == 0 else mats["prism_floor_face"]
+            add_poly_plate(root, f"Sector2ReadablePrismFloorFaceR{row}C{col}A", inset_points(plate_a, 0.76), FLOOR_TOP_Z + lift + 0.086, 0.030, face_material_a, 0.038, 1)
+            add_poly_plate(root, f"Sector2ReadableAmethystFloorFaceR{row}C{col}B", inset_points(plate_b, 0.74), FLOOR_TOP_Z + lift + 0.102, 0.026, face_material_b, 0.034, 1)
             if (row + col) % 4 != 1:
                 add_box(
                     root,
@@ -257,23 +287,23 @@ def create_fractured_floor(root, mats: dict) -> None:
 
 def create_refraction_channels(root, mats: dict) -> None:
     channel_specs = [
-        ("PrimaryRiftA", (-20.0, -14.6, NEON_Z), (21.5, 11.4, NEON_Z), 0.075, "magenta_channel"),
-        ("PrimaryRiftB", (-18.4, 15.2, NEON_Z + 0.004), (19.0, -11.8, NEON_Z + 0.004), 0.060, "cyan_core"),
-        ("OuterPrismLaneNorth", (-23.6, -18.8, NEON_Z), (23.6, -18.8, NEON_Z), 0.044, "magenta_channel"),
-        ("OuterPrismLaneSouth", (-23.6, 18.8, NEON_Z), (23.6, 18.8, NEON_Z), 0.044, "magenta_channel"),
-        ("OuterPrismLaneWest", (-18.8, -23.6, NEON_Z), (-18.8, 23.6, NEON_Z), 0.040, "cyan_core"),
-        ("OuterPrismLaneEast", (18.8, -23.6, NEON_Z), (18.8, 23.6, NEON_Z), 0.040, "cyan_core"),
+        ("PrimaryRiftA", (-20.0, -14.6, NEON_Z), (21.5, 11.4, NEON_Z), 0.052, "magenta_channel"),
+        ("PrimaryRiftB", (-18.4, 15.2, NEON_Z + 0.004), (19.0, -11.8, NEON_Z + 0.004), 0.044, "cyan_core"),
+        ("OuterPrismLaneNorth", (-23.6, -18.8, NEON_Z), (23.6, -18.8, NEON_Z), 0.032, "magenta_channel"),
+        ("OuterPrismLaneSouth", (-23.6, 18.8, NEON_Z), (23.6, 18.8, NEON_Z), 0.032, "magenta_channel"),
+        ("OuterPrismLaneWest", (-18.8, -23.6, NEON_Z), (-18.8, 23.6, NEON_Z), 0.030, "cyan_core"),
+        ("OuterPrismLaneEast", (18.8, -23.6, NEON_Z), (18.8, 23.6, NEON_Z), 0.030, "cyan_core"),
     ]
     for name, start, end, radius, material_key in channel_specs:
         add_cylinder_between(root, f"Sector2{name}ReadableEmbeddedTube", start, end, radius, mats[material_key], 12)
 
     diamond = [(0.0, -16.2, NEON_Z + 0.010), (16.2, 0.0, NEON_Z + 0.010), (0.0, 16.2, NEON_Z + 0.010), (-16.2, 0.0, NEON_Z + 0.010)]
     for index in range(len(diamond)):
-        add_cylinder_between(root, f"Sector2CentralDiamondRefractionEdge{index}", diamond[index], diamond[(index + 1) % len(diamond)], 0.042, mats["magenta_channel"], 10)
+        add_cylinder_between(root, f"Sector2CentralDiamondRefractionEdge{index}", diamond[index], diamond[(index + 1) % len(diamond)], 0.030, mats["magenta_channel"], 10)
     inner = [(0.0, -7.2, NEON_Z + 0.020), (7.2, 0.0, NEON_Z + 0.020), (0.0, 7.2, NEON_Z + 0.020), (-7.2, 0.0, NEON_Z + 0.020)]
     for index in range(len(inner)):
         material = mats["cyan_core"] if index % 2 == 0 else mats["magenta_channel"]
-        add_cylinder_between(root, f"Sector2InnerRiftDiamondHotEdge{index}", inner[index], inner[(index + 1) % len(inner)], 0.038, material, 10)
+        add_cylinder_between(root, f"Sector2InnerRiftDiamondHotEdge{index}", inner[index], inner[(index + 1) % len(inner)], 0.028, material, 10)
 
     for index, x in enumerate([-18.3, -9.1, 9.1, 18.3]):
         add_box(root, f"Sector2VerticalPrismSeamDarkBed{index}", (x, 0.0, FLOOR_TOP_Z + 0.022), (0.185, 52.6, 0.034), mats["black_glass_trim"], 0.014, 1)

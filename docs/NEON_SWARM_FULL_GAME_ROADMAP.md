@@ -55,7 +55,7 @@ Current and planned sectors:
 | Sector | Name | Status | Role | Geometry Identity |
 | --- | --- | --- | --- | --- |
 | 1 | Neon Grid | Implemented with Phase 38 visual-only Blender-built 3D aluminum arena kit after disabling the old Sector 1 HD plate and procedural tile roots | Opening sector, teaches movement, XP, rewards, and boss clear flow. | Blender-authored 7x7 aluminum/gunmetal floor panel kit with bevels, inset plates, cyan neon seams, raised border walls aligned to the gameplay boundary, top rails, corner pylons, and subtle depth buttresses. |
-| 2 | Prism Rift | Implemented with Phase 39 visual-only Blender-built 3D Prism Rift arena kit after disabling the old Sector 2 HD plate | Middle pressure, fractures, stronger enemy mixes, Fractal Crown event. | Blender-authored dark fractured prism deck with segmented plates, inset rift seams, magenta/violet rift rails, cyan refraction accents, glassy prism structures, and modeled outer boundary treatment aligned to the existing gameplay arena. |
+| 2 | Prism Rift | Implemented with Phase 39 visual-only Blender-built 3D Prism Rift arena kit after disabling the old Sector 2 HD plate; repaired for visible floor faces after rejection | Middle pressure, fractures, stronger enemy mixes, Fractal Crown event. | Blender-authored readable dark-violet fractured prism deck with segmented plates, raised amethyst/glass floor faces, inset rift seams, restrained magenta/violet rails, cyan refraction accents, glassy prism structures, and modeled outer boundary treatment aligned to the existing gameplay arena. |
 | 3 | Null Zone | Implemented with Phase 26 Hard Reset HD background plate | Darker late-run escalation and Null Octagon gatekeeper. | HD octagon/hex black-glass plate with slow purple/cyan polygon edge lighting. |
 | 4 | Hyper Grid | Phase 35 active content pass implemented | Late-game/final-sector pressure using Rail Skimmer dash enemies, Grid Splitters, Hyper Grid elite variants, stronger event pressure, and Null Octagon Prime final buildup. | HD rail/stretched-diamond hyperlane plate with fast cyan/white lane runners. |
 | 5 | Fractal Core | Planned | Deep build-check sector with heavier pattern variety. | Stacked triangles, recursive shards, crown-core motifs. |
@@ -261,7 +261,7 @@ Phase 26 sector background / arena visual upgrade status:
 - Krita-exported 4096x4096 PNG plates exist for all four current sectors.
 - Godot loads the PNGs directly through `Image.load_from_file()` and renders them as sector background plates.
 - Sector 1 now uses an HD square/rectangle cyan-blue arena plate with connected circuit paths.
-- Sector 2 now uses the Phase 39 Blender-authored Prism Rift 3D arena kit instead of the old flat HD prism plate.
+- Sector 2 now uses the Phase 39 Blender-authored Prism Rift 3D arena kit instead of the old flat HD prism plate; the repair pass brightens the floor and adds raised prism/glass faces so the arena no longer reads as neon over black.
 - Sector 3 now uses an HD octagon/hex black-glass plate with slow polygon edge lighting.
 - Sector 4 now uses an HD rail/stretched-diamond hyperlane plate with fast lane runners.
 - Adds sparse sector-authored `HDLightRunner_*` animation over the plates.

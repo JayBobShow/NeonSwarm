@@ -64,7 +64,8 @@ Official Godot 4.6 documentation was referenced for the runtime integration deci
 ## Compatibility Notes
 
 - The arena is visual-only.
-- No physics, collision, spawn, reward, save, Armory, Forge, Evolution, Fusion, Neon Dust, or weapon runtime systems are changed.
+- No physics, collision, spawn, reward, save, Armory, Forge, Evolution, Fusion, or Neon Dust systems are changed.
+- The repair pass changes run-bonus weapon runtime activation so `NEW RUN WEAPON` cards enter the active firing arsenal without touching equipped loadout slots.
 - Phase 37 player ripple nodes remain expected under the player presentation path.
 - Phase 38 HUD layout is left intact: left stat stack, right 8-slot equipped weapon stack, no in-game HUD scrolling, and the compact run bonus panel from Hotfix 10 remain unchanged.
 
@@ -117,3 +118,68 @@ Test:
 - Confirm enemies, projectiles, XP pickups, boss telegraphs, and the player ripple remain readable against the floor.
 - Confirm Sectors 1, 3, and 4 retain their existing presentation.
 - Pause/restart/return to title and confirm no duplicate Sector 2 arena model appears.
+
+## Repair - Prism Rift Visibility and Run Weapon Autofire
+
+User rejection:
+
+- The first Phase 39 Sector 2 arena was too black.
+- The floor did not read clearly.
+- It looked like magenta/cyan neon lines over a dark invisible board instead of a readable 3D prism arena.
+- The user also reported that selected `NEW RUN WEAPON` rewards did not appear to autofire.
+
+Sector 2 visibility repair:
+
+- Rebuilt the Sector 2 Blender source and GLB.
+- Brightened the actual fractured floor materials from near-black violet to readable dark violet/gunmetal.
+- Added raised `NS_S2_Readable_Prism_Floor_Face_AAA` and `NS_S2_Amethyst_Glass_Floor_Face_AAA` top-face geometry to every fractured floor cell.
+- Kept the fractured/prism identity as modeled deck faces, bevels, and glassy plate surfaces instead of adding more line art.
+- Reduced magenta/cyan channel radii and lowered their emission so neon reads as accent detail.
+- Increased Sector 2 visual-layer key light and ambient purple light enough for panel faces and bevels to remain visible.
+- Kept the old Sector 2 flat HD plate suppressed.
+- Kept Sector 1, Sector 3, and Sector 4 presentation paths unchanged.
+
+Run weapon autofire audit result:
+
+- Current `NEW RUN WEAPON` card paths are the Fractal Shard upgrade cards using `fractal_shard_enable`.
+- The selected reward was already tracked in `_run_bonus_weapon_definitions`, and the run-bonus HUD could show it.
+- The bug risk was real: active weapon state was primarily rebuilt from `_equipped_weapon_instances`, with only a Fractal-specific refresh path afterward.
+- The repair makes run-bonus definitions part of the active runtime weapon set during `_rebuild_weapon_stat_bonuses()`.
+- `_activate_run_bonus_weapon("fractal_shard", true)` now marks the run bonus active, refreshes weapon state, updates the run-bonus HUD, and primes the Fractal Shard timer to `0.0`.
+- The next unpaused `_update_weapons()` call includes Fractal Shard through `_weapon_state["fractal_shard"]["enabled"] == true`.
+- The run bonus does not append to or replace `_equipped_weapon_instances`.
+- The right-side `8` equipped weapon HUD remains unchanged.
+- Run bonus state clears on title entry, start-run reset, return-to-title, restart, death, and run complete.
+
+Validation run after repair:
+
+- `godot --headless --path . --script /tmp/neon_swarm_phase39_repair_validate.gd`: passed with `PHASE39_REPAIR_PASS sector2_meshes=466 equipped_slots=8`.
+
+Focused repair validation confirms:
+
+- Sector 2 repaired GLB exists and loads.
+- Sector 2 imports at least `450` mesh instances; observed `466`.
+- `Sector2ReadablePrismFloorFace*` and `Sector2ReadableAmethystFloorFace*` meshes import.
+- `NS_S2_Readable_Prism_Floor_Face_AAA` and `NS_S2_Amethyst_Glass_Floor_Face_AAA` materials import.
+- Runtime material overrides for the repaired floor faces are not blacked out.
+- Sector 2 remains collisionless and keeps the old HD Prism Rift plate suppressed.
+- Player ripple, enemy arrays, XP/projectile arrays, boss reward console, and the right-side `8` equipped HUD initialize.
+- `NEW RUN WEAPON` Fractal Shard does not alter `_equipped_weapon_instances`.
+- Fractal Shard is tracked through `_run_bonus_weapon_definitions`.
+- Fractal Shard enables `_weapon_state["fractal_shard"]`.
+- Fractal Shard timer is primed to `0.0` on selection.
+- The run-bonus HUD indicator appears.
+- The active `_update_weapons()` loop fires a `fractal_shard` projectile when a target is in range.
+- Run-bonus Fractal Shard survives `_rebuild_weapon_stat_bonuses()`.
+- Run-bonus Fractal Shard clears through cleanup, run complete, and death paths.
+
+Manual repair test focus:
+
+- Start a run with all `8` equipped loadout slots full and Fractal Shard not equipped.
+- Select a `NEW RUN WEAPON` Fractal Shard reward card.
+- Confirm `RUN BONUS WEAPONS / FRACTAL SHARD` appears below the right-side equipped stack.
+- Confirm Fractal Shard fires automatically shortly after selection.
+- Confirm the right-side `8` equipped loadout slots do not change.
+- Take another reward/stat rebuild and confirm Fractal Shard remains active for the current run.
+- Die, restart, return to title, or complete the run and confirm the run-only weapon is cleared.
+- Clear Sector 1, enter Sector 2, and confirm the repaired Prism Rift floor has visible violet/gunmetal prism panels, raised amethyst/glass faces, bevels, and readable fractured geometry rather than a black void with neon lines.

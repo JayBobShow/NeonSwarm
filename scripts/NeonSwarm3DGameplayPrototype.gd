@@ -89,9 +89,9 @@ const SECTOR1_ARENA_KEY_LIGHT_COLOR := Color(0.62, 0.78, 1.0, 1.0)
 const SECTOR1_ARENA_KEY_LIGHT_ROTATION := Vector3(-54.0, -28.0, 0.0)
 const SECTOR2_BLENDER_ARENA_SCENE_PATH := "res://art/arenas/sector_2/exported/sector_2_prism_rift_arena.glb"
 const SECTOR2_ARENA_VISUAL_LIGHT_LAYER_MASK := 1 << 18
-const SECTOR2_ARENA_KEY_LIGHT_ENERGY := 0.26
-const SECTOR2_ARENA_KEY_LIGHT_SPECULAR := 0.38
-const SECTOR2_ARENA_KEY_LIGHT_COLOR := Color(0.90, 0.48, 1.0, 1.0)
+const SECTOR2_ARENA_KEY_LIGHT_ENERGY := 0.36
+const SECTOR2_ARENA_KEY_LIGHT_SPECULAR := 0.48
+const SECTOR2_ARENA_KEY_LIGHT_COLOR := Color(0.96, 0.62, 1.0, 1.0)
 const SECTOR2_ARENA_KEY_LIGHT_ROTATION := Vector3(-58.0, -18.0, 0.0)
 
 const PULSE_COOLDOWN := 0.30
@@ -1279,39 +1279,87 @@ func _remember_discovered_weapon(instance: Dictionary) -> void:
 
 func _rebuild_weapon_stat_bonuses() -> void:
 	_weapon_family_stat_bonuses.clear()
-	var active_families := {}
+	var active_runtime_weapons := {}
 	for instance in _equipped_weapon_instances:
 		var definition_id := str(instance.get("definition_id", ""))
 		if definition_id == "":
 			continue
-		active_families[definition_id] = true
+		active_runtime_weapons[definition_id] = true
 		var totals: Dictionary = WeaponCatalog.stat_totals(instance)
 		var current: Dictionary = _weapon_family_stat_bonuses.get(definition_id, {})
 		for stat_id in totals.keys():
 			current[str(stat_id)] = float(current.get(str(stat_id), 0.0)) + float(totals[stat_id])
 		_weapon_family_stat_bonuses[definition_id] = current
 		_remember_discovered_weapon(instance)
+	for definition_id in _run_bonus_weapon_definitions.keys():
+		var id := str(definition_id)
+		if id == "" or not _has_run_bonus_weapon(id):
+			continue
+		if not _weapon_state.has(id):
+			continue
+		active_runtime_weapons[id] = true
 	for definition_id in _weapon_state.keys():
 		var state: Dictionary = _weapon_state[definition_id]
-		state["enabled"] = bool(active_families.get(definition_id, false))
+		state["enabled"] = bool(active_runtime_weapons.get(definition_id, false))
 		_weapon_state[definition_id] = state
 	_refresh_run_weapon_activation()
 	_update_orbit_visual_visibility()
 	if is_instance_valid(_ring_saw_root):
-		_ring_saw_root.visible = _is_weapon_family_equipped("ring_saw")
+		_ring_saw_root.visible = _is_runtime_weapon_active("ring_saw")
 
 
 func _has_run_bonus_weapon(definition_id: String) -> bool:
 	return bool(_run_bonus_weapon_definitions.get(definition_id, false))
 
 
+func _is_runtime_weapon_active(definition_id: String) -> bool:
+	if _is_weapon_family_equipped(definition_id) or _has_run_bonus_weapon(definition_id):
+		return true
+	var state: Dictionary = _weapon_state.get(definition_id, {})
+	return bool(state.get("enabled", false))
+
+
+func _set_runtime_weapon_enabled(definition_id: String, enabled: bool) -> void:
+	if not _weapon_state.has(definition_id):
+		return
+	var state: Dictionary = _weapon_state[definition_id]
+	state["enabled"] = enabled
+	_weapon_state[definition_id] = state
+
+
+func _prime_runtime_weapon_autofire(definition_id: String) -> void:
+	if not _weapon_state.has(definition_id):
+		return
+	var state: Dictionary = _weapon_state[definition_id]
+	state["timer"] = 0.0
+	_weapon_state[definition_id] = state
+
+
+func _activate_run_bonus_weapon(definition_id: String, prime_autofire := false) -> void:
+	if definition_id == "" or not _weapon_state.has(definition_id):
+		return
+	_run_bonus_weapon_definitions[definition_id] = true
+	_refresh_run_weapon_activation()
+	if prime_autofire:
+		_prime_runtime_weapon_autofire(definition_id)
+	_update_run_bonus_weapon_hud()
+
+
+func _clear_run_bonus_weapons() -> void:
+	if _run_bonus_weapon_definitions.is_empty():
+		return
+	_run_bonus_weapon_definitions.clear()
+	_refresh_run_weapon_activation()
+	_update_run_bonus_weapon_hud()
+
+
 func _refresh_run_weapon_activation() -> void:
+	for definition_id in _weapon_state.keys():
+		var id := str(definition_id)
+		_set_runtime_weapon_enabled(id, _is_weapon_family_equipped(id) or _has_run_bonus_weapon(id))
 	var fractal_active := _is_weapon_family_equipped("fractal_shard") or _has_run_bonus_weapon("fractal_shard")
 	_fractal_shard_enabled = fractal_active
-	if _weapon_state.has("fractal_shard"):
-		var fractal_state: Dictionary = _weapon_state["fractal_shard"]
-		fractal_state["enabled"] = fractal_active
-		_weapon_state["fractal_shard"] = fractal_state
+	_set_runtime_weapon_enabled("fractal_shard", fractal_active)
 
 
 func _is_weapon_family_equipped(definition_id: String) -> bool:
@@ -2269,8 +2317,8 @@ func _apply_sector_environment_tone() -> void:
 			_world_environment_data.ambient_light_energy = 0.34
 		1:
 			_world_environment_data.background_color = Color(0.010, 0.000, 0.024, 1.0)
-			_world_environment_data.ambient_light_color = Color(0.060, 0.020, 0.082, 1.0)
-			_world_environment_data.ambient_light_energy = 0.24
+			_world_environment_data.ambient_light_color = Color(0.090, 0.038, 0.118, 1.0)
+			_world_environment_data.ambient_light_energy = 0.32
 		2:
 			_world_environment_data.background_color = Color(0.0, 0.0, 0.010, 1.0)
 			_world_environment_data.ambient_light_color = Color(0.018, 0.008, 0.038, 1.0)
@@ -2879,23 +2927,27 @@ func _boost_sector2_imported_arena_materials(mesh_instance: MeshInstance3D, mate
 func _apply_sector2_arena_material_visibility(material: StandardMaterial3D, material_name: String) -> void:
 	var lower_name := material_name.to_lower()
 	if lower_name.find("deep_rift_void") >= 0:
-		_set_sector2_visible_arena_material(material, Color(0.020, 0.006, 0.040, 1.0), 0.28, 0.82, Color(0.030, 0.006, 0.070, 1.0), 0.040)
+		_set_sector2_visible_arena_material(material, Color(0.058, 0.022, 0.090, 1.0), 0.28, 0.78, Color(0.038, 0.010, 0.080, 1.0), 0.030)
 	elif lower_name.find("dark_violet_metal") >= 0:
-		_set_sector2_visible_arena_material(material, Color(0.130, 0.064, 0.176, 1.0), 0.56, 0.58, Color(0.075, 0.016, 0.150, 1.0), 0.115)
+		_set_sector2_visible_arena_material(material, Color(0.250, 0.140, 0.335, 1.0), 0.50, 0.50, Color(0.090, 0.026, 0.155, 1.0), 0.090)
 	elif lower_name.find("rift_gunmetal") >= 0:
-		_set_sector2_visible_arena_material(material, Color(0.176, 0.112, 0.224, 1.0), 0.64, 0.46, Color(0.095, 0.028, 0.172, 1.0), 0.135)
+		_set_sector2_visible_arena_material(material, Color(0.312, 0.202, 0.390, 1.0), 0.58, 0.40, Color(0.115, 0.040, 0.190, 1.0), 0.110)
 	elif lower_name.find("black_glass_trim") >= 0:
-		_set_sector2_visible_arena_material(material, Color(0.030, 0.012, 0.056, 1.0), 0.22, 0.76, Color(0.022, 0.004, 0.054, 1.0), 0.050)
+		_set_sector2_visible_arena_material(material, Color(0.080, 0.036, 0.118, 1.0), 0.22, 0.64, Color(0.032, 0.008, 0.066, 1.0), 0.045)
+	elif lower_name.find("readable_prism_floor_face") >= 0:
+		_set_sector2_visible_arena_material(material, Color(0.390, 0.240, 0.510, 1.0), 0.28, 0.34, Color(0.135, 0.050, 0.250, 1.0), 0.120)
+	elif lower_name.find("amethyst_glass_floor_face") >= 0:
+		_set_sector2_visible_arena_material(material, Color(0.460, 0.275, 0.640, 0.84), 0.12, 0.22, Color(0.160, 0.070, 0.310, 1.0), 0.145, true)
 	elif lower_name.find("magenta_embedded_channel") >= 0:
-		_set_sector2_visible_arena_material(material, Color(0.600, 0.035, 0.520, 1.0), 0.0, 0.32, Color(0.920, 0.070, 0.780, 1.0), 0.78)
+		_set_sector2_visible_arena_material(material, Color(0.540, 0.050, 0.470, 1.0), 0.0, 0.32, Color(0.800, 0.060, 0.690, 1.0), 0.42)
 	elif lower_name.find("violet_prism_glass") >= 0:
-		_set_sector2_visible_arena_material(material, Color(0.280, 0.108, 0.600, 0.58), 0.08, 0.18, Color(0.170, 0.060, 0.420, 1.0), 0.30, true)
+		_set_sector2_visible_arena_material(material, Color(0.410, 0.185, 0.700, 0.72), 0.08, 0.18, Color(0.190, 0.070, 0.430, 1.0), 0.24, true)
 	elif lower_name.find("cyan_refraction_core") >= 0:
-		_set_sector2_visible_arena_material(material, Color(0.040, 0.560, 0.770, 1.0), 0.0, 0.26, Color(0.060, 0.820, 1.000, 1.0), 0.70)
+		_set_sector2_visible_arena_material(material, Color(0.050, 0.470, 0.650, 1.0), 0.0, 0.26, Color(0.060, 0.700, 0.900, 1.0), 0.36)
 	elif lower_name.find("rift_sheen") >= 0:
 		_set_sector2_visible_arena_material(material, Color(0.500, 0.300, 0.760, 1.0), 0.20, 0.24, Color(0.200, 0.070, 0.360, 1.0), 0.180)
 	elif lower_name.find("outer_rift_rail") >= 0:
-		_set_sector2_visible_arena_material(material, Color(0.112, 0.052, 0.142, 1.0), 0.68, 0.52, Color(0.118, 0.030, 0.205, 1.0), 0.155)
+		_set_sector2_visible_arena_material(material, Color(0.210, 0.118, 0.260, 1.0), 0.68, 0.44, Color(0.130, 0.044, 0.220, 1.0), 0.115)
 
 
 func _set_sector2_visible_arena_material(material: StandardMaterial3D, albedo: Color, metallic: float, roughness: float, emission: Color, emission_energy: float, glass := false) -> void:
@@ -5370,6 +5422,7 @@ func _enter_title_menu() -> void:
 	_pause_options_visible = false
 	_pause_menu_selected_index = 0
 	_pause_options_selected_index = 0
+	_clear_run_bonus_weapons()
 	_clear_upgrade_choice_preview()
 	_clear_weapon_reward_decision_state()
 	_clear_chain_link_effects()
@@ -5415,6 +5468,7 @@ func _enter_title_menu() -> void:
 func _start_title_run() -> void:
 	if not _title_menu_active:
 		return
+	_clear_run_bonus_weapons()
 	_title_menu_active = false
 	_title_options_visible = false
 	_help_visible = false
@@ -5685,6 +5739,7 @@ func _return_to_title_from_pause() -> void:
 	_manual_pause = false
 	_level_up_active = false
 	_sector_reward_active = false
+	_clear_run_bonus_weapons()
 	_clear_weapon_reward_decision_state()
 	_clear_run_event_state()
 	_title_menu_active = true
@@ -12941,12 +12996,9 @@ func _apply_upgrade(upgrade: Dictionary) -> void:
 	_hex_shatter_split_bonus = mini(6, _hex_shatter_split_bonus + int(effects.get("hex_shatter_split_add", 0)))
 	if bool(effects.get("fractal_shard_enable", false)):
 		if not _is_weapon_family_equipped("fractal_shard"):
-			_run_bonus_weapon_definitions["fractal_shard"] = true
-		_refresh_run_weapon_activation()
-		if _weapon_state.has("fractal_shard"):
-			var fractal_state: Dictionary = _weapon_state["fractal_shard"]
-			fractal_state["timer"] = minf(float(fractal_state.get("timer", 0.0)), 0.28)
-			_weapon_state["fractal_shard"] = fractal_state
+			_activate_run_bonus_weapon("fractal_shard", was_new_run_weapon)
+		else:
+			_refresh_run_weapon_activation()
 	_fractal_shard_damage_multiplier += float(effects.get("fractal_shard_damage_multiplier_add", 0.0))
 	_fractal_shard_cooldown_multiplier = clampf(_fractal_shard_cooldown_multiplier + float(effects.get("fractal_shard_cooldown_multiplier_add", 0.0)), 0.52, 1.0)
 	_fractal_shard_split_bonus = mini(4, _fractal_shard_split_bonus + int(effects.get("fractal_shard_split_add", 0)))
@@ -12971,7 +13023,7 @@ func _upgrade_result_notice_text(upgrade: Dictionary, was_new_run_weapon := fals
 
 
 func _update_orbit_visual_visibility() -> void:
-	if not _is_weapon_family_equipped("orbit_spark"):
+	if not _is_runtime_weapon_active("orbit_spark"):
 		for node in _orbit_nodes:
 			if is_instance_valid(node):
 				node.visible = false
@@ -13140,6 +13192,7 @@ func _complete_run() -> void:
 	if _run_success or _game_over:
 		return
 	_run_success = true
+	_clear_run_bonus_weapons()
 	_clear_run_event_state()
 	_clear_enemy_projectiles_and_hazards()
 	_clear_chain_link_effects()
@@ -13170,6 +13223,7 @@ func _damage_player(amount: float) -> void:
 	_add_screen_shake(0.10, 0.18)
 	if _player_health <= 0.0:
 		_game_over = true
+		_clear_run_bonus_weapons()
 		_clear_run_event_state()
 		_clear_chain_link_effects()
 		_finalize_run_neon_dust(false)
@@ -13194,6 +13248,7 @@ func _restart_run() -> void:
 	_help_visible = false
 	_level_up_active = false
 	_sector_reward_active = false
+	_clear_run_bonus_weapons()
 	_clear_weapon_reward_decision_state()
 	_clear_run_event_state()
 	_run_success = false

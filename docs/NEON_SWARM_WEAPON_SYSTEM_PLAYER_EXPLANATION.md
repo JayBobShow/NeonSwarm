@@ -149,6 +149,12 @@ Run weapons:
 - do not replace the 8 equipped weapons,
 - are run-only unless a separate loot/save system awards or stores them.
 
+Runtime note:
+
+- A `NEW RUN WEAPON` is added to the active runtime firing arsenal, not to the equipped loadout list.
+- Its cooldown timer is primed so it can fire on the next unpaused weapon update.
+- It remains active through current-run stat rebuilds and is cleared when the run ends, restarts, returns to title, or completes.
+
 ## 6. When Does A Weapon Go To The Stash?
 
 A weapon goes to the stash when:
@@ -191,7 +197,7 @@ The default new-save loadout already fills all 8 slots:
 
 This means a new generated weapon usually cannot simply become a ninth weapon. The player normally has to replace an existing equipped slot or send the new weapon to stash.
 
-A `NEW RUN WEAPON` is the exception because it is not an equipped slot. It is a temporary run-only addition and does not change the 8-slot loadout cap.
+A `NEW RUN WEAPON` is the exception because it is not an equipped slot. It is a temporary run-only addition, enters the active firing arsenal immediately, and does not change the 8-slot loadout cap.
 
 ## 9. Are Equipped Weapons Automatic Or Button-Fired?
 

@@ -1031,7 +1031,7 @@ Focused validation confirms:
 - The Hard Repair 3 focused validation confirms the AAA-style GLB imports with 1,075 geometry descendants, no collision descendants, shadow/GI disabled, old flat/procedural visuals inactive, no white cross/debug markers, player clamp intact, Phase 37 ripple nodes present, and no duplicate GLB nodes after rebuild/sector switch.
 - The Hotfix 10 focused validation confirms `NEW RUN WEAPON` card text includes type, starts-firing, run-only, and no-loadout-replacement language.
 - The Hotfix 10 focused validation confirms How To Play includes the equipped weapons vs run weapons explanation.
-- The Hotfix 10 focused validation confirms Fractal Shard run-bonus activation starts firing soon, does not alter equipped slot count, survives a weapon-stat rebuild, and appears in the run-bonus HUD indicator.
+- The Hotfix 10 focused validation confirmed Fractal Shard run-bonus activation text and HUD behavior. Phase 39 Repair later tightened the runtime path so the run-bonus definition is included in active weapon enablement and its timer is primed to `0.0` on selection.
 - The Hotfix 10 focused validation confirms the `8` equipped weapon HUD rows still initialize, the right equipped weapon HUD contains no `ScrollContainer`, boss/generated reward flow UI initializes, and save compatibility is not broken.
 
 ## Manual Test Checklist

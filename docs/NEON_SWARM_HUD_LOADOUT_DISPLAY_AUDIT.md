@@ -290,7 +290,7 @@ Scope:
 Current audited behavior:
 
 - `NEW RUN WEAPON` applies to Fractal Shard upgrade cards while Fractal Shard is not equipped from the Armory/loadout.
-- Selecting the card enables Fractal Shard for the current run and lowers its timer so it starts firing automatically shortly after selection.
+- Selecting the card enables Fractal Shard for the current run, adds it to the active runtime weapon definitions, and primes its timer to `0.0` so it can fire on the next unpaused weapon update.
 - It does not append to or replace `_equipped_weapon_instances`.
 - It does not use the generated weapon loot decision console and does not require Armory equipment.
 - It is run-only because the run-bonus state is not saved to weapon inventory.
@@ -353,3 +353,20 @@ Validation run:
 - `godot --headless --path . scenes/Main.tscn --quit-after 3`: passed.
 - `godot --headless --path . --script /tmp/neon_swarm_phase38_hotfix10_validation.gd`: passed with `PHASE38_HOTFIX10_RUN_WEAPON_CLARITY_PASS`.
 - Focused validation confirmed card text, How To Play text, run-bonus activation, weapon-stat rebuild persistence, `8` equipped HUD rows, no gameplay HUD scroll container, generated reward flow initialization, and no save compatibility break.
+
+## Phase 39 Repair - Run Weapon Autofire
+
+The Phase 39 repair audited the `NEW RUN WEAPON` path after user testing reported that selected run weapons did not appear to autofire.
+
+Bug found:
+
+- Run-bonus state existed in `_run_bonus_weapon_definitions`.
+- The HUD could display the run-bonus weapon.
+- Runtime weapon enablement was still primarily rebuilt from `_equipped_weapon_instances`, with only a narrow Fractal-specific refresh afterward.
+
+Repair:
+
+- `_rebuild_weapon_stat_bonuses()` now builds active runtime weapons from equipped loadout weapons plus `_run_bonus_weapon_definitions`.
+- `_activate_run_bonus_weapon()` marks the run-only weapon active, refreshes weapon state, updates the run-bonus HUD, and primes newly selected run weapons to fire immediately.
+- `_clear_run_bonus_weapons()` clears temporary run-only weapons on title/start/restart/death/run-complete paths.
+- Run-only weapons still do not enter or replace the fixed right-side `8` equipped loadout slots.
