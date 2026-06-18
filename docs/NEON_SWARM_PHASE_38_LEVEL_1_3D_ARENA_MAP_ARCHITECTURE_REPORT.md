@@ -481,6 +481,110 @@ Manual test focus for this repair:
 - Confirm enemies, XP, bullets, event markers, boss warnings, HUD, and the Phase 37 ripple remain clearer than the floor.
 - Confirm pause/restart/return-to-title does not duplicate the arena model.
 
+## Hard Repair 4 — Material / Lighting / Visibility Pass
+
+Why Hard Repair 3 was rejected:
+
+- User feedback was "no all of it is black."
+- The Blender GLB had enough modeled structure, but the runtime read collapsed into a near-black value mass.
+- The issue was material/lighting visibility, not another geometry-count problem.
+
+Role/delegation summary:
+
+- Material / Lighting Artist inspected the GLB material table, the Blender material palette, and Sector 1 environment tone. Verdict: high-metallic, very dark albedos plus exported-no-lights and low ambient caused the black read.
+- Environment Art Director inspected the arena notes, Blender build script, report, runtime GLB path, and old-background suppression. Verdict: preserve the hard-surface geometry and repair value separation/light catch.
+- Godot Technical Artist inspected the Sector 1 load/configuration path and recommended the current integration lane: tune imported `NS_S1_` `StandardMaterial3D` resources after GLB instancing, keep shadows/GI disabled, use one controlled shadowless light, and avoid camera/bounds changes.
+- Readability QA was handled in the focused validation script and manual checklist: verify material setup, arena-only lighting, old flat visuals absent, player clamp intact, Phase 37 ripple present, and no duplicate GLB after rebuild.
+
+Cause of the black/invisible look:
+
+- The GLB export intentionally excludes the Blender preview area light (`export_lights=False`).
+- Sector 1 previously used very low ambient (`Color(0.020, 0.040, 0.085)` at energy `0.22`).
+- Hard Repair 3 metal values were high-metallic and very dark, for example `NS_S1_Dark_Brushed_Aluminum_AAA` at base `(0.124, 0.132, 0.138)`, metallic `0.90`, emission strength `0.012`.
+- In Godot, that combination had too little diffuse/value response for the top-down camera to reveal panel faces, bevels, lips, vents, grooves, and borders.
+
+Material changes:
+
+- `NS_S1_Dark_Brushed_Aluminum_AAA`: base `(0.205, 0.218, 0.232)`, metallic `0.62`, roughness `0.54`, emission strength `0.120`.
+- `NS_S1_Raised_Gunmetal_Panel_AAA`: base `(0.245, 0.262, 0.274)`, metallic `0.66`, roughness `0.48`, emission strength `0.145`.
+- `NS_S1_Beveled_Edge_Gunmetal_AAA`: base `(0.145, 0.165, 0.188)`, metallic `0.62`, roughness `0.58`, emission strength `0.105`.
+- `NS_S1_Recessed_Dark_Depth_Metal_AAA`: base `(0.055, 0.066, 0.084)`, metallic `0.40`, roughness `0.78`, emission strength `0.048`.
+- `NS_S1_Blackened_Service_Trim_AAA`: base `(0.030, 0.038, 0.052)`, metallic `0.32`, roughness `0.84`, emission strength `0.020`.
+- `NS_S1_Cool_Aluminum_Sheen_AAA`: base `(0.500, 0.650, 0.700)`, metallic `0.34`, roughness `0.20`, emission strength `0.160`.
+- Cyan accents remain restrained: embedded channels use emission strength `0.68`; rail cores use `0.86`.
+
+Lighting/fake reflection changes:
+
+- Added one runtime `DirectionalLight3D` named `Sector1ArenaMaterialReadabilityKeyLight`.
+- Light settings: color `Color(0.62, 0.78, 1.0)`, energy `0.30`, specular `0.42`, rotation `Vector3(-54, -28, 0)`.
+- The light is shadowless, has bake mode disabled, indirect energy `0.0`, and volumetric fog energy `0.0`.
+- The light cull mask is isolated to `SECTOR1_ARENA_VISUAL_LIGHT_LAYER_MASK = 1 << 19`.
+- Imported Sector 1 arena `GeometryInstance3D` nodes are moved to that same visual layer so the key light catches the metal floor without globally lifting enemies, XP, projectiles, HUD, or the Phase 37 ripple.
+- Sector 1 ambient tone was lifted only to `Color(0.045, 0.060, 0.090)` at energy `0.34`; camera size, tonemap exposure, glow, and gameplay bounds were not changed.
+
+Runtime material safeguards:
+
+- `_configure_sector1_blender_arena_visuals()` still disables imported shadows and GI.
+- `_boost_sector1_imported_arena_materials()` now duplicates each matched imported `NS_S1_` `StandardMaterial3D` and assigns it as a surface override before tuning values.
+- This preserves the GLB's material slot separation and avoids mutating cached PackedScene material resources globally.
+
+Visibility/readability changes:
+
+- Panel faces, bevels, raised lips, inset plates, vents, grooves, border walls, pylons, and sheen strips now have enough value separation to read from the orthographic gameplay camera.
+- The pass does not reintroduce white center cross lines, full-floor cyan debug grid lines, giant marker dots, old procedural Sector 1 floor visuals, or the old HD background plate.
+- The Phase 37 blue propulsion ripple remains active and should stay visible on the brighter floor because cyan seam/rail emissions were kept restrained.
+
+Files changed for Hard Repair 4:
+
+- `scripts/NeonSwarm3DGameplayPrototype.gd`
+- `art/arenas/sector_1/source/blender/build_sector_1_neon_grid_arena.py`
+- `art/arenas/sector_1/source/blender/sector_1_neon_grid_arena.blend`
+- `art/arenas/sector_1/exported/sector_1_neon_grid_arena.glb`
+- `art/arenas/sector_1/source/blender/sector_1_environment_art_notes.md`
+- `docs/NEON_SWARM_PHASE_38_LEVEL_1_3D_ARENA_MAP_ARCHITECTURE_REPORT.md`
+
+Godot docs/classes referenced:
+
+- `StandardMaterial3D`: used because Godot documents it as the PBR 3D material for albedo/metallic/roughness/emission-driven 3D objects.
+- `BaseMaterial3D`: used for roughness, metallic/specular, emission, and texture filtering behavior.
+- `MeshInstance3D`: used because imported GLB descendants render mesh resources and can receive per-surface material overrides.
+- `GLTFDocument` / `GLTFState`: used by the existing runtime GLB loading path to append the file and generate the scene.
+- `DirectionalLight3D` / `Light3D`: used for one controlled arena-only material key light; shadows are disabled because Godot documents real-time shadows as a significant performance cost.
+- 3D lights and shadows guidance: followed by using one persistent light, disabling shadows, and avoiding dynamic light spam.
+- `Camera3D`: reviewed but not changed; orthographic camera size remains `47.5`.
+
+Focused validation for Hard Repair 4:
+
+- `timeout 30s godot --headless --path . --script /tmp/neon_swarm_phase38_hard_repair4_validate.gd`
+- Confirms Sector 1 GLB exists and loads.
+- Confirms one `Sector1ArenaMaterialReadabilityKeyLight` exists, is shadowless, uses the arena-only light cull mask, and has energy `0.30`.
+- Confirms imported Sector 1 geometry remains shadow/GI disabled and is assigned to the arena visual light layer.
+- Confirms imported `NS_S1_` material overrides are applied and expected visible metal materials are present.
+- Confirms old procedural Sector 1 floor/grid roots and old HD background plate are absent.
+- Confirms generic grid/border overlays remain hidden in Sector 1.
+- Confirms Phase 37 propulsion ripple disk exists.
+- Confirms the player clamp still keeps the player inside the `+/-27.0` playable area.
+- Confirms repeated visual identity rebuild does not duplicate the Sector 1 GLB.
+
+Hard Repair 4 validation results:
+
+- `git status`: working tree contained only the intended Hard Repair 4 files before commit.
+- `godot --headless --path . --quit-after 3`: passed.
+- `godot --headless --path . scenes/Main.tscn --quit-after 3`: passed.
+- `timeout 30s godot --headless --path . --script /tmp/neon_swarm_phase38_hard_repair4_validate.gd`: passed with `PHASE38_HARD_REPAIR4_VALIDATION_PASS`.
+- No gameplay, camera, bounds, collision, save, UI, weapon, enemy, XP, event, boss, controller, or Phase 37 ripple behavior was intentionally changed.
+
+Manual test focus for this repair:
+
+- Start Game in Sector 1.
+- Confirm the floor no longer reads as all black.
+- Confirm metal panels, bevels, raised lips, inset panels, grooves, vents, border walls, rails, and pylons are visible at normal gameplay zoom.
+- Confirm the floor reads as dark aluminum/gunmetal, not black squares or gray plastic.
+- Confirm cyan seams/rails are accents, not a flat debug grid.
+- Confirm no white cross, giant corner dots, old HD background plate, or procedural floor overlay is visible.
+- Confirm enemies, XP, bullets, player core, HUD, event markers, and Phase 37 ripple remain clearer than the floor.
+- Confirm the player cannot leave the visible arena and no duplicate arena appears after pause/restart/return-to-title.
+
 ## Validation Results
 
 Run after implementation:

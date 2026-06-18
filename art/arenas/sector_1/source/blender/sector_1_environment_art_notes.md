@@ -26,3 +26,11 @@ Current art structure:
 - Seam channels are recessed dark trenches with bridge plates and short dim cyan accents.
 - Border walls are segmented machinery modules with plinths, inset wall faces, top caps, inner curbs, brackets, and restrained cyan rail segments.
 - Corner and mid-wall anchors are built as dark machinery, not bright markers.
+
+Hard Repair 4 material/lighting visibility notes:
+
+- The Hard Repair 3 geometry was not rebuilt; the issue was value/lighting collapse, not missing modeled structure.
+- Metal panel materials were lifted out of near-black and moved from very high metallic toward mixed metal/diffuse response so they stay visible under the Sector 1 runtime lighting.
+- The runtime still applies a Sector 1-only material visibility pass to imported `NS_S1_` materials after GLB load so the exported asset and live build stay aligned.
+- Cyan channel/rail materials remain restrained accents and should not return to full-floor grid identity.
+- A single shadowless Godot `DirectionalLight3D` is added at runtime on an arena-only visual light layer to help the metal catch light without globally brightening combat objects.

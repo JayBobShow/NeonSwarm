@@ -81,6 +81,11 @@ const SECTOR1_ARENA_GRID_Y := 0.044
 const SECTOR1_ARENA_RAIL_HALF_SIZE := ARENA_HALF_SIZE
 const SECTOR1_ARENA_DEPTH_HALF_SIZE := ARENA_HALF_SIZE + 3.0
 const SECTOR1_BLENDER_ARENA_SCENE_PATH := "res://art/arenas/sector_1/exported/sector_1_neon_grid_arena.glb"
+const SECTOR1_ARENA_VISUAL_LIGHT_LAYER_MASK := 1 << 19
+const SECTOR1_ARENA_KEY_LIGHT_ENERGY := 0.30
+const SECTOR1_ARENA_KEY_LIGHT_SPECULAR := 0.42
+const SECTOR1_ARENA_KEY_LIGHT_COLOR := Color(0.62, 0.78, 1.0, 1.0)
+const SECTOR1_ARENA_KEY_LIGHT_ROTATION := Vector3(-54.0, -28.0, 0.0)
 
 const PULSE_COOLDOWN := 0.30
 const PULSE_DAMAGE := 27.0
@@ -2226,9 +2231,9 @@ func _apply_sector_environment_tone() -> void:
 		return
 	match _sector_index:
 		0:
-			_world_environment_data.background_color = Color(0.0, 0.004, 0.018, 1.0)
-			_world_environment_data.ambient_light_color = Color(0.020, 0.040, 0.085, 1.0)
-			_world_environment_data.ambient_light_energy = 0.22
+			_world_environment_data.background_color = Color(0.0, 0.006, 0.022, 1.0)
+			_world_environment_data.ambient_light_color = Color(0.045, 0.060, 0.090, 1.0)
+			_world_environment_data.ambient_light_energy = 0.34
 		1:
 			_world_environment_data.background_color = Color(0.010, 0.000, 0.024, 1.0)
 			_world_environment_data.ambient_light_color = Color(0.060, 0.020, 0.082, 1.0)
@@ -2655,7 +2660,23 @@ func _create_sector1_neon_grid_3d_architecture() -> void:
 	var root := Node3D.new()
 	root.name = "Sector1NeonGrid3DArenaArchitectureRoot"
 	_sector_geometry_root.add_child(root)
+	_create_sector1_arena_readability_key_light(root)
 	_create_sector1_blender_arena_kit(root)
+
+
+func _create_sector1_arena_readability_key_light(parent: Node3D) -> void:
+	var light := DirectionalLight3D.new()
+	light.name = "Sector1ArenaMaterialReadabilityKeyLight"
+	light.light_color = SECTOR1_ARENA_KEY_LIGHT_COLOR
+	light.light_energy = SECTOR1_ARENA_KEY_LIGHT_ENERGY
+	light.light_specular = SECTOR1_ARENA_KEY_LIGHT_SPECULAR
+	light.light_cull_mask = SECTOR1_ARENA_VISUAL_LIGHT_LAYER_MASK
+	light.light_bake_mode = Light3D.BAKE_DISABLED
+	light.light_indirect_energy = 0.0
+	light.light_volumetric_fog_energy = 0.0
+	light.shadow_enabled = false
+	light.rotation_degrees = SECTOR1_ARENA_KEY_LIGHT_ROTATION
+	parent.add_child(light)
 
 
 func _create_sector1_blender_arena_kit(parent: Node3D) -> Node3D:
@@ -2669,17 +2690,78 @@ func _create_sector1_blender_arena_kit(parent: Node3D) -> Node3D:
 		false
 	) as Node3D
 	if instance != null:
-		_configure_sector1_blender_arena_visuals(instance)
+		var material_visibility_cache: Dictionary = {}
+		_configure_sector1_blender_arena_visuals(instance, material_visibility_cache)
 	return instance
 
 
-func _configure_sector1_blender_arena_visuals(root: Node) -> void:
+func _configure_sector1_blender_arena_visuals(root: Node, material_visibility_cache: Dictionary) -> void:
 	if root is GeometryInstance3D:
 		var geometry := root as GeometryInstance3D
 		geometry.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		geometry.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
+		geometry.layers = SECTOR1_ARENA_VISUAL_LIGHT_LAYER_MASK
+	if root is MeshInstance3D:
+		_boost_sector1_imported_arena_materials(root as MeshInstance3D, material_visibility_cache)
 	for child in root.get_children():
-		_configure_sector1_blender_arena_visuals(child)
+		_configure_sector1_blender_arena_visuals(child, material_visibility_cache)
+
+
+func _boost_sector1_imported_arena_materials(mesh_instance: MeshInstance3D, material_visibility_cache: Dictionary) -> void:
+	var mesh := mesh_instance.mesh
+	if mesh == null:
+		return
+	for surface_index in range(mesh.get_surface_count()):
+		var material := mesh_instance.get_surface_override_material(surface_index)
+		if material == null:
+			material = mesh.surface_get_material(surface_index)
+		if material is StandardMaterial3D:
+			var arena_material := material as StandardMaterial3D
+			var material_name := arena_material.resource_name
+			if material_name == "":
+				material_name = str(arena_material)
+			if not material_name.begins_with("NS_S1_"):
+				continue
+			var material_id := arena_material.get_instance_id()
+			if material_visibility_cache.has(material_id):
+				mesh_instance.set_surface_override_material(surface_index, material_visibility_cache[material_id] as Material)
+				continue
+			var visible_material := arena_material.duplicate() as StandardMaterial3D
+			_apply_sector1_arena_material_visibility(visible_material, material_name)
+			material_visibility_cache[material_id] = visible_material
+			mesh_instance.set_surface_override_material(surface_index, visible_material)
+
+
+func _apply_sector1_arena_material_visibility(material: StandardMaterial3D, material_name: String) -> void:
+	var lower_name := material_name.to_lower()
+	if lower_name.find("dark_brushed_aluminum") >= 0:
+		_set_sector1_visible_arena_material(material, Color(0.205, 0.218, 0.232, 1.0), 0.62, 0.54, Color(0.025, 0.074, 0.088, 1.0), 0.120)
+	elif lower_name.find("raised_gunmetal") >= 0:
+		_set_sector1_visible_arena_material(material, Color(0.245, 0.262, 0.274, 1.0), 0.66, 0.48, Color(0.030, 0.086, 0.100, 1.0), 0.145)
+	elif lower_name.find("beveled_edge") >= 0:
+		_set_sector1_visible_arena_material(material, Color(0.145, 0.165, 0.188, 1.0), 0.62, 0.58, Color(0.022, 0.068, 0.086, 1.0), 0.105)
+	elif lower_name.find("recessed_dark_depth") >= 0:
+		_set_sector1_visible_arena_material(material, Color(0.055, 0.066, 0.084, 1.0), 0.40, 0.78, Color(0.010, 0.042, 0.058, 1.0), 0.048)
+	elif lower_name.find("cool_aluminum_sheen") >= 0:
+		_set_sector1_visible_arena_material(material, Color(0.500, 0.650, 0.700, 1.0), 0.34, 0.20, Color(0.070, 0.240, 0.300, 1.0), 0.160)
+	elif lower_name.find("blackened_service_trim") >= 0:
+		_set_sector1_visible_arena_material(material, Color(0.030, 0.038, 0.052, 1.0), 0.32, 0.84, Color(0.006, 0.026, 0.040, 1.0), 0.020)
+	elif lower_name.find("dim_cyan_embedded_channel") >= 0:
+		_set_sector1_visible_arena_material(material, Color(0.000, 0.340, 0.470, 1.0), 0.0, 0.34, Color(0.000, 0.620, 0.780, 1.0), 0.68)
+	elif lower_name.find("restrained_cyan_rail_core") >= 0:
+		_set_sector1_visible_arena_material(material, Color(0.025, 0.460, 0.580, 1.0), 0.0, 0.30, Color(0.000, 0.720, 0.900, 1.0), 0.86)
+
+
+func _set_sector1_visible_arena_material(material: StandardMaterial3D, albedo: Color, metallic: float, roughness: float, emission: Color, emission_energy: float) -> void:
+	material.albedo_color = albedo
+	material.metallic = metallic
+	material.roughness = roughness
+	material.metallic_specular = 0.62
+	material.emission_enabled = emission_energy > 0.0
+	if material.emission_enabled:
+		material.emission = emission
+		material.emission_energy_multiplier = emission_energy
+	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 
 
 func _create_sector1_child_root(parent: Node3D, node_name: String) -> Node3D:
