@@ -80,6 +80,7 @@ const SECTOR1_ARENA_PANEL_BASE_Y := -0.096
 const SECTOR1_ARENA_GRID_Y := 0.044
 const SECTOR1_ARENA_RAIL_HALF_SIZE := ARENA_HALF_SIZE
 const SECTOR1_ARENA_DEPTH_HALF_SIZE := ARENA_HALF_SIZE + 3.0
+const SECTOR1_BLENDER_ARENA_SCENE_PATH := "res://art/arenas/sector_1/exported/sector_1_neon_grid_arena.glb"
 
 const PULSE_COOLDOWN := 0.30
 const PULSE_DAMAGE := 27.0
@@ -2652,10 +2653,29 @@ func _create_sector1_neon_grid_3d_architecture() -> void:
 	var root := Node3D.new()
 	root.name = "Sector1NeonGrid3DArenaArchitectureRoot"
 	_sector_geometry_root.add_child(root)
-	_create_sector1_floor_panel_foundation(root)
-	_create_sector1_cyan_grid_linework(root)
-	_create_sector1_raised_border_architecture(root)
-	_create_sector1_background_depth_architecture(root)
+	_create_sector1_blender_arena_kit(root)
+
+
+func _create_sector1_blender_arena_kit(parent: Node3D) -> Node3D:
+	var instance := _add_blender_asset_instance(
+		parent,
+		"Blender3DSector1NeonGridArenaModel",
+		SECTOR1_BLENDER_ARENA_SCENE_PATH,
+		1.0,
+		Vector3.ZERO,
+		0.0,
+		false
+	) as Node3D
+	if instance != null:
+		_configure_sector1_blender_arena_visuals(instance)
+	return instance
+
+
+func _configure_sector1_blender_arena_visuals(root: Node) -> void:
+	if root is GeometryInstance3D:
+		(root as GeometryInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	for child in root.get_children():
+		_configure_sector1_blender_arena_visuals(child)
 
 
 func _create_sector1_child_root(parent: Node3D, node_name: String) -> Node3D:

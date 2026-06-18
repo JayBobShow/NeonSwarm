@@ -78,6 +78,7 @@ Approved gameplay presentation:
 Approved arena architecture presentation:
 
 - 3D arena map pieces may use visual-only floor plates, border walls, rails, and background depth geometry.
+- Authored Blender source plus GLB runtime kits are preferred for arena architecture when practical, especially for Level/Sector map construction.
 - Gameplay remains authoritative on the existing flat plane unless a future phase explicitly approves collision changes.
 - Decorative map architecture must not imply playable ramps, platforms, or paths that do not exist.
 - Border walls and rails must clarify the playable arena boundary without blocking or hiding combat reads.
