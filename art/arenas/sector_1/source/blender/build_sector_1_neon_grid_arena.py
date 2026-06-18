@@ -409,21 +409,11 @@ def create_border_and_pylons(root, mats: dict) -> None:
 
 
 def create_depth_and_detail(root, mats: dict) -> None:
-    depth = ARENA_HALF_SIZE + 2.85
-    for i, p in enumerate([-18.0, 0.0, 18.0]):
-        add_box(root, f"Sector1AAAOuterNorthServiceButtress{i}", (p, -depth, 0.22), (7.4, 0.58, 0.42), mats["deep_metal"], 0.070, 1)
-        add_box(root, f"Sector1AAAOuterSouthServiceButtress{i}", (p, depth, 0.22), (7.4, 0.58, 0.42), mats["deep_metal"], 0.070, 1)
-        add_box(root, f"Sector1AAAOuterWestServiceButtress{i}", (-depth, p, 0.22), (0.58, 7.4, 0.42), mats["deep_metal"], 0.070, 1)
-        add_box(root, f"Sector1AAAOuterEastServiceButtress{i}", (depth, p, 0.22), (0.58, 7.4, 0.42), mats["deep_metal"], 0.070, 1)
     for i, p in enumerate([-24.0, -8.0, 8.0, 24.0]):
         add_box(root, f"Sector1AAAPerimeterServiceTrenchNorth{i}", (p, -25.70, -0.015), (5.6, 0.56, 0.050), mats["black_trim"], 0.030, 1)
         add_box(root, f"Sector1AAAPerimeterServiceTrenchSouth{i}", (p, 25.70, -0.015), (5.6, 0.56, 0.050), mats["black_trim"], 0.030, 1)
         add_box(root, f"Sector1AAAPerimeterServiceTrenchWest{i}", (-25.70, p, -0.015), (0.56, 5.6, 0.050), mats["black_trim"], 0.030, 1)
         add_box(root, f"Sector1AAAPerimeterServiceTrenchEast{i}", (25.70, p, -0.015), (0.56, 5.6, 0.050), mats["black_trim"], 0.030, 1)
-    add_cylinder_between(root, "Sector1AAAFarNorthRestrainedCyanRail", (-22.0, -depth, 0.54), (22.0, -depth, 0.54), 0.022, mats["cyan_neon"], 10)
-    add_cylinder_between(root, "Sector1AAAFarSouthRestrainedCyanRail", (-22.0, depth, 0.54), (22.0, depth, 0.54), 0.022, mats["cyan_neon"], 10)
-    add_cylinder_between(root, "Sector1AAAFarWestRestrainedCyanRail", (-depth, -22.0, 0.54), (-depth, 22.0, 0.54), 0.022, mats["cyan_neon"], 10)
-    add_cylinder_between(root, "Sector1AAAFarEastRestrainedCyanRail", (depth, -22.0, 0.54), (depth, 22.0, 0.54), 0.022, mats["cyan_neon"], 10)
 
 
 def setup_scene() -> None:

@@ -667,6 +667,102 @@ Manual test focus:
 - Confirm enemies, XP, bullets, event markers, player core, HUD, and the metal arena remain readable.
 - Confirm the player cannot leave the visible arena.
 
+## Hotfix 6 — Outer Rail Cleanup and Non-Scrolling Vertical HUD Layout
+
+User feedback:
+
+- Remove the running vertical decorative rails/lines outside the arena/play area.
+- Keep top-left and top-right HUD panels outside or at the edge of the playable action area.
+- Keep top-center notification/objective panels as temporary notification space.
+- Replace the bottom loadout rail with a clearer non-scrolling layout that shows all `8` equipped weapons.
+
+Outer rail cleanup:
+
+- The unnecessary outer clutter was baked into the Sector 1 Blender GLB by `create_depth_and_detail()` in `art/arenas/sector_1/source/blender/build_sector_1_neon_grid_arena.py`.
+- Removed generated outer service buttress meshes:
+  - `Sector1AAAOuterNorthServiceButtress0..2`
+  - `Sector1AAAOuterSouthServiceButtress0..2`
+  - `Sector1AAAOuterWestServiceButtress0..2`
+  - `Sector1AAAOuterEastServiceButtress0..2`
+- Removed generated far restrained cyan rail meshes:
+  - `Sector1AAAFarNorthRestrainedCyanRail`
+  - `Sector1AAAFarSouthRestrainedCyanRail`
+  - `Sector1AAAFarWestRestrainedCyanRail`
+  - `Sector1AAAFarEastRestrainedCyanRail`
+- Preserved actual arena boundary geometry:
+  - `Sector1AAASegmentedWall_*_*`
+  - `Sector1AAASegmentedWall_*_*_SegmentedCyanTopRail`
+  - `Sector1AAACornerMachineryAnchor*`
+  - `Sector1AAAMidWallPylon_*_*`
+- Regenerated `art/arenas/sector_1/source/blender/sector_1_neon_grid_arena.blend`.
+- Re-exported `art/arenas/sector_1/exported/sector_1_neon_grid_arena.glb`.
+
+HUD audit result:
+
+- The gameplay HUD is procedural in `scripts/NeonSwarm3DGameplayPrototype.gd`.
+- `EQUIPPED_WEAPON_SLOT_CAP` remains `8`.
+- Before Hotfix 5, the bottom rail was effectively `4` stat chips plus `4` weapon-family chips, so it did not show all `8` equipped weapon slots.
+- Hotfix 5 fixed the count but kept the display as a horizontal bottom rail.
+- The gameplay HUD itself was already non-scrolling; `ScrollContainer` remains limited to menu contexts such as Help, Armory, and weapon reward UI.
+
+Final non-scrolling HUD layout:
+
+- Top-left `GameplayCoreVitalsPanel` remains at the screen edge for health/XP/level.
+- Top-right `GameplayRunTelemetryPanel` remains at the screen edge for timer/sector/kills/score/hostiles/audio.
+- Top-center boss, combat notice, and run-event objective panels remain temporary notification/objective panels.
+- Added left-side vertical `GameplayStatsReadoutPanel` under core vitals with stat chips:
+  - `DMG`
+  - `RATE`
+  - `SPD`
+  - `PICKUP`
+- Replaced the bottom loadout rail with right-side `GameplayEquippedWeaponVerticalPanel`.
+- Added `GameplayLoadoutEightSlotColumn`, a fixed `VBoxContainer` with `8` visible weapon rows:
+  - `GameplayLoadoutSlot01`
+  - `GameplayLoadoutSlot02`
+  - `GameplayLoadoutSlot03`
+  - `GameplayLoadoutSlot04`
+  - `GameplayLoadoutSlot05`
+  - `GameplayLoadoutSlot06`
+  - `GameplayLoadoutSlot07`
+  - `GameplayLoadoutSlot08`
+- Each weapon row shows a `NeonWeaponIcon`, slot number, rarity code, and compact weapon name.
+- Empty slots render as dim `EMPTY` rows.
+- No gameplay weapon/stat HUD uses scrolling.
+
+Godot docs/classes referenced:
+
+- `Control`: used for fixed HUD positioning in the 1920x1080 design root.
+- `VBoxContainer`: used for the vertical stat stack and vertical 8-slot weapon stack.
+- `HBoxContainer`: used only inside each fixed weapon row to align icon/text.
+- `ScrollContainer`: reviewed and intentionally not used in the gameplay HUD; menu scroll behavior remains separate.
+- `MeshInstance3D`: used for imported GLB mesh validation and to verify removed outer rails/buttresses while preserving boundary meshes.
+- Imported 3D scene/GLB workflow: preserved by regenerating the Blender source and exported GLB, then continuing to load the GLB through the existing Sector 1 runtime path.
+
+Hotfix 6 validation results:
+
+- `git status`: confirmed the intended Hotfix 6 files were modified before commit.
+- `godot --headless --path . --quit-after 3`: passed.
+- `godot --headless --path . scenes/Main.tscn --quit-after 3`: passed.
+- `timeout 30s godot --headless --path . --script /tmp/neon_swarm_phase38_hotfix6_validate.gd`: passed with `PHASE38_HOTFIX6_VALIDATION_PASS`.
+- `git diff --check`: passed with no whitespace errors.
+- `git diff --stat`: reviewed the intended Hotfix 6 file set before commit.
+- Focused validation confirms removed far cyan rails and outer service buttresses are absent from the imported GLB.
+- Focused validation confirms actual segmented boundary rails, corner machinery cores, and mid-wall pylon cores remain present.
+- Focused validation confirms the old bottom rail nodes are absent, `GameplayLoadoutEightSlotColumn` exists, exactly `8` weapon slot rows/icons/labels exist, stat chips are separated in `GameplayStatsReadoutPanel`, no `ScrollContainer` exists under `GameplayBlueprintReadoutRoot`, player clamp still holds inside `+/-27.0`, and the Phase 37 propulsion ripple still initializes.
+
+Manual test focus:
+
+- Start Game in Sector 1.
+- Confirm the outside running vertical decorative rails/streaks are gone.
+- Confirm the actual raised arena border/walls/rails still clearly show the playable boundary.
+- Confirm top-left and top-right HUD panels sit at the screen edges and do not cover central action.
+- Confirm the bottom loadout rail is gone.
+- Confirm the left side shows vertical run stat chips.
+- Confirm the right side shows all `8` equipped weapon slots without scrolling.
+- Confirm weapon slot names/icons remain readable during movement/combat.
+- Confirm top-center notification/objective panels still appear only as temporary notifications.
+- Confirm enemies, XP, bullets, event objectives, player core, Phase 37 ripple, and arena bounds remain readable.
+
 ## Validation Results
 
 Run after implementation:

@@ -3924,6 +3924,7 @@ func _create_hud() -> void:
 	_hud_design_root.add_child(_gameplay_hud_root)
 
 	var core_panel := _make_frame(NeonFramePanel.FrameKind.LEFT_WEDGE, Rect2(24, 28, 360, 132), Color(0.0, 0.95, 1.0, 0.96), Color(1.0, 0.05, 0.86, 0.78), 26.0, 2.2, Vector4(20, 10, 22, 10))
+	core_panel.name = "GameplayCoreVitalsPanel"
 	_gameplay_hud_root.add_child(core_panel)
 	var core_column := VBoxContainer.new()
 	core_column.add_theme_constant_override("separation", 2)
@@ -3961,13 +3962,8 @@ func _create_hud() -> void:
 	_xp_bar = _make_bar("XP", Color(0.0, 0.86, 1.0, 0.96), float(_xp_required), Vector2(314, 14), Color(0.0, 0.95, 1.0, 0.78))
 	_xp_bar.set("segment_count", 18)
 	core_column.add_child(_xp_bar)
-	_stat_summary_label = _make_hud_label("DMG 100%   RATE 100%   SPD --   PCK --")
-	_stat_summary_label.name = "GameplayStatTelemetryInline"
-	_stat_summary_label.add_theme_font_size_override("font_size", 10)
-	_stat_summary_label.add_theme_color_override("font_color", Color(0.78, 1.0, 1.0, 0.92))
-	core_column.add_child(_stat_summary_label)
-
 	var telemetry_panel := _make_frame(NeonFramePanel.FrameKind.RIGHT_WEDGE, Rect2(1536, 28, 360, 132), Color(1.0, 0.06, 0.86, 0.88), Color(0.0, 0.88, 1.0, 0.70), 26.0, 2.2, Vector4(22, 10, 20, 10))
+	telemetry_panel.name = "GameplayRunTelemetryPanel"
 	_gameplay_hud_root.add_child(telemetry_panel)
 	var telemetry_column := VBoxContainer.new()
 	telemetry_column.add_theme_constant_override("separation", 4)
@@ -3990,20 +3986,33 @@ func _create_hud() -> void:
 		label.add_theme_font_size_override("font_size", 12)
 		telemetry_column.add_child(label)
 
-	var chip_rail := _make_frame(NeonFramePanel.FrameKind.RAIL, Rect2(420, 980, 1080, 72), Color(0.0, 0.95, 1.0, 0.92), Color(1.0, 0.06, 0.86, 0.78), 22.0, 2.0, Vector4(22, 12, 22, 12))
-	chip_rail.name = "GameplayFixedEightSlotLoadoutRail"
-	_gameplay_hud_root.add_child(chip_rail)
-	var chip_row := HBoxContainer.new()
-	chip_row.name = "GameplayLoadoutEightSlotRail"
-	chip_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	chip_row.add_theme_constant_override("separation", 6)
-	chip_rail.add_child(chip_row)
+	var stat_panel := _make_frame(NeonFramePanel.FrameKind.RAIL, Rect2(24, 176, 236, 226), Color(0.0, 0.95, 1.0, 0.88), Color(1.0, 0.06, 0.86, 0.68), 20.0, 1.8, Vector4(16, 12, 16, 12))
+	stat_panel.name = "GameplayStatsReadoutPanel"
+	_gameplay_hud_root.add_child(stat_panel)
+	var stat_stack := VBoxContainer.new()
+	stat_stack.name = "GameplayRunStatVerticalStack"
+	stat_stack.alignment = BoxContainer.ALIGNMENT_CENTER
+	stat_stack.add_theme_constant_override("separation", 7)
+	stat_panel.add_child(stat_stack)
 	_loadout_chips.clear()
+	_add_loadout_chip(stat_stack, "DMG", "damage", "diamond", Color(1.0, 0.10, 0.86, 0.90))
+	_add_loadout_chip(stat_stack, "RATE", "rate", "bolt", Color(0.0, 0.95, 1.0, 0.90))
+	_add_loadout_chip(stat_stack, "SPD", "speed", "speed", Color(0.0, 0.95, 1.0, 0.90))
+	_add_loadout_chip(stat_stack, "PICKUP", "pickup", "pickup", Color(1.0, 0.90, 0.08, 0.90))
+
+	var loadout_panel := _make_frame(NeonFramePanel.FrameKind.RAIL, Rect2(1536, 176, 360, 542), Color(0.0, 0.95, 1.0, 0.90), Color(1.0, 0.06, 0.86, 0.72), 20.0, 1.8, Vector4(18, 12, 18, 12))
+	loadout_panel.name = "GameplayEquippedWeaponVerticalPanel"
+	_gameplay_hud_root.add_child(loadout_panel)
+	var loadout_stack := VBoxContainer.new()
+	loadout_stack.name = "GameplayLoadoutEightSlotColumn"
+	loadout_stack.alignment = BoxContainer.ALIGNMENT_CENTER
+	loadout_stack.add_theme_constant_override("separation", 5)
+	loadout_panel.add_child(loadout_stack)
 	_gameplay_weapon_slot_panels.clear()
 	_gameplay_weapon_slot_icons.clear()
 	_gameplay_weapon_slot_labels.clear()
 	for slot_index in range(EQUIPPED_WEAPON_SLOT_CAP):
-		_add_gameplay_weapon_slot(chip_row, slot_index)
+		_add_gameplay_weapon_slot(loadout_stack, slot_index)
 
 	_boss_panel = _make_frame(NeonFramePanel.FrameKind.ALERT_RAIL, Rect2(560, 24, 800, 48), Color(1.0, 0.06, 0.86, 0.92), Color(0.0, 0.95, 1.0, 0.75), 18.0, 2.0, Vector4(18, 8, 18, 8))
 	_gameplay_hud_root.add_child(_boss_panel)
@@ -5133,7 +5142,7 @@ func _add_loadout_chip(parent: Control, title: String, key: String, icon: String
 	var chip := NeonStatChip.new()
 	chip.configure(title, "--", icon, color)
 	chip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	chip.custom_minimum_size = Vector2(122, 42)
+	chip.custom_minimum_size = Vector2(188, 42)
 	parent.add_child(chip)
 	_loadout_chips[key] = chip
 
@@ -5149,7 +5158,7 @@ func _gameplay_loadout_slot_style(fill_color: Color, border_color: Color, border
 func _add_gameplay_weapon_slot(parent: Control, slot_index: int) -> void:
 	var slot_panel := PanelContainer.new()
 	slot_panel.name = "GameplayLoadoutSlot%02d" % [slot_index + 1]
-	slot_panel.custom_minimum_size = Vector2(122, 42)
+	slot_panel.custom_minimum_size = Vector2(318, 50)
 	slot_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	slot_panel.add_theme_stylebox_override("panel", _gameplay_loadout_slot_style(Color(0.0, 0.010, 0.032, 0.78), Color(0.0, 0.82, 1.0, 0.58), 1))
 	parent.add_child(slot_panel)
@@ -5160,17 +5169,17 @@ func _add_gameplay_weapon_slot(parent: Control, slot_index: int) -> void:
 	row.add_theme_constant_override("separation", 5)
 	slot_panel.add_child(row)
 
-	var icon := _make_weapon_icon_control(Vector2(32, 32), true)
+	var icon := _make_weapon_icon_control(Vector2(38, 38), true)
 	icon.name = "GameplayLoadoutSlot%02dIcon" % [slot_index + 1]
 	if icon is NeonWeaponIcon:
 		icon.animate_preview = false
 	row.add_child(icon)
 
-	var label := _make_hud_label("%02d C\nEMPTY" % [slot_index + 1])
+	var label := _make_hud_label("SLOT %02d\nEMPTY" % [slot_index + 1])
 	label.name = "GameplayLoadoutSlot%02dLabel" % [slot_index + 1]
-	label.custom_minimum_size = Vector2(74, 30)
+	label.custom_minimum_size = Vector2(250, 34)
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 9)
+	label.add_theme_font_size_override("font_size", 10)
 	label.add_theme_color_override("font_color", Color(0.72, 0.92, 1.0, 0.72))
 	label.clip_text = true
 	row.add_child(label)
@@ -12726,6 +12735,10 @@ func _update_hud() -> void:
 
 
 func _update_loadout_chips() -> void:
+	_set_loadout_chip("damage", "%.0f%%" % (_damage_multiplier * 100.0))
+	_set_loadout_chip("rate", "%.0f%%" % (_fire_rate_multiplier * 100.0))
+	_set_loadout_chip("speed", "%.1f" % _current_player_speed())
+	_set_loadout_chip("pickup", "%.1f" % _current_pickup_radius())
 	if is_instance_valid(_stat_summary_label):
 		_stat_summary_label.text = "DMG %.0f%%   RATE %.0f%%   SPD %.1f   PCK %.1f" % [
 			_damage_multiplier * 100.0,
@@ -12752,14 +12765,14 @@ func _update_gameplay_loadout_slots() -> void:
 			panel.add_theme_stylebox_override("panel", _gameplay_loadout_slot_style(Color(0.0, 0.010, 0.032, 0.82), Color(accent.r, accent.g, accent.b, 0.92), 2))
 			_set_weapon_icon(icon, instance, true)
 			icon.modulate = Color(1.0, 1.0, 1.0, 0.96)
-			label.text = "%02d %s\n%s" % [i + 1, _rarity_display_code(rarity), _compact_weapon_name(instance, 7)]
+			label.text = "SLOT %02d  %s\n%s" % [i + 1, _rarity_display_code(rarity), _compact_weapon_name(instance, 18)]
 			label.tooltip_text = "Slot %02d: %s (%s)" % [i + 1, str(instance.get("name", "WEAPON")), rarity]
 			label.add_theme_color_override("font_color", Color(0.88, 1.0, 1.0, 0.96))
 		else:
 			panel.add_theme_stylebox_override("panel", _gameplay_loadout_slot_style(Color(0.0, 0.010, 0.032, 0.52), Color(0.18, 0.42, 0.52, 0.50), 1))
 			_set_weapon_icon(icon, "unknown_weapon", true)
 			icon.modulate = Color(0.46, 0.64, 0.72, 0.34)
-			label.text = "%02d -\nEMPTY" % [i + 1]
+			label.text = "SLOT %02d\nEMPTY" % [i + 1]
 			label.tooltip_text = "Slot %02d: Empty" % [i + 1]
 			label.add_theme_color_override("font_color", Color(0.58, 0.78, 0.86, 0.54))
 

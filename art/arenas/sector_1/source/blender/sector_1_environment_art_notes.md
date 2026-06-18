@@ -19,6 +19,7 @@ Do not reintroduce:
 - Tall interior floor objects that look like gameplay obstacles.
 - Dynamic light spam or material bloom that washes out combat reads.
 - Random short cyan floor dash accents. Hotfix 5 removed the service/vent/heavy/reactor dash marks and scattered seam accent dashes; keep cyan accents on intentional wall/perimeter machinery instead.
+- Running outer rails/buttresses outside the arena. Hotfix 6 removed the far restrained cyan rails and outer service buttresses beyond the actual playfield boundary.
 
 Current art structure:
 
@@ -27,6 +28,7 @@ Current art structure:
 - Seam channels are recessed dark trenches with bridge plates; floor-level random cyan dash accents were removed in Hotfix 5.
 - Border walls are segmented machinery modules with plinths, inset wall faces, top caps, inner curbs, brackets, and restrained cyan rail segments.
 - Corner and mid-wall anchors are built as dark machinery, not bright markers.
+- Far outside depth rails/buttresses are intentionally absent after Hotfix 6; keep the visual boundary on the playable arena edge.
 
 Hard Repair 4 material/lighting visibility notes:
 
@@ -42,3 +44,10 @@ Hotfix 5 floor accent / ripple visibility notes:
 - Perimeter rails, wall slits, pylon insets, and boundary cyan accents remain so the arena edge still reads as built neon machinery.
 - Do not re-add `ShortCyanHatchStatus`, `TinyEmbeddedCyanVentCue`, `CyanAccessTag`, `NorthCyanPowerInset`, `SouthCyanPowerInset`, or `Sector1AAAEmbeddedCyanAccentX/Y` without a full art review.
 - The player propulsion ripple is now rendered slightly above the raised floor details at runtime; future floor details near arena center should stay below that visual layer unless the ripple offset is retuned.
+
+Hotfix 6 outer rail cleanup notes:
+
+- Removed `Sector1AAAOuterNorth/South/West/EastServiceButtress*` meshes from the Blender build.
+- Removed `Sector1AAAFarNorth/South/West/EastRestrainedCyanRail` meshes from the Blender build.
+- Kept `Sector1AAASegmentedWall_*_*`, `Sector1AAASegmentedWall_*_*_SegmentedCyanTopRail`, `Sector1AAACornerMachineryAnchor*`, and `Sector1AAAMidWallPylon_*_*` as the actual readable arena boundary.
+- Do not re-add decorative rails past the arena half-size unless they are clearly outside the camera/playfield composition and approved as background architecture.

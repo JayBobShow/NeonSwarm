@@ -358,8 +358,9 @@ Core Upgrades:
 - Equipped loadout capacity remains `8` weapons.
 - Armory remains the detailed management UI for equipped/stash replacement, comparison, Forge, Evolution/Fusion, and scrolling stash inventory.
 - The in-game combat HUD is not a menu and does not scroll.
-- Phase 38 Hotfix 5 changes the bottom gameplay rail to represent all `8` equipped weapon slots at once.
-- The gameplay rail now uses fixed slot cells with weapon icon, slot number, rarity code, and compact weapon name.
+- Phase 38 Hotfix 5 changed the combat HUD to represent all `8` equipped weapon slots at once.
+- Phase 38 Hotfix 6 replaces that bottom rail with a right-side fixed vertical equipped weapon panel.
+- The gameplay weapon panel uses fixed slot rows with weapon icon, slot number, rarity code, and compact weapon name.
 - Empty slots render as dim `EMPTY` cells if a save/load state has fewer than `8` equipped weapons.
-- Stat telemetry is separate from the weapon rail so `DMG`, `RATE`, `SPD`, and pickup radius do not consume weapon slot display space.
+- Stat telemetry is separate in a left-side vertical stat panel so `DMG`, `RATE`, `SPD`, and pickup radius do not consume weapon slot display space.
 - No weapon stats, loadout cap, Forge behavior, Armory save data, or progression rules changed for this HUD fix.
