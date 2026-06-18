@@ -213,7 +213,6 @@ def add_service_panel_detail(root, name_prefix: str, x: float, y: float, z: floa
     add_box(root, f"{name_prefix}WideInsetServicePlate", (x, y, z), (5.62, 4.92, 0.060), mats["dark_aluminum"], 0.090, 2)
     add_box(root, f"{name_prefix}ReadableServiceHatch", (x - 0.72, y + 0.20, z + 0.056), (2.72, 1.62, 0.078), mats["raised_gunmetal"], 0.064, 2)
     add_box(root, f"{name_prefix}HatchDarkRecess", (x - 0.72, y + 0.20, z + 0.100), (2.12, 1.02, 0.024), mats["black_trim"], 0.026, 1)
-    add_box(root, f"{name_prefix}ShortCyanHatchStatus", (x + 1.76, y - 1.96, NEON_Z + 0.014), (1.08, 0.078, 0.022), mats["cyan_neon"], 0.014, 1)
     add_panel_corner_clamps(root, name_prefix, x, y, z + 0.044, mats, True)
 
 
@@ -223,7 +222,6 @@ def add_vented_panel_detail(root, name_prefix: str, x: float, y: float, z: float
     for slat_index in range(5):
         slat_x = x - 1.56 + float(slat_index) * 0.78
         add_box(root, f"{name_prefix}ReadableVentSlat{slat_index}", (slat_x, y + 0.18, z + 0.092), (0.220, 1.36, 0.046), mats["edge_metal"], 0.020, 1)
-    add_box(root, f"{name_prefix}TinyEmbeddedCyanVentCue", (x + 1.78, y - 2.08, NEON_Z + 0.016), (0.94, 0.070, 0.020), mats["cyan_neon"], 0.014, 1)
     add_panel_corner_clamps(root, name_prefix, x, y, z + 0.038, mats)
 
 
@@ -239,7 +237,6 @@ def add_heavy_panel_detail(root, name_prefix: str, x: float, y: float, z: float,
     add_box(root, f"{name_prefix}HeavyInsetDeckPlate", (x, y, z), (5.76, 5.76, 0.072), mats["raised_gunmetal"], 0.110, 2)
     add_box(root, f"{name_prefix}RaisedMacroAccessCover", (x + 0.08, y - 0.06, z + 0.076), (3.72, 3.10, 0.070), mats["dark_aluminum"], 0.080, 2)
     add_box(root, f"{name_prefix}AccessCoverDarkInset", (x + 0.08, y - 0.06, z + 0.128), (2.72, 2.06, 0.024), mats["black_trim"], 0.034, 1)
-    add_box(root, f"{name_prefix}CyanAccessTag", (x + 1.66, y + 2.14, NEON_Z + 0.016), (0.78, 0.076, 0.020), mats["cyan_neon"], 0.014, 1)
     add_panel_corner_clamps(root, name_prefix, x, y, z + 0.050, mats, True)
 
 
@@ -255,8 +252,6 @@ def add_reactor_panel_detail(root, name_prefix: str, x: float, y: float, z: floa
     add_box(root, f"{name_prefix}CentralLandingDeckPlate", (x, y, z), (6.00, 6.00, 0.070), mats["raised_gunmetal"], 0.120, 2)
     add_box(root, f"{name_prefix}CentralDarkPowerWell", (x, y, z + 0.052), (3.90, 3.90, 0.038), mats["black_trim"], 0.070, 2)
     add_box(root, f"{name_prefix}LowSquarePowerDeckCover", (x, y, z + 0.098), (2.72, 2.72, 0.042), mats["dark_aluminum"], 0.050, 1)
-    add_box(root, f"{name_prefix}NorthCyanPowerInset", (x, y - 2.16, NEON_Z + 0.018), (1.24, 0.080, 0.020), mats["cyan_neon"], 0.014, 1)
-    add_box(root, f"{name_prefix}SouthCyanPowerInset", (x, y + 2.16, NEON_Z + 0.018), (1.24, 0.080, 0.020), mats["cyan_neon"], 0.014, 1)
     add_panel_corner_clamps(root, name_prefix, x, y, z + 0.048, mats, True)
 
 
@@ -345,12 +340,6 @@ def create_neon_seams(root, mats: dict) -> None:
                     (bed_width + 0.34, 1.55, 0.046),
                     mats,
                 )
-        for accent_index, accent_center in enumerate([-20.0, -8.0, 8.0, 20.0]):
-            if not is_perimeter and (index + accent_index) % 4 == 0:
-                add_box(root, f"Sector1AAAEmbeddedCyanAccentX{index}_{accent_index}", (accent_center, p, NEON_Z), (1.30, 0.066, 0.018), mats["cyan_neon"], 0.012, 1)
-            if not is_perimeter and (index + accent_index) % 4 == 2:
-                add_box(root, f"Sector1AAAEmbeddedCyanAccentY{index}_{accent_index}", (p, accent_center, NEON_Z + 0.004), (0.066, 1.30, 0.018), mats["cyan_neon"], 0.012, 1)
-
 
 def add_wall_segment(root, name: str, center: float, side: str, mats: dict) -> None:
     half = ARENA_HALF_SIZE

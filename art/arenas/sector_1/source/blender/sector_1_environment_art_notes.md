@@ -18,12 +18,13 @@ Do not reintroduce:
 - Runtime procedural Sector 1 floor tiles over the GLB.
 - Tall interior floor objects that look like gameplay obstacles.
 - Dynamic light spam or material bloom that washes out combat reads.
+- Random short cyan floor dash accents. Hotfix 5 removed the service/vent/heavy/reactor dash marks and scattered seam accent dashes; keep cyan accents on intentional wall/perimeter machinery instead.
 
 Current art structure:
 
 - 7x7 base layout retained for bounds alignment, but panel variants break the tile-board read.
 - Floor modules include service hatches, vents, diagonal braces, heavy access covers, macro ribs, and a central low power-deck panel.
-- Seam channels are recessed dark trenches with bridge plates and short dim cyan accents.
+- Seam channels are recessed dark trenches with bridge plates; floor-level random cyan dash accents were removed in Hotfix 5.
 - Border walls are segmented machinery modules with plinths, inset wall faces, top caps, inner curbs, brackets, and restrained cyan rail segments.
 - Corner and mid-wall anchors are built as dark machinery, not bright markers.
 
@@ -34,3 +35,10 @@ Hard Repair 4 material/lighting visibility notes:
 - The runtime still applies a Sector 1-only material visibility pass to imported `NS_S1_` materials after GLB load so the exported asset and live build stay aligned.
 - Cyan channel/rail materials remain restrained accents and should not return to full-floor grid identity.
 - A single shadowless Godot `DirectionalLight3D` is added at runtime on an arena-only visual light layer to help the metal catch light without globally brightening combat objects.
+
+Hotfix 5 floor accent / ripple visibility notes:
+
+- Floor-level cyan dash accents were removed from the Blender source because they read as random weak markers at gameplay zoom.
+- Perimeter rails, wall slits, pylon insets, and boundary cyan accents remain so the arena edge still reads as built neon machinery.
+- Do not re-add `ShortCyanHatchStatus`, `TinyEmbeddedCyanVentCue`, `CyanAccessTag`, `NorthCyanPowerInset`, `SouthCyanPowerInset`, or `Sector1AAAEmbeddedCyanAccentX/Y` without a full art review.
+- The player propulsion ripple is now rendered slightly above the raised floor details at runtime; future floor details near arena center should stay below that visual layer unless the ripple offset is retuned.

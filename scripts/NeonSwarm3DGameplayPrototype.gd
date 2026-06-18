@@ -69,7 +69,7 @@ const PLAYER_PRESENTATION_RIPPLE_PERIOD := 0.92
 const PLAYER_PRESENTATION_RIPPLE_RADIUS := 2.72
 const PLAYER_PRESENTATION_RIPPLE_WAVE_SPEED := 1.08
 const PLAYER_PRESENTATION_RIPPLE_WAVE_FREQUENCY := 5.35
-const PLAYER_PRESENTATION_FLOOR_Y := 0.092
+const PLAYER_PRESENTATION_FLOOR_Y := 0.132
 const GAMEPLAY_CAMERA_SIZE := 47.5
 const GAMEPLAY_CAMERA_POSITION := Vector3(0.0, 31.0, 24.0)
 const SECTOR1_ARENA_PANEL_COUNT := 7
@@ -585,6 +585,10 @@ var _tutorial_prompt_panel: Control
 var _tutorial_prompt_title_label: Label
 var _tutorial_prompt_body_label: Label
 var _loadout_chips: Dictionary = {}
+var _stat_summary_label: Label
+var _gameplay_weapon_slot_panels: Array[PanelContainer] = []
+var _gameplay_weapon_slot_icons: Array[Control] = []
+var _gameplay_weapon_slot_labels: Array[Label] = []
 var _presentation_flash: ColorRect
 var _presentation_flash_color := Color(0.0, 0.94, 1.0, 0.0)
 var _presentation_flash_alpha := 0.0
@@ -3706,10 +3710,10 @@ func _make_player_propulsion_ripple_material() -> ShaderMaterial:
 	var shader := Shader.new()
 	shader.code = """
 shader_type spatial;
-render_mode unshaded, blend_add, depth_draw_never, cull_disabled;
+render_mode unshaded, blend_add, depth_draw_never, depth_test_disabled, cull_disabled;
 
-uniform vec4 ripple_color : source_color = vec4(0.0, 0.98, 1.0, 0.78);
-uniform vec4 core_color : source_color = vec4(0.04, 0.44, 1.0, 0.48);
+uniform vec4 ripple_color : source_color = vec4(0.0, 0.98, 1.0, 0.88);
+uniform vec4 core_color : source_color = vec4(0.04, 0.44, 1.0, 0.58);
 uniform float ripple_time = 0.0;
 uniform float wave_speed = 1.08;
 uniform float wave_frequency = 5.35;
@@ -3746,20 +3750,21 @@ void fragment() {
 	float flow_lines = ring_band(radial_wave - 0.030, 0.036) * outer_fade * angular_gate * 0.20;
 	float center_seed = (1.0 - smoothstep(0.0, 0.050, rw)) * (0.08 + movement_boost * 0.08);
 	float propulsion = rings + flow_lines + center_seed;
-	float alpha = clamp(propulsion * outer_fade * intensity, 0.0, 0.70);
+	float alpha = clamp(propulsion * outer_fade * intensity, 0.0, 0.82);
 	if (alpha < 0.006) {
 		discard;
 	}
 	vec3 color = mix(core_color.rgb, ripple_color.rgb, clamp(rings + flow_lines, 0.0, 1.0));
 	ALBEDO = color;
-	EMISSION = color * (2.35 + rings * 8.7 + flow_lines * 3.8 + movement_boost * 1.5) * alpha;
+	EMISSION = color * (2.90 + rings * 10.2 + flow_lines * 4.6 + movement_boost * 1.7) * alpha;
 	ALPHA = alpha * ripple_color.a;
 }
 """
 	var material := ShaderMaterial.new()
 	material.shader = shader
-	material.set_shader_parameter("ripple_color", Color(0.0, 0.98, 1.0, 0.78))
-	material.set_shader_parameter("core_color", Color(0.04, 0.44, 1.0, 0.48))
+	material.render_priority = 80
+	material.set_shader_parameter("ripple_color", Color(0.0, 0.98, 1.0, 0.88))
+	material.set_shader_parameter("core_color", Color(0.04, 0.44, 1.0, 0.58))
 	material.set_shader_parameter("ripple_time", 0.0)
 	material.set_shader_parameter("wave_speed", PLAYER_PRESENTATION_RIPPLE_WAVE_SPEED)
 	material.set_shader_parameter("wave_frequency", PLAYER_PRESENTATION_RIPPLE_WAVE_FREQUENCY)
@@ -3786,7 +3791,7 @@ func _create_player_presentation_effects() -> void:
 		"PlayerPropulsionRadialShaderRippleDisk",
 		ripple_mesh,
 		_player_propulsion_ripple_material,
-		Vector3(0.0, 0.028, 0.0)
+		Vector3(0.0, 0.045, 0.0)
 	)
 	_update_player_presentation_effects(0.0)
 	_set_player_presentation_visible(false)
@@ -3821,7 +3826,7 @@ func _update_player_presentation_effects(delta: float) -> void:
 	_player_ripple_time = fposmod(_player_ripple_time + delta, PLAYER_PRESENTATION_RIPPLE_PERIOD * 64.0)
 	if _player_propulsion_ripple_material:
 		_player_propulsion_ripple_material.set_shader_parameter("ripple_time", _player_ripple_time)
-		_player_propulsion_ripple_material.set_shader_parameter("intensity", vfx_multiplier * lerpf(0.94, 1.28, movement_strength))
+		_player_propulsion_ripple_material.set_shader_parameter("intensity", vfx_multiplier * lerpf(1.10, 1.45, movement_strength))
 		_player_propulsion_ripple_material.set_shader_parameter("movement_boost", movement_strength)
 
 
@@ -3956,6 +3961,11 @@ func _create_hud() -> void:
 	_xp_bar = _make_bar("XP", Color(0.0, 0.86, 1.0, 0.96), float(_xp_required), Vector2(314, 14), Color(0.0, 0.95, 1.0, 0.78))
 	_xp_bar.set("segment_count", 18)
 	core_column.add_child(_xp_bar)
+	_stat_summary_label = _make_hud_label("DMG 100%   RATE 100%   SPD --   PCK --")
+	_stat_summary_label.name = "GameplayStatTelemetryInline"
+	_stat_summary_label.add_theme_font_size_override("font_size", 10)
+	_stat_summary_label.add_theme_color_override("font_color", Color(0.78, 1.0, 1.0, 0.92))
+	core_column.add_child(_stat_summary_label)
 
 	var telemetry_panel := _make_frame(NeonFramePanel.FrameKind.RIGHT_WEDGE, Rect2(1536, 28, 360, 132), Color(1.0, 0.06, 0.86, 0.88), Color(0.0, 0.88, 1.0, 0.70), 26.0, 2.2, Vector4(22, 10, 20, 10))
 	_gameplay_hud_root.add_child(telemetry_panel)
@@ -3981,20 +3991,19 @@ func _create_hud() -> void:
 		telemetry_column.add_child(label)
 
 	var chip_rail := _make_frame(NeonFramePanel.FrameKind.RAIL, Rect2(420, 980, 1080, 72), Color(0.0, 0.95, 1.0, 0.92), Color(1.0, 0.06, 0.86, 0.78), 22.0, 2.0, Vector4(22, 12, 22, 12))
+	chip_rail.name = "GameplayFixedEightSlotLoadoutRail"
 	_gameplay_hud_root.add_child(chip_rail)
 	var chip_row := HBoxContainer.new()
+	chip_row.name = "GameplayLoadoutEightSlotRail"
 	chip_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	chip_row.add_theme_constant_override("separation", 8)
+	chip_row.add_theme_constant_override("separation", 6)
 	chip_rail.add_child(chip_row)
 	_loadout_chips.clear()
-	_add_loadout_chip(chip_row, "DMG", "damage", "diamond", Color(1.0, 0.10, 0.86, 0.90))
-	_add_loadout_chip(chip_row, "RATE", "rate", "bolt", Color(0.0, 0.95, 1.0, 0.90))
-	_add_loadout_chip(chip_row, "SPD", "speed", "speed", Color(0.0, 0.95, 1.0, 0.90))
-	_add_loadout_chip(chip_row, "PICKUP", "pickup", "pickup", Color(1.0, 0.90, 0.08, 0.90))
-	_add_loadout_chip(chip_row, "ORBIT", "orbit", "ring", Color(0.0, 1.0, 0.92, 0.90))
-	_add_loadout_chip(chip_row, "LANCE", "lance", "triangle", Color(0.82, 0.10, 1.0, 0.90))
-	_add_loadout_chip(chip_row, "SAW", "saw", "ring", Color(0.0, 0.95, 1.0, 0.90))
-	_add_loadout_chip(chip_row, "MINE", "mine", "mine", Color(1.0, 0.12, 0.86, 0.90))
+	_gameplay_weapon_slot_panels.clear()
+	_gameplay_weapon_slot_icons.clear()
+	_gameplay_weapon_slot_labels.clear()
+	for slot_index in range(EQUIPPED_WEAPON_SLOT_CAP):
+		_add_gameplay_weapon_slot(chip_row, slot_index)
 
 	_boss_panel = _make_frame(NeonFramePanel.FrameKind.ALERT_RAIL, Rect2(560, 24, 800, 48), Color(1.0, 0.06, 0.86, 0.92), Color(0.0, 0.95, 1.0, 0.75), 18.0, 2.0, Vector4(18, 8, 18, 8))
 	_gameplay_hud_root.add_child(_boss_panel)
@@ -5127,6 +5136,48 @@ func _add_loadout_chip(parent: Control, title: String, key: String, icon: String
 	chip.custom_minimum_size = Vector2(122, 42)
 	parent.add_child(chip)
 	_loadout_chips[key] = chip
+
+
+func _gameplay_loadout_slot_style(fill_color: Color, border_color: Color, border_width: int) -> StyleBoxFlat:
+	var style := _button_style(fill_color, border_color, border_width, 6)
+	style.content_margin_top = 4
+	style.content_margin_bottom = 4
+	style.content_margin_right = 6
+	return style
+
+
+func _add_gameplay_weapon_slot(parent: Control, slot_index: int) -> void:
+	var slot_panel := PanelContainer.new()
+	slot_panel.name = "GameplayLoadoutSlot%02d" % [slot_index + 1]
+	slot_panel.custom_minimum_size = Vector2(122, 42)
+	slot_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	slot_panel.add_theme_stylebox_override("panel", _gameplay_loadout_slot_style(Color(0.0, 0.010, 0.032, 0.78), Color(0.0, 0.82, 1.0, 0.58), 1))
+	parent.add_child(slot_panel)
+
+	var row := HBoxContainer.new()
+	row.name = "GameplayLoadoutSlot%02dContent" % [slot_index + 1]
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 5)
+	slot_panel.add_child(row)
+
+	var icon := _make_weapon_icon_control(Vector2(32, 32), true)
+	icon.name = "GameplayLoadoutSlot%02dIcon" % [slot_index + 1]
+	if icon is NeonWeaponIcon:
+		icon.animate_preview = false
+	row.add_child(icon)
+
+	var label := _make_hud_label("%02d C\nEMPTY" % [slot_index + 1])
+	label.name = "GameplayLoadoutSlot%02dLabel" % [slot_index + 1]
+	label.custom_minimum_size = Vector2(74, 30)
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 9)
+	label.add_theme_color_override("font_color", Color(0.72, 0.92, 1.0, 0.72))
+	label.clip_text = true
+	row.add_child(label)
+
+	_gameplay_weapon_slot_panels.append(slot_panel)
+	_gameplay_weapon_slot_icons.append(icon)
+	_gameplay_weapon_slot_labels.append(label)
 
 
 func _enter_title_menu() -> void:
@@ -12675,14 +12726,42 @@ func _update_hud() -> void:
 
 
 func _update_loadout_chips() -> void:
-	_set_loadout_chip("damage", "%.0f%%" % (_damage_multiplier * 100.0))
-	_set_loadout_chip("rate", "%.0f%%" % (_fire_rate_multiplier * 100.0))
-	_set_loadout_chip("speed", "%.1f" % _current_player_speed())
-	_set_loadout_chip("pickup", "%.1f" % _current_pickup_radius())
-	_set_loadout_chip("orbit", "%d" % clampi(_orbit_count + _weapon_int_stat_bonus("orbit_spark", "orbit_count_bonus", 1), 1, ORBIT_VISUAL_CAP) if _is_weapon_family_equipped("orbit_spark") else "OFF")
-	_set_loadout_chip("lance", "x%.0f" % (_prism_lance_damage_multiplier * 100.0) if _is_weapon_family_equipped("prism_lance") else "OFF")
-	_set_loadout_chip("saw", "%.1f" % ((RING_SAW_RADIUS + _ring_saw_radius_bonus) * _weapon_range_multiplier("ring_saw")) if _is_weapon_family_equipped("ring_saw") else "OFF")
-	_set_loadout_chip("mine", "%.1f" % ((GRAVITY_MINE_RADIUS + _mine_radius_bonus) * _weapon_range_multiplier("gravity_mine")) if _is_weapon_family_equipped("gravity_mine") else "OFF")
+	if is_instance_valid(_stat_summary_label):
+		_stat_summary_label.text = "DMG %.0f%%   RATE %.0f%%   SPD %.1f   PCK %.1f" % [
+			_damage_multiplier * 100.0,
+			_fire_rate_multiplier * 100.0,
+			_current_player_speed(),
+			_current_pickup_radius()
+		]
+	_update_gameplay_loadout_slots()
+
+
+func _update_gameplay_loadout_slots() -> void:
+	for i in range(EQUIPPED_WEAPON_SLOT_CAP):
+		if i >= _gameplay_weapon_slot_panels.size() or i >= _gameplay_weapon_slot_icons.size() or i >= _gameplay_weapon_slot_labels.size():
+			return
+		var panel := _gameplay_weapon_slot_panels[i]
+		var icon := _gameplay_weapon_slot_icons[i]
+		var label := _gameplay_weapon_slot_labels[i]
+		if not is_instance_valid(panel) or not is_instance_valid(icon) or not is_instance_valid(label):
+			continue
+		if i < _equipped_weapon_instances.size():
+			var instance: Dictionary = _equipped_weapon_instances[i]
+			var rarity := str(instance.get("rarity", "Common"))
+			var accent := Color.html("#%s" % WeaponCatalog.rarity_accent_hex(rarity)) if WeaponCatalog.rarity_tiers().has(rarity) else Color(0.0, 0.95, 1.0, 0.96)
+			panel.add_theme_stylebox_override("panel", _gameplay_loadout_slot_style(Color(0.0, 0.010, 0.032, 0.82), Color(accent.r, accent.g, accent.b, 0.92), 2))
+			_set_weapon_icon(icon, instance, true)
+			icon.modulate = Color(1.0, 1.0, 1.0, 0.96)
+			label.text = "%02d %s\n%s" % [i + 1, _rarity_display_code(rarity), _compact_weapon_name(instance, 7)]
+			label.tooltip_text = "Slot %02d: %s (%s)" % [i + 1, str(instance.get("name", "WEAPON")), rarity]
+			label.add_theme_color_override("font_color", Color(0.88, 1.0, 1.0, 0.96))
+		else:
+			panel.add_theme_stylebox_override("panel", _gameplay_loadout_slot_style(Color(0.0, 0.010, 0.032, 0.52), Color(0.18, 0.42, 0.52, 0.50), 1))
+			_set_weapon_icon(icon, "unknown_weapon", true)
+			icon.modulate = Color(0.46, 0.64, 0.72, 0.34)
+			label.text = "%02d -\nEMPTY" % [i + 1]
+			label.tooltip_text = "Slot %02d: Empty" % [i + 1]
+			label.add_theme_color_override("font_color", Color(0.58, 0.78, 0.86, 0.54))
 
 
 func _set_loadout_chip(key: String, value: String) -> void:
