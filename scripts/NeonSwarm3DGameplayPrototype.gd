@@ -70,6 +70,14 @@ const PLAYER_PRESENTATION_RIPPLE_RADIUS := 2.72
 const PLAYER_PRESENTATION_RIPPLE_WAVE_SPEED := 1.08
 const PLAYER_PRESENTATION_RIPPLE_WAVE_FREQUENCY := 5.35
 const PLAYER_PRESENTATION_FLOOR_Y := 0.092
+const SECTOR1_ARENA_PANEL_COUNT := 5
+const SECTOR1_ARENA_PANEL_STEP := 10.8
+const SECTOR1_ARENA_PANEL_SIZE := 9.96
+const SECTOR1_ARENA_PANEL_THICKNESS := 0.12
+const SECTOR1_ARENA_PANEL_BASE_Y := -0.072
+const SECTOR1_ARENA_GRID_Y := 0.034
+const SECTOR1_ARENA_RAIL_HALF_SIZE := ARENA_HALF_SIZE + 1.08
+const SECTOR1_ARENA_DEPTH_HALF_SIZE := ARENA_HALF_SIZE + 5.25
 
 const PULSE_COOLDOWN := 0.30
 const PULSE_DAMAGE := 27.0
@@ -461,6 +469,7 @@ var _sector_motion_nodes: Array[Dictionary] = []
 var _sector_flow_lines: Array[Dictionary] = []
 var _sector_pulse_nodes: Array[Dictionary] = []
 var _sector_sweep_nodes: Array[Dictionary] = []
+var _sector1_arena_panel_motion: Array[Dictionary] = []
 var _sector_transition_nodes: Array[Dictionary] = []
 var _sector_transition_timer := 0.0
 var _sector_transition_duration := 0.82
@@ -934,6 +943,7 @@ func _process(delta: float) -> void:
 	_update_camera_shake(delta)
 	_update_atmosphere()
 	_update_sector_background_motion(delta)
+	_update_sector1_neon_grid_arena_architecture(delta)
 	_update_hud()
 	_check_run_goal()
 
@@ -1924,6 +1934,11 @@ func _create_materials() -> void:
 	_materials["sector1_floor_core"] = Kit.make_emissive_material(Color(0.86, 1.0, 1.0, 0.72), 3.2, true)
 	_materials["sector1_floor_edge"] = Kit.make_emissive_material(Color(0.0, 0.76, 1.0, 0.42), 1.42, true)
 	_materials["sector1_floor_atmosphere"] = Kit.make_emissive_material(Color(0.0, 0.24, 0.62, 0.038), 0.22, true)
+	_materials["sector1_arena_panel_dark"] = Kit.make_neon_body_material(Color(0.010, 0.024, 0.060, 1.0), 0.26)
+	_materials["sector1_arena_panel_lift"] = Kit.make_neon_body_material(Color(0.012, 0.036, 0.082, 1.0), 0.34)
+	_materials["sector1_arena_wall_body"] = Kit.make_neon_body_material(Color(0.010, 0.030, 0.074, 1.0), 0.32)
+	_materials["sector1_arena_depth_body"] = Kit.make_neon_body_material(Color(0.008, 0.020, 0.052, 1.0), 0.22)
+	_materials["sector1_arena_soft_pool"] = Kit.make_emissive_material(Color(0.0, 0.36, 0.72, 0.070), 0.34, true)
 	_materials["sector2_grid_minor"] = Kit.make_emissive_material(Color(0.20, 0.06, 0.44, 0.16), 0.42, true)
 	_materials["sector2_grid_major"] = Kit.make_emissive_material(Color(1.0, 0.05, 0.86, 0.28), 0.90, true)
 	_materials["sector2_grid_axis"] = Kit.make_emissive_material(Color(0.0, 0.92, 1.0, 0.34), 1.00, true)
@@ -2177,11 +2192,14 @@ func _apply_sector_visual_identity() -> void:
 func _rebuild_sector_geometry_identity() -> void:
 	if not is_instance_valid(_sector_geometry_root):
 		return
+	_sector1_arena_panel_motion.clear()
 	for child in _sector_geometry_root.get_children():
 		_sector_geometry_root.remove_child(child)
 		child.queue_free()
 	# Phase 26 Hard Reset: HD art plates carry sector identity.
 	# Legacy loose floor markers are kept as inert utilities but no longer spawned here.
+	if _sector_index == 0:
+		_create_sector1_neon_grid_3d_architecture()
 
 
 func _apply_sector_environment_tone() -> void:
@@ -2609,6 +2627,148 @@ func _add_hd_background_light_runner(runner: Dictionary, material_key: String, c
 		0.72,
 		0.055
 	)
+
+
+func _create_sector1_neon_grid_3d_architecture() -> void:
+	if not is_instance_valid(_sector_geometry_root):
+		return
+	var root := Node3D.new()
+	root.name = "Sector1NeonGrid3DArenaArchitectureRoot"
+	_sector_geometry_root.add_child(root)
+	_create_sector1_floor_panel_foundation(root)
+	_create_sector1_cyan_grid_linework(root)
+	_create_sector1_raised_border_architecture(root)
+	_create_sector1_background_depth_architecture(root)
+
+
+func _create_sector1_child_root(parent: Node3D, node_name: String) -> Node3D:
+	var root := Node3D.new()
+	root.name = node_name
+	parent.add_child(root)
+	return root
+
+
+func _sector1_add_framed_box(parent: Node3D, node_name: String, size: Vector3, position: Vector3, body_material_key: String, edge_material_key: String, outer_radius := 0.024, core_radius := 0.008) -> Node3D:
+	var root := Node3D.new()
+	root.name = node_name
+	root.position = position
+	parent.add_child(root)
+	if _materials.has(body_material_key):
+		Kit.add_mesh(root, "%sDarkBody" % node_name, Kit.box_mesh(size), _materials[body_material_key])
+	if _materials.has(edge_material_key):
+		Kit.add_glowing_edges(root, "%sFrame" % node_name, Kit.box_points(size), Kit.box_edges(), outer_radius, core_radius, _materials[edge_material_key], _materials["soft_white"])
+	return root
+
+
+func _sector1_add_tube(parent: Node3D, node_name: String, start: Vector3, end: Vector3, radius: float, material_key: String, core_material_key := "", core_radius := 0.0) -> void:
+	if not _materials.has(material_key):
+		return
+	Kit.tube_between(parent, "%sOuterTube" % node_name, start, end, radius, _materials[material_key], 8)
+	if core_material_key != "" and _materials.has(core_material_key):
+		var raised := Vector3(0.0, radius * 0.42, 0.0)
+		Kit.tube_between(parent, "%sHotCoreTube" % node_name, start + raised, end + raised, maxf(0.004, core_radius if core_radius > 0.0 else radius * 0.32), _materials[core_material_key], 6)
+
+
+func _sector1_add_rect_loop(parent: Node3D, node_name: String, half_size: float, y: float, material_key: String, radius: float, core_material_key := "") -> void:
+	var corners: Array[Vector3] = [
+		Vector3(-half_size, y, -half_size),
+		Vector3(half_size, y, -half_size),
+		Vector3(half_size, y, half_size),
+		Vector3(-half_size, y, half_size)
+	]
+	for i in range(corners.size()):
+		_sector1_add_tube(parent, "%sEdge%d" % [node_name, i], corners[i], corners[(i + 1) % corners.size()], radius, material_key, core_material_key)
+
+
+func _create_sector1_floor_panel_foundation(parent: Node3D) -> void:
+	var panel_root := _create_sector1_child_root(parent, "Sector1DarkFloorPanelFoundationRoot")
+	var pool_mesh := PlaneMesh.new()
+	pool_mesh.size = Vector2(ARENA_HALF_SIZE * 1.78, ARENA_HALF_SIZE * 1.78)
+	Kit.add_mesh(panel_root, "Sector1SoftReadableFloorEnergyUnderlay", pool_mesh, _materials["sector1_arena_soft_pool"], Vector3(0.0, -0.030, 0.0))
+	var panel_mesh := Kit.box_mesh(Vector3(SECTOR1_ARENA_PANEL_SIZE, SECTOR1_ARENA_PANEL_THICKNESS, SECTOR1_ARENA_PANEL_SIZE))
+	var offset := float(SECTOR1_ARENA_PANEL_COUNT - 1) * SECTOR1_ARENA_PANEL_STEP * 0.5
+	for row in range(SECTOR1_ARENA_PANEL_COUNT):
+		for column in range(SECTOR1_ARENA_PANEL_COUNT):
+			var x := -offset + float(column) * SECTOR1_ARENA_PANEL_STEP
+			var z := -offset + float(row) * SECTOR1_ARENA_PANEL_STEP
+			var variation := 0.010 if (row + column) % 2 == 0 else -0.004
+			var material_key := "sector1_arena_panel_lift" if (row + column) % 3 == 1 else "sector1_arena_panel_dark"
+			var panel := Kit.add_mesh(
+				panel_root,
+				"Sector1FloorPanelR%dC%d" % [row, column],
+				panel_mesh,
+				_materials[material_key],
+				Vector3(x, SECTOR1_ARENA_PANEL_BASE_Y + variation, z)
+			)
+			if (row + column) % 3 == 1:
+				_sector1_arena_panel_motion.append({
+					"node": panel,
+					"base": panel.position,
+					"amplitude": 0.010,
+					"speed": 0.34 + float((row + column) % 2) * 0.08,
+					"phase": float(row * 7 + column * 5) * 0.31
+				})
+
+
+func _create_sector1_cyan_grid_linework(parent: Node3D) -> void:
+	var line_root := _create_sector1_child_root(parent, "Sector1CyanGridLineRoot")
+	var line_extent := ARENA_HALF_SIZE - 1.10
+	var seam_offset := float(SECTOR1_ARENA_PANEL_COUNT - 1) * SECTOR1_ARENA_PANEL_STEP * 0.5
+	for i in range(SECTOR1_ARENA_PANEL_COUNT):
+		var offset := -seam_offset + float(i) * SECTOR1_ARENA_PANEL_STEP
+		var major := absf(offset) < 0.01 or i == 0 or i == SECTOR1_ARENA_PANEL_COUNT - 1
+		var radius := 0.017 if major else 0.011
+		var material_key := "sector1_floor_path" if major else "sector1_floor_grid"
+		var core_key := "sector1_floor_core" if major else ""
+		_sector1_add_tube(line_root, "Sector1LongitudinalGridLine%d" % i, Vector3(offset, SECTOR1_ARENA_GRID_Y, -line_extent), Vector3(offset, SECTOR1_ARENA_GRID_Y, line_extent), radius, material_key, core_key)
+		_sector1_add_tube(line_root, "Sector1LateralGridLine%d" % i, Vector3(-line_extent, SECTOR1_ARENA_GRID_Y, offset), Vector3(line_extent, SECTOR1_ARENA_GRID_Y, offset), radius, material_key, core_key)
+	_sector1_add_rect_loop(line_root, "Sector1InnerCircuitFrame", ARENA_HALF_SIZE - 3.0, SECTOR1_ARENA_GRID_Y + 0.014, "sector1_floor_edge", 0.020, "sector1_floor_core")
+	_sector1_add_rect_loop(line_root, "Sector1MidCircuitFrame", SECTOR1_ARENA_PANEL_STEP * 1.5, SECTOR1_ARENA_GRID_Y + 0.020, "sector1_floor_path", 0.014, "sector1_floor_core")
+	_sector1_add_tube(line_root, "Sector1NorthSouthCenterHotLine", Vector3(0.0, SECTOR1_ARENA_GRID_Y + 0.030, -line_extent), Vector3(0.0, SECTOR1_ARENA_GRID_Y + 0.030, line_extent), 0.010, "sector1_floor_core")
+	_sector1_add_tube(line_root, "Sector1EastWestCenterHotLine", Vector3(-line_extent, SECTOR1_ARENA_GRID_Y + 0.034, 0.0), Vector3(line_extent, SECTOR1_ARENA_GRID_Y + 0.034, 0.0), 0.010, "sector1_floor_core")
+
+
+func _create_sector1_raised_border_architecture(parent: Node3D) -> void:
+	var border_root := _create_sector1_child_root(parent, "Sector1RaisedBorderWallRailRoot")
+	var half := SECTOR1_ARENA_RAIL_HALF_SIZE
+	var wall_height := 0.78
+	var wall_thickness := 0.72
+	var wall_y := 0.40
+	var long_size := half * 2.0 + wall_thickness
+	_sector1_add_framed_box(border_root, "Sector1NorthRaisedBorderWall", Vector3(long_size, wall_height, wall_thickness), Vector3(0.0, wall_y, -half), "sector1_arena_wall_body", "sector1_floor_edge", 0.024, 0.008)
+	_sector1_add_framed_box(border_root, "Sector1SouthRaisedBorderWall", Vector3(long_size, wall_height, wall_thickness), Vector3(0.0, wall_y, half), "sector1_arena_wall_body", "sector1_floor_edge", 0.024, 0.008)
+	_sector1_add_framed_box(border_root, "Sector1WestRaisedBorderWall", Vector3(wall_thickness, wall_height, long_size), Vector3(-half, wall_y, 0.0), "sector1_arena_wall_body", "sector1_floor_edge", 0.024, 0.008)
+	_sector1_add_framed_box(border_root, "Sector1EastRaisedBorderWall", Vector3(wall_thickness, wall_height, long_size), Vector3(half, wall_y, 0.0), "sector1_arena_wall_body", "sector1_floor_edge", 0.024, 0.008)
+	for corner in [
+		Vector3(-half, 0.76, -half),
+		Vector3(half, 0.76, -half),
+		Vector3(half, 0.76, half),
+		Vector3(-half, 0.76, half)
+	]:
+		_sector1_add_framed_box(border_root, "Sector1CornerPowerPylon%d" % border_root.get_child_count(), Vector3(0.90, 1.42, 0.90), corner, "sector1_arena_wall_body", "sector1_floor_path", 0.026, 0.009)
+	var rail_y := 0.90
+	_sector1_add_tube(border_root, "Sector1NorthTopNeonRail", Vector3(-half, rail_y, -half), Vector3(half, rail_y, -half), 0.052, "sector1_floor_edge", "soft_white", 0.014)
+	_sector1_add_tube(border_root, "Sector1SouthTopNeonRail", Vector3(-half, rail_y, half), Vector3(half, rail_y, half), 0.052, "sector1_floor_edge", "soft_white", 0.014)
+	_sector1_add_tube(border_root, "Sector1WestTopNeonRail", Vector3(-half, rail_y, -half), Vector3(-half, rail_y, half), 0.052, "sector1_floor_edge", "soft_white", 0.014)
+	_sector1_add_tube(border_root, "Sector1EastTopNeonRail", Vector3(half, rail_y, -half), Vector3(half, rail_y, half), 0.052, "sector1_floor_edge", "soft_white", 0.014)
+	var lower_y := 0.18
+	var inner_half := ARENA_HALF_SIZE - 0.22
+	_sector1_add_rect_loop(border_root, "Sector1GroundedInnerSafetyRail", inner_half, lower_y, "sector1_floor_grid", 0.016, "sector1_floor_core")
+
+
+func _create_sector1_background_depth_architecture(parent: Node3D) -> void:
+	var depth_root := _create_sector1_child_root(parent, "Sector1SubtleBackgroundDepthRoot")
+	var depth := SECTOR1_ARENA_DEPTH_HALF_SIZE
+	for i in range(3):
+		var offset := -18.0 + float(i) * 18.0
+		_sector1_add_framed_box(depth_root, "Sector1NorthDepthPlate%d" % i, Vector3(7.8, 0.70, 0.22), Vector3(offset, 0.34, -depth), "sector1_arena_depth_body", "sector1_floor_grid", 0.015, 0.005)
+		_sector1_add_framed_box(depth_root, "Sector1SouthDepthPlate%d" % i, Vector3(7.8, 0.70, 0.22), Vector3(offset, 0.34, depth), "sector1_arena_depth_body", "sector1_floor_grid", 0.015, 0.005)
+		_sector1_add_framed_box(depth_root, "Sector1WestDepthPlate%d" % i, Vector3(0.22, 0.70, 7.8), Vector3(-depth, 0.34, offset), "sector1_arena_depth_body", "sector1_floor_grid", 0.015, 0.005)
+		_sector1_add_framed_box(depth_root, "Sector1EastDepthPlate%d" % i, Vector3(0.22, 0.70, 7.8), Vector3(depth, 0.34, offset), "sector1_arena_depth_body", "sector1_floor_grid", 0.015, 0.005)
+	_sector1_add_tube(depth_root, "Sector1FarNorthHorizonRail", Vector3(-24.0, 0.72, -depth), Vector3(24.0, 0.72, -depth), 0.030, "sector1_far_structure", "soft_white", 0.009)
+	_sector1_add_tube(depth_root, "Sector1FarSouthHorizonRail", Vector3(-24.0, 0.72, depth), Vector3(24.0, 0.72, depth), 0.030, "sector1_far_structure", "soft_white", 0.009)
+	_sector1_add_tube(depth_root, "Sector1FarWestHorizonRail", Vector3(-depth, 0.72, -24.0), Vector3(-depth, 0.72, 24.0), 0.030, "sector1_far_structure", "soft_white", 0.009)
+	_sector1_add_tube(depth_root, "Sector1FarEastHorizonRail", Vector3(depth, 0.72, -24.0), Vector3(depth, 0.72, 24.0), 0.030, "sector1_far_structure", "soft_white", 0.009)
 
 
 func _sector_floor_design(index: int) -> Dictionary:
@@ -3309,6 +3469,19 @@ func _update_sector_background_motion(delta: float) -> void:
 		root.position = base + direction * offset
 		root.rotation.y += float(data.get("spin", 1.0)) * delta * (1.0 + reaction)
 		root.scale = Vector3.ONE * (1.0 + reaction * 0.18)
+
+
+func _update_sector1_neon_grid_arena_architecture(delta: float) -> void:
+	if _sector_index != 0 or _sector1_arena_panel_motion.is_empty():
+		return
+	var time := _survival_time + delta
+	for data in _sector1_arena_panel_motion:
+		var panel: MeshInstance3D = data.get("node", null)
+		if not is_instance_valid(panel):
+			continue
+		var base: Vector3 = data.get("base", Vector3.ZERO)
+		var phase := time * float(data.get("speed", 0.35)) + float(data.get("phase", 0.0))
+		panel.position = base + Vector3.UP * sin(phase) * float(data.get("amplitude", 0.0))
 
 
 func _trigger_sector_background_reaction(strength: float, duration := 0.55) -> void:

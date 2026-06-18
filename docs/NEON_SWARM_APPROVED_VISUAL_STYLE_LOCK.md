@@ -75,6 +75,13 @@ Approved gameplay presentation:
 - Particles, glow, trails, and plasma are visual effects only.
 - `scenes/Main.tscn` remains the official game scene.
 
+Approved arena architecture presentation:
+
+- 3D arena map pieces may use visual-only floor plates, border walls, rails, and background depth geometry.
+- Gameplay remains authoritative on the existing flat plane unless a future phase explicitly approves collision changes.
+- Decorative map architecture must not imply playable ramps, platforms, or paths that do not exist.
+- Border walls and rails must clarify the playable arena boundary without blocking or hiding combat reads.
+
 ## 6. Approved Performance Guardrails
 
 Preserve:
