@@ -5,7 +5,6 @@ const Kit := preload("res://scripts/visuals/Neon3DVisualKit.gd")
 var _time := 0.0
 var _rings: Node3D
 var _shells: Array[Node3D] = []
-var _trail_tubes: Array[MeshInstance3D] = []
 var _spark_batch: MultiMeshInstance3D
 var _spark_count := 14
 
@@ -25,19 +24,12 @@ func _process(delta: float) -> void:
 		var pulse := 1.0 + sin(_time * (1.8 + float(i) * 0.42)) * (0.075 + float(i) * 0.025)
 		_shells[i].scale = Vector3.ONE * pulse
 	_update_sparks()
-	for i in range(_trail_tubes.size()):
-		var tube := _trail_tubes[i]
-		var radius := lerpf(0.078, 0.026, float(i) / float(maxi(1, _trail_tubes.size() - 1)))
-		var start := Vector3(0.0, -0.06, 1.10 + float(i) * 0.34)
-		var end := start + Vector3(0.0, 0.0, 1.12 - float(i) * 0.16)
-		Kit.update_tube(tube, start, end, radius * (0.90 + sin(_time * 3.4 + float(i)) * 0.10))
 
 
 func _build_visual() -> void:
 	var white := Kit.make_emissive_material(Color(1.0, 0.99, 0.88, 1.0), 8.0, false)
 	var cyan := Kit.make_emissive_material(Color(0.0, 0.96, 1.0, 0.94), 7.3, true)
 	var magenta := Kit.make_emissive_material(Color(1.0, 0.04, 0.96, 0.92), 6.9, true)
-	var blue_haze := Kit.make_emissive_material(Color(0.0, 0.56, 1.0, 0.078), 1.35, true)
 	var cyan_body := Kit.make_neon_body_material(Color(0.0, 0.48, 0.66, 1.0), 1.18)
 	var magenta_body := Kit.make_neon_body_material(Color(0.62, 0.0, 0.50, 1.0), 1.04)
 	var cyan_shell := Kit.make_plasma_shell_material(Color(0.0, 0.86, 1.0, 0.14), 1.25, 1.54)
@@ -83,9 +75,6 @@ func _build_visual() -> void:
 	ring_a.rotation.x = PI * 0.5
 	ring_b.rotation.y = PI * 0.5
 	ring_c.rotation.z = PI * 0.5
-
-	for i in range(3):
-		_trail_tubes.append(Kit.tube_between(self, "PlayerGhostPlasmaSmear%d" % i, Vector3(0.0, 0.0, 1.1), Vector3(0.0, 0.0, 1.8), 0.05, blue_haze, 8))
 
 	_spark_batch = Kit.create_spark_multimesh(self, "PlayerOrbitingIonSparkBatch", Kit.sphere_mesh(0.050, 8, 4), white, _spark_count)
 	_update_sparks()

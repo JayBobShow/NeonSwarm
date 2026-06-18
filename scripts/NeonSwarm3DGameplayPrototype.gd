@@ -3405,8 +3405,8 @@ func _make_player_propulsion_ripple_material() -> ShaderMaterial:
 shader_type spatial;
 render_mode unshaded, blend_add, depth_draw_never, cull_disabled;
 
-uniform vec4 ripple_color : source_color = vec4(0.0, 0.92, 1.0, 0.72);
-uniform vec4 core_color : source_color = vec4(0.05, 0.36, 1.0, 0.42);
+uniform vec4 ripple_color : source_color = vec4(0.0, 0.98, 1.0, 0.78);
+uniform vec4 core_color : source_color = vec4(0.04, 0.44, 1.0, 0.48);
 uniform float ripple_time = 0.0;
 uniform float wave_speed = 1.08;
 uniform float wave_frequency = 5.35;
@@ -3414,7 +3414,7 @@ uniform float intensity = 1.0;
 uniform float movement_boost = 0.0;
 
 float ring_band(float dist_to_ring, float width) {
-	return 1.0 - smoothstep(width * 0.24, width, abs(dist_to_ring));
+	return 1.0 - smoothstep(width * 0.18, width, abs(dist_to_ring));
 }
 
 void fragment() {
@@ -3428,36 +3428,35 @@ void fragment() {
 	float wobble = sin(angle * 8.0 + ripple_time * 2.2) * 0.005 + sin(angle * 13.0 - ripple_time * 1.45) * 0.003;
 	float rw = max(r + wobble, 0.0);
 	float outer_fade = 1.0 - smoothstep(0.78, 1.0, rw);
-	float angular_gate = 0.72 + 0.28 * smoothstep(-0.35, 0.82, sin(angle * 7.0 + ripple_time * 3.1));
+	float angular_gate = 0.78 + 0.22 * smoothstep(-0.35, 0.82, sin(angle * 7.0 + ripple_time * 3.1));
 	float rings = 0.0;
 	for (int i = 0; i < 5; i++) {
 		float progress = fract(ripple_time * wave_speed + float(i) * 0.20);
 		float radius = progress * 0.92;
-		float width = mix(0.016, 0.048, progress);
+		float width = mix(0.014, 0.040, progress);
 		float band = ring_band(rw - radius, width);
-		float trailing = ring_band(rw - max(radius - 0.052, 0.0), width * 1.75) * 0.22;
 		float fade_in = smoothstep(-0.015, 0.08, progress);
 		float fade_out = pow(max(1.0 - progress, 0.0), 1.55);
-		rings += (band + trailing) * fade_in * fade_out * angular_gate;
+		rings += band * 1.18 * fade_in * fade_out * angular_gate;
 	}
 	float radial_wave = fract(rw * wave_frequency - ripple_time * wave_speed);
-	float flow_lines = ring_band(radial_wave - 0.030, 0.040) * outer_fade * angular_gate * 0.18;
-	float center_seed = (1.0 - smoothstep(0.0, 0.055, rw)) * (0.10 + movement_boost * 0.10);
+	float flow_lines = ring_band(radial_wave - 0.030, 0.036) * outer_fade * angular_gate * 0.20;
+	float center_seed = (1.0 - smoothstep(0.0, 0.050, rw)) * (0.08 + movement_boost * 0.08);
 	float propulsion = rings + flow_lines + center_seed;
-	float alpha = clamp(propulsion * outer_fade * intensity, 0.0, 0.62);
-	if (alpha < 0.008) {
+	float alpha = clamp(propulsion * outer_fade * intensity, 0.0, 0.70);
+	if (alpha < 0.006) {
 		discard;
 	}
 	vec3 color = mix(core_color.rgb, ripple_color.rgb, clamp(rings + flow_lines, 0.0, 1.0));
 	ALBEDO = color;
-	EMISSION = color * (2.0 + rings * 7.4 + flow_lines * 3.2 + movement_boost * 1.4) * alpha;
+	EMISSION = color * (2.35 + rings * 8.7 + flow_lines * 3.8 + movement_boost * 1.5) * alpha;
 	ALPHA = alpha * ripple_color.a;
 }
 """
 	var material := ShaderMaterial.new()
 	material.shader = shader
-	material.set_shader_parameter("ripple_color", Color(0.0, 0.92, 1.0, 0.72))
-	material.set_shader_parameter("core_color", Color(0.05, 0.36, 1.0, 0.42))
+	material.set_shader_parameter("ripple_color", Color(0.0, 0.98, 1.0, 0.78))
+	material.set_shader_parameter("core_color", Color(0.04, 0.44, 1.0, 0.48))
 	material.set_shader_parameter("ripple_time", 0.0)
 	material.set_shader_parameter("wave_speed", PLAYER_PRESENTATION_RIPPLE_WAVE_SPEED)
 	material.set_shader_parameter("wave_frequency", PLAYER_PRESENTATION_RIPPLE_WAVE_FREQUENCY)
@@ -3519,7 +3518,7 @@ func _update_player_presentation_effects(delta: float) -> void:
 	_player_ripple_time = fposmod(_player_ripple_time + delta, PLAYER_PRESENTATION_RIPPLE_PERIOD * 64.0)
 	if _player_propulsion_ripple_material:
 		_player_propulsion_ripple_material.set_shader_parameter("ripple_time", _player_ripple_time)
-		_player_propulsion_ripple_material.set_shader_parameter("intensity", vfx_multiplier * lerpf(0.86, 1.18, movement_strength))
+		_player_propulsion_ripple_material.set_shader_parameter("intensity", vfx_multiplier * lerpf(0.94, 1.28, movement_strength))
 		_player_propulsion_ripple_material.set_shader_parameter("movement_boost", movement_strength)
 
 
