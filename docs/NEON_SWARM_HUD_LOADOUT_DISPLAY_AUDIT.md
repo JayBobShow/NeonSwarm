@@ -199,3 +199,80 @@ Manual test checklist:
 - Confirm global upgrades still change the left `DMG`, `RATE`, `SPD`, or `PICKUP` chips.
 - Confirm no HUD scrolling appears during gameplay.
 - Confirm the HUD stays outside the play area as much as practical.
+
+## Phase 38 Hotfix 9 — Upgrade-to-Weapon Clarity and Reward Pool Audit
+
+Scope:
+
+- Gameplay reward-card clarity and in-run weapon HUD linkage.
+- Kept the approved side HUD layout.
+- Kept all `8` equipped weapon slots visible.
+- Kept the gameplay HUD non-scrolling.
+- No weapon balance, damage, cooldown, target count, progression, save data, Armory, Forge, Evolution/Fusion, arena bounds, player controls, or Phase 37 ripple behavior was changed.
+
+Godot docs/classes referenced:
+
+- `Control`: fixed side HUD panels remain anchored/positioned in the design-space HUD root.
+- `VBoxContainer`: left stat stack and right equipped weapon stack remain fixed vertical containers.
+- `Button`: level-up/reward cards use focus events to update selected-card preview linkage.
+- `Label`: weapon rows continue to use compact multiline status/stat feedback.
+- `ScrollContainer`: reviewed to confirm no gameplay HUD scrolling was introduced.
+
+Missing clarity found:
+
+- Upgrade cards previously showed title, description, and category, but not the affected equipped slot.
+- Player could not immediately tell whether a card was a current-weapon buff, global stat buff, non-equipped family buff, new run weapon unlock, or generated weapon route.
+- Right-side rows flashed after an upgrade was accepted, but selection did not preview the affected row.
+- `_roll_upgrade_choices()` prevented exact duplicate cards in one panel only; it did not suppress recent repeated IDs or same-family clustering.
+
+Final card format:
+
+- Card title.
+- `AFFECTS: ...`
+- `GAIN: ...`
+- `TYPE: ...`
+
+Examples now supported:
+
+- `AFFECTS: SLOT 02 - ORBIT SPARK`
+- `AFFECTS: NEW RUN WEAPON - FRACTAL SHARD`
+- `AFFECTS: FRACTAL SHARD FAMILY - NOT EQUIPPED`
+- `AFFECTS: GLOBAL CORE STATS`
+- `AFFECTS: NEW WEAPON - OPEN SLOT`
+- `GAIN: PIERCE 4 -> 5`
+- `GAIN: DMG +12% / RATE +10%`
+- `GAIN: PULSE COUNT 1 -> 2`
+
+Equipped weapon row linkage:
+
+- Selecting a card computes affected weapon definitions from its effects.
+- Equipped affected definitions get a cyan preview highlight on the right-side weapon row before confirmation.
+- Confirmed weapon-specific upgrades still use the Hotfix 8 gold flash.
+- Global weapon-output upgrades preview all equipped rows; player-only global upgrades remain left-stat-stack information.
+- Non-equipped-family or new-run-weapon cards explain that no current slot is affected instead of highlighting a misleading row.
+
+Right weapon stack adjustment:
+
+- Right panel moved slightly lower and taller: `Rect2(1602, 204, 300, 462)`.
+- Row size increased to `272x50`.
+- Weapon icon size increased to `34x34`.
+- Text label size increased to `216x44`, with font size `9`.
+- All `8` slots remain visible in a single non-scrolling vertical stack.
+
+Reward pool audit result:
+
+- Existing pool weights are implicit one-entry-per-upgrade, but the Fractal family has multiple entries and could appear repeatedly across nearby level-ups.
+- The same panel already removed exact duplicate IDs, but could still roll several same-family cards.
+- Hotfix 9 adds a recent-card history of the last `9` shown level-up card IDs and avoids those IDs while enough alternatives exist.
+- Hotfix 9 also avoids repeating the same primary target/family inside one `3`-card level-up roll while enough alternatives exist.
+- This is presentation/pool clarity only; upgrade values and gameplay math are unchanged.
+
+Manual test checklist:
+
+- Start Game and trigger an XP level-up.
+- Confirm each card says what it affects and what it grants.
+- Move selection across cards and confirm matching equipped weapon rows highlight when applicable.
+- Confirm new weapon and non-equipped-family cards are labeled clearly.
+- Confirm global cards still update the left stat stack after selection.
+- Confirm weapon-specific cards still update and flash the right weapon row after selection.
+- Confirm all `8` right-side weapon rows remain visible without scrolling.

@@ -875,6 +875,69 @@ Manual test focus:
 - Confirm global upgrades still update the left stat stack.
 - Confirm enemies, XP, bullets, event objectives, player core, Phase 37 ripple, arena bounds, and HUD readability remain intact.
 
+## Hotfix 9 — Upgrade-to-Weapon Clarity and Reward Pool Audit
+
+User confusion:
+
+- XP level-up cards did not clearly say whether they affected a current equipped weapon, a new run weapon, a global core stat, or a non-equipped weapon family.
+- Names such as `Fractal Aperture`, `Fractal Shard`, and `Orbit Splitter` were mechanically correct but player-facing linkage was unclear.
+- The right-side weapon stack had post-confirm upgrade feedback, but card selection did not preview which equipped row would be affected.
+- Level-up reward rolls suppressed exact duplicates only inside one panel; repeated same-family options, especially Fractal-family cards, could feel too frequent.
+
+Godot docs/classes referenced:
+
+- `Control`: used for fixed in-run HUD placement and selection/focus behavior.
+- `VBoxContainer`: preserved for the non-scrolling left stat stack and right `8`-slot equipped weapon stack.
+- `Button`: upgrade cards remain focusable buttons; `focus_entered` now updates selected-card preview linkage.
+- `Label`: weapon rows and card text use compact multiline labels through existing label/button text behavior.
+- `ScrollContainer`: reviewed to confirm no gameplay HUD scrolling was introduced.
+
+Upgrade card clarity:
+
+- Level-up and sector reward cards now use a consistent compact format:
+  - title
+  - `AFFECTS: ...`
+  - `GAIN: ...`
+  - `TYPE: ...`
+- Current equipped weapon buffs name the linked slot, such as `AFFECTS: SLOT 03 - FRACTAL SHARD`.
+- New generated weapons say whether they target an open slot or a full loadout route.
+- Fractal unlock/buff cards identify `NEW RUN WEAPON - FRACTAL SHARD` while Fractal is not equipped.
+- Non-equipped weapon-family buffs say `FAMILY - NOT EQUIPPED` instead of implying an equipped row will change.
+- Global/player upgrades say `GLOBAL CORE STATS`.
+
+Equipped row linkage:
+
+- Moving selection across upgrade cards now updates a transient preview map of affected weapon definitions.
+- Any currently equipped affected weapon row gets a cyan highlight before confirmation.
+- Confirmed weapon upgrades still use the existing gold post-apply flash.
+- Global weapon-output cards, such as damage/fire-rate style buffs, preview all equipped weapon rows because they affect weapon output globally.
+
+Right-side HUD readability:
+
+- The right equipped weapon panel was shifted from `Rect2(1602, 190, 300, 438)` to `Rect2(1602, 204, 300, 462)`.
+- Each row increased from `268x48` to `272x50`.
+- Weapon icons increased from `32x32` to `34x34`.
+- Row label minimum size increased to `216x44`, and row font increased from `8` to `9`.
+- All `8` weapon slots remain visible in one fixed vertical stack with no scrolling.
+
+Reward pool audit/fix:
+
+- Existing behavior: `_roll_upgrade_choices()` randomly selected from the whole level-up pool and removed exact selected entries only for that one panel.
+- Finding: this prevented duplicate card IDs in one panel, but did not prevent same-family clustering or recent repeated IDs across consecutive level-ups.
+- Fix: level-up rolls now prefer candidates that avoid recently shown upgrade IDs and avoid already-used target families inside the same card roll.
+- Recent history is capped to the last `9` shown level-up card IDs, so the pool still opens back up naturally.
+- Sector reward pools remain structurally separate and still include the generated weapon reward route.
+- No weapon damage, cooldown, count, progression, save data, or balance values were changed.
+
+Manual test focus:
+
+- Start Game and gain an XP level.
+- Move selection across all three upgrade cards and confirm the card clearly says what it affects.
+- Confirm currently equipped weapon buffs highlight the matching right-side slot row.
+- Confirm global core cards say `GLOBAL CORE STATS` and still update the left stat stack after confirmation.
+- Confirm new weapon/fractal cards say new weapon or not-equipped clearly when no right-side slot is affected.
+- Confirm all `8` equipped weapon slots remain visible without scrolling.
+
 ## Validation Results
 
 Run after implementation:

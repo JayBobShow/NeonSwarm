@@ -442,6 +442,8 @@ var _level_up_active := false
 var _level_nav_cooldown := 0.0
 var _upgrade_choices: Array[Dictionary] = []
 var _upgrade_selected_index := 0
+var _upgrade_preview_weapon_definitions: Dictionary = {}
+var _recent_level_upgrade_ids: Array[String] = []
 var _weapon_reward_decision_active := false
 var _weapon_reward_mode := "actions"
 var _weapon_reward_was_sector_reward := false
@@ -4004,7 +4006,7 @@ func _create_hud() -> void:
 	_add_loadout_chip(stat_stack, "SPD", "speed", "speed", Color(0.0, 0.95, 1.0, 0.90))
 	_add_loadout_chip(stat_stack, "PICKUP", "pickup", "pickup", Color(1.0, 0.90, 0.08, 0.90))
 
-	var loadout_panel := _make_frame(NeonFramePanel.FrameKind.RAIL, Rect2(1602, 190, 300, 438), Color(0.0, 0.95, 1.0, 0.90), Color(1.0, 0.06, 0.86, 0.72), 20.0, 1.8, Vector4(14, 10, 14, 10))
+	var loadout_panel := _make_frame(NeonFramePanel.FrameKind.RAIL, Rect2(1602, 204, 300, 462), Color(0.0, 0.95, 1.0, 0.90), Color(1.0, 0.06, 0.86, 0.72), 20.0, 1.8, Vector4(14, 10, 14, 10))
 	loadout_panel.name = "GameplayEquippedWeaponVerticalPanel"
 	_gameplay_hud_root.add_child(loadout_panel)
 	var loadout_stack := VBoxContainer.new()
@@ -5162,7 +5164,7 @@ func _gameplay_loadout_slot_style(fill_color: Color, border_color: Color, border
 func _add_gameplay_weapon_slot(parent: Control, slot_index: int) -> void:
 	var slot_panel := PanelContainer.new()
 	slot_panel.name = "GameplayLoadoutSlot%02d" % [slot_index + 1]
-	slot_panel.custom_minimum_size = Vector2(268, 48)
+	slot_panel.custom_minimum_size = Vector2(272, 50)
 	slot_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	slot_panel.add_theme_stylebox_override("panel", _gameplay_loadout_slot_style(Color(0.0, 0.010, 0.032, 0.78), Color(0.0, 0.82, 1.0, 0.58), 1))
 	parent.add_child(slot_panel)
@@ -5173,7 +5175,7 @@ func _add_gameplay_weapon_slot(parent: Control, slot_index: int) -> void:
 	row.add_theme_constant_override("separation", 5)
 	slot_panel.add_child(row)
 
-	var icon := _make_weapon_icon_control(Vector2(32, 32), true)
+	var icon := _make_weapon_icon_control(Vector2(34, 34), true)
 	icon.name = "GameplayLoadoutSlot%02dIcon" % [slot_index + 1]
 	if icon is NeonWeaponIcon:
 		icon.animate_preview = false
@@ -5181,9 +5183,9 @@ func _add_gameplay_weapon_slot(parent: Control, slot_index: int) -> void:
 
 	var label := _make_hud_label("SLOT %02d\nEMPTY\n--" % [slot_index + 1])
 	label.name = "GameplayLoadoutSlot%02dLabel" % [slot_index + 1]
-	label.custom_minimum_size = Vector2(212, 40)
+	label.custom_minimum_size = Vector2(216, 44)
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 8)
+	label.add_theme_font_size_override("font_size", 9)
 	label.add_theme_color_override("font_color", Color(0.72, 0.92, 1.0, 0.72))
 	label.clip_text = true
 	row.add_child(label)
@@ -5206,6 +5208,7 @@ func _enter_title_menu() -> void:
 	_pause_options_visible = false
 	_pause_menu_selected_index = 0
 	_pause_options_selected_index = 0
+	_clear_upgrade_choice_preview()
 	_clear_weapon_reward_decision_state()
 	_clear_chain_link_effects()
 	get_tree().paused = true
@@ -5258,6 +5261,8 @@ func _start_title_run() -> void:
 	_core_upgrade_confirm_pending_id = ""
 	_manual_pause = false
 	_pause_options_visible = false
+	_recent_level_upgrade_ids.clear()
+	_clear_upgrade_choice_preview()
 	_clear_weapon_reward_decision_state()
 	_reset_run_event_director_for_run()
 	get_tree().paused = false
@@ -8225,12 +8230,12 @@ func _create_level_up_panel(root: Control) -> void:
 	_level_up_panel.name = "LevelUpChoicePanel"
 	_level_up_panel.process_mode = Node.PROCESS_MODE_ALWAYS
 	_level_up_panel.visible = false
-	_level_up_panel.configure(Color(0.0, 0.95, 1.0, 0.96), Color(1.0, 0.06, 0.86, 0.86), Vector2(842, 282), 22.0, 2.5)
+	_level_up_panel.configure(Color(0.0, 0.95, 1.0, 0.96), Color(1.0, 0.06, 0.86, 0.86), Vector2(920, 332), 22.0, 2.5)
 	_level_up_panel.set_anchors_preset(Control.PRESET_CENTER)
-	_level_up_panel.offset_left = -421
-	_level_up_panel.offset_top = -141
-	_level_up_panel.offset_right = 421
-	_level_up_panel.offset_bottom = 141
+	_level_up_panel.offset_left = -460
+	_level_up_panel.offset_top = -166
+	_level_up_panel.offset_right = 460
+	_level_up_panel.offset_bottom = 166
 	root.add_child(_level_up_panel)
 
 	var margin := MarginContainer.new()
@@ -8254,7 +8259,7 @@ func _create_level_up_panel(root: Control) -> void:
 	_level_up_prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_level_up_prompt.add_theme_font_size_override("font_size", 12)
 	_level_up_prompt.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_level_up_prompt.custom_minimum_size = Vector2(790, 34)
+	_level_up_prompt.custom_minimum_size = Vector2(860, 34)
 	layout.add_child(_level_up_prompt)
 
 	var choices := HBoxContainer.new()
@@ -8265,12 +8270,12 @@ func _create_level_up_panel(root: Control) -> void:
 		var button := Button.new()
 		button.name = "UpgradeChoice%d" % i
 		button.set_meta("choice_index", i)
-		button.custom_minimum_size = Vector2(242, 116)
+		button.custom_minimum_size = Vector2(272, 136)
 		button.focus_mode = Control.FOCUS_ALL
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		button.add_theme_font_size_override("font_size", 13)
+		button.add_theme_font_size_override("font_size", 11)
 		button.add_theme_color_override("font_color", Color(0.86, 1.0, 1.0))
 		button.add_theme_color_override("font_focus_color", Color.WHITE)
 		button.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.90))
@@ -8281,6 +8286,10 @@ func _create_level_up_panel(root: Control) -> void:
 		button.pressed.connect(func() -> void:
 			_upgrade_selected_index = int(button.get_meta("choice_index"))
 			_confirm_level_up_choice()
+		)
+		button.focus_entered.connect(func() -> void:
+			_upgrade_selected_index = int(button.get_meta("choice_index"))
+			_sync_upgrade_choice_preview()
 		)
 		var icon := _make_weapon_icon_control(Vector2(64, 64))
 		icon.position = Vector2(9, 8)
@@ -12062,7 +12071,7 @@ func _begin_sector_clear_reward() -> void:
 		_level_up_title.text = "%s CLEAR" % _sector_display_title(_sector_index)
 	if _level_up_prompt:
 		var next_text := _sector_display_title(_sector_index + 1) if _sector_index + 1 < SECTOR_COUNT else "RUN COMPLETE VECTOR"
-		_level_up_prompt.text = "BOSS DEFEATED: %s  //  REWARD UNLOCKED\n+%d NEON DUST BANKED  //  NEXT: %s  //  D-Pad / Left Stick: Select    A / Enter: Route Reward" % [str(sector.get("boss_name", "BOSS")).to_upper(), dust_bonus, next_text]
+		_level_up_prompt.text = "BOSS DEFEATED: %s  //  REWARD UNLOCKED\n+%d NEON DUST BANKED  //  NEXT: %s  //  Select to preview linked slots    A / Enter: Route Reward" % [str(sector.get("boss_name", "BOSS")).to_upper(), dust_bonus, next_text]
 	for i in range(_upgrade_buttons.size()):
 		var button := _upgrade_buttons[i]
 		if i < _upgrade_choices.size():
@@ -12098,16 +12107,208 @@ func _roll_sector_reward_choices(amount: int) -> Array[Dictionary]:
 	return choices
 
 
-func _reward_choice_button_text(choice: Dictionary) -> String:
+func _append_unique_string(values: Array[String], value: String) -> void:
+	if value == "" or values.has(value):
+		return
+	values.append(value)
+
+
+func _weapon_display_name_for_definition(definition_id: String) -> String:
+	var definition := WeaponCatalog.weapon_definition(definition_id)
+	if not definition.is_empty():
+		return str(definition.get("name", definition_id.replace("_", " ").capitalize()))
+	return definition_id.replace("_", " ").capitalize()
+
+
+func _upgrade_choice_effects(choice: Dictionary) -> Dictionary:
+	return Dictionary(choice.get("effects", {}))
+
+
+func _upgrade_choice_affected_definitions(choice: Dictionary) -> Array[String]:
+	var definitions: Array[String] = []
 	if str(choice.get("kind", "stat_upgrade")) == "weapon_loot":
 		var instance: Dictionary = choice.get("weapon_instance", {})
-		var rarity := str(instance.get("rarity", "Common")).to_upper()
-		return "%s\nGENERATED WEAPON SYSTEM\n%s  //  %s\nChoose equip, stash, replace, or scrap next." % [
-			str(choice.get("title", "WEAPON LOOT")).to_upper(),
-			rarity,
-			str(choice.get("category", "WEAPON")).to_upper()
-		]
-	return "%s\nRUN UPGRADE // %s\nEFFECT: %s" % [str(choice["title"]).to_upper(), str(choice["category"]).to_upper(), str(choice["description"]).to_upper()]
+		_append_unique_string(definitions, str(instance.get("definition_id", "")))
+		return definitions
+	var effects := _upgrade_choice_effects(choice)
+	if effects.has("projectile_count_add"):
+		_append_unique_string(definitions, "pulse_blaster")
+	if effects.has("orbit_count_add"):
+		_append_unique_string(definitions, "orbit_spark")
+	if effects.has("nova_cooldown_multiplier_add"):
+		_append_unique_string(definitions, "nova_burst")
+	if effects.has("beam_duration_add"):
+		_append_unique_string(definitions, "arc_beam")
+	if effects.has("mine_radius_add"):
+		_append_unique_string(definitions, "gravity_mine")
+	if effects.has("prism_lance_damage_multiplier_add") or effects.has("prism_lance_pierce_add"):
+		_append_unique_string(definitions, "prism_lance")
+	if effects.has("ring_saw_radius_add") or effects.has("ring_saw_spin_add"):
+		_append_unique_string(definitions, "ring_saw")
+	if effects.has("hex_shatter_damage_multiplier_add") or effects.has("hex_shatter_cooldown_multiplier_add") or effects.has("hex_shatter_split_add"):
+		_append_unique_string(definitions, "hex_shatter")
+	if effects.has("fractal_shard_enable") or effects.has("fractal_shard_damage_multiplier_add") or effects.has("fractal_shard_cooldown_multiplier_add") or effects.has("fractal_shard_split_add") or effects.has("fractal_shard_life_add") or effects.has("fractal_shard_pierce_add"):
+		_append_unique_string(definitions, "fractal_shard")
+	return definitions
+
+
+func _upgrade_choice_has_global_core_effect(choice: Dictionary) -> bool:
+	var effects := _upgrade_choice_effects(choice)
+	for key in ["damage_multiplier_add", "fire_rate_multiplier_add", "pickup_radius_add", "speed_add", "max_health_add", "heal_add", "xp_pull_speed_add", "enemy_xp_bonus_add", "mini_boss_reward_bonus_add"]:
+		if effects.has(key):
+			return true
+	return false
+
+
+func _upgrade_choice_is_new_run_weapon(choice: Dictionary) -> bool:
+	var effects := _upgrade_choice_effects(choice)
+	return bool(effects.get("fractal_shard_enable", false)) and not _is_weapon_family_equipped("fractal_shard")
+
+
+func _upgrade_choice_type_text(choice: Dictionary) -> String:
+	if str(choice.get("kind", "stat_upgrade")) == "weapon_loot":
+		return "NEW WEAPON LOOT"
+	if _upgrade_choice_is_new_run_weapon(choice):
+		return "NEW RUN WEAPON"
+	if not _upgrade_choice_affected_definitions(choice).is_empty():
+		return "WEAPON BUFF"
+	if _upgrade_choice_has_global_core_effect(choice):
+		return "GLOBAL CORE"
+	return str(choice.get("category", "RUN SYSTEM")).to_upper()
+
+
+func _upgrade_choice_target_text(choice: Dictionary) -> String:
+	if str(choice.get("kind", "stat_upgrade")) == "weapon_loot":
+		var instance: Dictionary = choice.get("weapon_instance", {})
+		var definition_id := str(instance.get("definition_id", ""))
+		var equipped_index := _equipped_weapon_index_for_definition(definition_id)
+		if equipped_index >= 0:
+			return "AFFECTS: SLOT %02d - %s FAMILY" % [equipped_index + 1, _weapon_display_name_for_definition(definition_id).to_upper()]
+		if _find_open_weapon_slot_index() >= 0:
+			return "AFFECTS: NEW WEAPON - OPEN SLOT"
+		return "AFFECTS: NEW WEAPON - LOADOUT FULL"
+	var definitions := _upgrade_choice_affected_definitions(choice)
+	var equipped_slots: Array[String] = []
+	for definition_id in definitions:
+		var equipped_index := _equipped_weapon_index_for_definition(definition_id)
+		if equipped_index >= 0:
+			if definitions.size() == 1:
+				equipped_slots.append("SLOT %02d - %s" % [equipped_index + 1, _weapon_display_name_for_definition(definition_id).to_upper()])
+			else:
+				equipped_slots.append("SLOT %02d" % [equipped_index + 1])
+	if not equipped_slots.is_empty():
+		return "AFFECTS: %s" % " + ".join(equipped_slots)
+	if _upgrade_choice_is_new_run_weapon(choice):
+		return "AFFECTS: NEW RUN WEAPON - FRACTAL SHARD"
+	if not definitions.is_empty():
+		var names: Array[String] = []
+		for definition_id in definitions:
+			names.append(_weapon_display_name_for_definition(definition_id).to_upper())
+		return "AFFECTS: %s FAMILY - NOT EQUIPPED" % " + ".join(names)
+	if _upgrade_choice_has_global_core_effect(choice):
+		return "AFFECTS: GLOBAL CORE STATS"
+	return "AFFECTS: RUN SYSTEM"
+
+
+func _append_upgrade_piece(pieces: Array[String], piece: String, maximum := 3) -> void:
+	if piece == "" or pieces.size() >= maximum:
+		return
+	pieces.append(piece)
+
+
+func _upgrade_choice_impact_text(choice: Dictionary) -> String:
+	if str(choice.get("kind", "stat_upgrade")) == "weapon_loot":
+		var instance: Dictionary = choice.get("weapon_instance", {})
+		var comparison: Dictionary = choice.get("comparison", {})
+		var candidate_power := float(instance.get("power_score", 1.0))
+		var current_power := float(comparison.get("current_power", 0.0))
+		if current_power > 0.0:
+			return "PWR %.2f -> %.2f" % [current_power, candidate_power]
+		return "PWR %.2f / %s" % [candidate_power, str(instance.get("rarity", "Common")).to_upper()]
+	var effects := _upgrade_choice_effects(choice)
+	var pieces: Array[String] = []
+	if effects.has("damage_multiplier_add"):
+		_append_upgrade_piece(pieces, "DMG +%d%%" % int(round(float(effects["damage_multiplier_add"]) * 100.0)))
+	if effects.has("fire_rate_multiplier_add"):
+		_append_upgrade_piece(pieces, "RATE +%d%%" % int(round(float(effects["fire_rate_multiplier_add"]) * 100.0)))
+	if effects.has("projectile_count_add"):
+		var current_projectiles := 1 + _projectile_count_bonus + _weapon_int_stat_bonus("pulse_blaster", "projectile_count_bonus", 1)
+		var added_projectiles := int(effects["projectile_count_add"])
+		_append_upgrade_piece(pieces, "PULSE COUNT %d -> %d" % [current_projectiles, current_projectiles + added_projectiles])
+	if effects.has("pickup_radius_add"):
+		_append_upgrade_piece(pieces, "PICKUP +%.1f" % float(effects["pickup_radius_add"]))
+	if effects.has("speed_add"):
+		_append_upgrade_piece(pieces, "SPD +%d%%" % int(round(float(effects["speed_add"]) / PLAYER_SPEED * 100.0)))
+	if effects.has("max_health_add"):
+		_append_upgrade_piece(pieces, "HP +%d" % int(round(float(effects["max_health_add"]))))
+	if effects.has("heal_add"):
+		_append_upgrade_piece(pieces, "HEAL +%d" % int(round(float(effects["heal_add"]))))
+	if effects.has("orbit_count_add"):
+		var current_orbits := clampi(_orbit_count + _weapon_int_stat_bonus("orbit_spark", "orbit_count_bonus", 1), 1, ORBIT_VISUAL_CAP)
+		var added_orbits := int(effects["orbit_count_add"])
+		_append_upgrade_piece(pieces, "ORBIT %d -> %d" % [current_orbits, clampi(current_orbits + added_orbits, 1, ORBIT_VISUAL_CAP)])
+	if effects.has("nova_cooldown_multiplier_add"):
+		_append_upgrade_piece(pieces, "NOVA CD %d%%" % int(round(float(effects["nova_cooldown_multiplier_add"]) * 100.0)))
+	if effects.has("beam_duration_add"):
+		_append_upgrade_piece(pieces, "BEAM +%.2fs" % float(effects["beam_duration_add"]))
+	if effects.has("mine_radius_add"):
+		_append_upgrade_piece(pieces, "MINE AREA +%d%%" % int(round(float(effects["mine_radius_add"]) / GRAVITY_MINE_RADIUS * 100.0)))
+	if effects.has("prism_lance_damage_multiplier_add"):
+		_append_upgrade_piece(pieces, "LANCE DMG +%d%%" % int(round(float(effects["prism_lance_damage_multiplier_add"]) * 100.0)))
+	if effects.has("prism_lance_pierce_add"):
+		var current_pierce := PRISM_LANCE_PIERCE + _prism_lance_pierce_bonus + _weapon_int_stat_bonus("prism_lance", "pierce_bonus", 1)
+		var added_pierce := int(effects["prism_lance_pierce_add"])
+		_append_upgrade_piece(pieces, "PIERCE %d -> %d" % [current_pierce, current_pierce + added_pierce])
+	if effects.has("ring_saw_radius_add"):
+		_append_upgrade_piece(pieces, "SAW AREA +%d%%" % int(round(float(effects["ring_saw_radius_add"]) * 100.0)))
+	if effects.has("ring_saw_spin_add"):
+		_append_upgrade_piece(pieces, "SPIN +%d%%" % int(round(float(effects["ring_saw_spin_add"]) * 100.0)))
+	if effects.has("hex_shatter_damage_multiplier_add"):
+		_append_upgrade_piece(pieces, "HEX DMG +%d%%" % int(round(float(effects["hex_shatter_damage_multiplier_add"]) * 100.0)))
+	if effects.has("hex_shatter_cooldown_multiplier_add"):
+		_append_upgrade_piece(pieces, "HEX CD %d%%" % int(round(float(effects["hex_shatter_cooldown_multiplier_add"]) * 100.0)))
+	if effects.has("hex_shatter_split_add"):
+		var current_hex_split := 5 + _hex_shatter_split_bonus + _weapon_int_stat_bonus("hex_shatter", "split_count_bonus", 2)
+		var added_hex_split := int(effects["hex_shatter_split_add"])
+		_append_upgrade_piece(pieces, "HEX SPLIT %d -> %d" % [current_hex_split, current_hex_split + added_hex_split])
+	if bool(effects.get("fractal_shard_enable", false)):
+		_append_upgrade_piece(pieces, "UNLOCK FRACTAL")
+	if effects.has("fractal_shard_damage_multiplier_add"):
+		_append_upgrade_piece(pieces, "FRACTAL DMG +%d%%" % int(round(float(effects["fractal_shard_damage_multiplier_add"]) * 100.0)))
+	if effects.has("fractal_shard_cooldown_multiplier_add"):
+		_append_upgrade_piece(pieces, "FRACTAL CD %d%%" % int(round(float(effects["fractal_shard_cooldown_multiplier_add"]) * 100.0)))
+	if effects.has("fractal_shard_split_add"):
+		var current_fractal_split := 5 + _fractal_shard_split_bonus + _weapon_int_stat_bonus("fractal_shard", "split_count_bonus", 2)
+		var added_fractal_split := int(effects["fractal_shard_split_add"])
+		_append_upgrade_piece(pieces, "FRACTAL SPLIT %d -> %d" % [current_fractal_split, current_fractal_split + added_fractal_split])
+	if effects.has("fractal_shard_life_add"):
+		_append_upgrade_piece(pieces, "FRACTAL LIFE +%.2fs" % float(effects["fractal_shard_life_add"]))
+	if effects.has("fractal_shard_pierce_add"):
+		var current_fractal_pierce := 1 + _fractal_shard_pierce_bonus + _weapon_int_stat_bonus("fractal_shard", "pierce_bonus", 1)
+		var added_fractal_pierce := int(effects["fractal_shard_pierce_add"])
+		_append_upgrade_piece(pieces, "FRACTAL PIERCE %d -> %d" % [current_fractal_pierce, current_fractal_pierce + added_fractal_pierce])
+	if effects.has("xp_pull_speed_add"):
+		_append_upgrade_piece(pieces, "XP PULL +%d%%" % int(round(float(effects["xp_pull_speed_add"]) / XP_PULL_SPEED * 100.0)))
+	if effects.has("enemy_xp_bonus_add"):
+		_append_upgrade_piece(pieces, "ENEMY XP +%d" % int(effects["enemy_xp_bonus_add"]))
+	if effects.has("mini_boss_reward_bonus_add"):
+		_append_upgrade_piece(pieces, "BOSS XP +%d" % int(effects["mini_boss_reward_bonus_add"]))
+	if pieces.is_empty():
+		return str(choice.get("description", "RUN IMPROVED")).to_upper()
+	return " / ".join(pieces)
+
+
+func _upgrade_choice_button_text(choice: Dictionary) -> String:
+	return "%s\n%s\nGAIN: %s\nTYPE: %s" % [
+		str(choice.get("title", "UPGRADE")).to_upper(),
+		_upgrade_choice_target_text(choice),
+		_upgrade_choice_impact_text(choice),
+		_upgrade_choice_type_text(choice)
+	]
+
+
+func _reward_choice_button_text(choice: Dictionary) -> String:
+	return _upgrade_choice_button_text(choice)
 
 
 func _apply_choice_button_accent(button: Button, choice: Dictionary) -> void:
@@ -12127,7 +12328,11 @@ func _update_upgrade_choice_icon(index: int, choice: Dictionary) -> void:
 	if index < 0 or index >= _upgrade_choice_icons.size():
 		return
 	if str(choice.get("kind", "stat_upgrade")) != "weapon_loot":
-		_set_weapon_icon(_upgrade_choice_icons[index], "unknown_weapon", false)
+		var affected_definitions := _upgrade_choice_affected_definitions(choice)
+		if affected_definitions.is_empty():
+			_set_weapon_icon(_upgrade_choice_icons[index], "unknown_weapon", false)
+		else:
+			_set_weapon_icon(_upgrade_choice_icons[index], affected_definitions[0], true)
 		return
 	var instance: Dictionary = choice.get("weapon_instance", {})
 	_set_weapon_icon(_upgrade_choice_icons[index], instance, not instance.is_empty())
@@ -12306,12 +12511,12 @@ func _begin_level_up() -> void:
 	if _level_up_title:
 		_level_up_title.text = "LEVEL %d UPGRADE" % _player_level
 	if _level_up_prompt:
-		_level_up_prompt.text = "D-Pad / Left Stick: Select    A / Enter: Confirm"
+		_level_up_prompt.text = "D-Pad / Left Stick: Select to preview linked slots    A / Enter: Confirm"
 	for i in range(_upgrade_buttons.size()):
 		var button := _upgrade_buttons[i]
 		if i < _upgrade_choices.size():
 			var upgrade := _upgrade_choices[i]
-			button.text = "%s\n%s\n[%s]" % [upgrade["title"], upgrade["description"], upgrade["category"]]
+			button.text = _upgrade_choice_button_text(upgrade)
 			_apply_choice_button_accent(button, upgrade)
 			_update_upgrade_choice_icon(i, upgrade)
 			button.visible = true
@@ -12329,11 +12534,75 @@ func _begin_level_up() -> void:
 func _roll_upgrade_choices(amount: int) -> Array[Dictionary]:
 	var pool := _upgrade_pool.duplicate()
 	var choices: Array[Dictionary] = []
+	var used_targets: Dictionary = {}
 	while choices.size() < amount and pool.size() > 0:
-		var index := _upgrade_rng.randi_range(0, pool.size() - 1)
-		choices.append(pool[index])
-		pool.remove_at(index)
+		var candidates := _upgrade_roll_candidates(pool, used_targets, true)
+		if candidates.is_empty():
+			candidates = _upgrade_roll_candidates(pool, used_targets, false)
+		if candidates.is_empty():
+			candidates.assign(pool)
+		var selected: Dictionary = candidates[_upgrade_rng.randi_range(0, candidates.size() - 1)]
+		var selected_id := str(selected.get("id", ""))
+		choices.append(selected)
+		used_targets[_upgrade_choice_primary_target_key(selected)] = true
+		_remove_upgrade_id_from_pool(pool, selected_id)
+	_remember_level_upgrade_choice_roll(choices)
 	return choices
+
+
+func _upgrade_roll_candidates(pool: Array, used_targets: Dictionary, avoid_recent: bool) -> Array[Dictionary]:
+	var candidates: Array[Dictionary] = []
+	for entry in pool:
+		var upgrade: Dictionary = entry
+		var upgrade_id := str(upgrade.get("id", ""))
+		if avoid_recent and _recent_level_upgrade_ids.has(upgrade_id):
+			continue
+		var target_key := _upgrade_choice_primary_target_key(upgrade)
+		if used_targets.has(target_key):
+			continue
+		candidates.append(upgrade)
+	return candidates
+
+
+func _remove_upgrade_id_from_pool(pool: Array, upgrade_id: String) -> void:
+	for i in range(pool.size()):
+		var upgrade: Dictionary = pool[i]
+		if str(upgrade.get("id", "")) == upgrade_id:
+			pool.remove_at(i)
+			return
+	if not pool.is_empty():
+		pool.remove_at(0)
+
+
+func _remember_level_upgrade_choice_roll(choices: Array[Dictionary]) -> void:
+	for choice in choices:
+		var upgrade_id := str(choice.get("id", ""))
+		if upgrade_id == "":
+			continue
+		_recent_level_upgrade_ids.append(upgrade_id)
+	while _recent_level_upgrade_ids.size() > 9:
+		_recent_level_upgrade_ids.pop_front()
+
+
+func _upgrade_choice_primary_target_key(choice: Dictionary) -> String:
+	if str(choice.get("kind", "stat_upgrade")) == "weapon_loot":
+		return "weapon_loot"
+	var definitions := _upgrade_choice_affected_definitions(choice)
+	if not definitions.is_empty():
+		return "weapon:%s" % "+".join(definitions)
+	if _upgrade_choice_has_global_core_effect(choice):
+		var effects := _upgrade_choice_effects(choice)
+		if effects.has("damage_multiplier_add") or effects.has("fire_rate_multiplier_add"):
+			return "global:weapon_output"
+		if effects.has("pickup_radius_add") or effects.has("xp_pull_speed_add"):
+			return "global:collection"
+		if effects.has("speed_add"):
+			return "global:movement"
+		if effects.has("max_health_add") or effects.has("heal_add"):
+			return "global:survival"
+		if effects.has("enemy_xp_bonus_add") or effects.has("mini_boss_reward_bonus_add"):
+			return "global:economy"
+	return "category:%s" % str(choice.get("category", "run"))
 
 
 func _handle_level_up_input(event: InputEvent) -> void:
@@ -12367,6 +12636,39 @@ func _focus_upgrade_choice() -> void:
 		var button := _upgrade_buttons[i]
 		if i == _upgrade_selected_index:
 			button.grab_focus()
+	_sync_upgrade_choice_preview()
+
+
+func _sync_upgrade_choice_preview() -> void:
+	_upgrade_preview_weapon_definitions.clear()
+	if _upgrade_choices.is_empty() or _upgrade_selected_index < 0 or _upgrade_selected_index >= _upgrade_choices.size():
+		_update_hud()
+		return
+	var choice := _upgrade_choices[_upgrade_selected_index]
+	for definition_id in _upgrade_choice_preview_definitions(choice):
+		_upgrade_preview_weapon_definitions[definition_id] = true
+	_update_hud()
+
+
+func _clear_upgrade_choice_preview() -> void:
+	if _upgrade_preview_weapon_definitions.is_empty():
+		return
+	_upgrade_preview_weapon_definitions.clear()
+	_update_hud()
+
+
+func _upgrade_choice_preview_definitions(choice: Dictionary) -> Array[String]:
+	var preview_definitions: Array[String] = []
+	var affected_definitions := _upgrade_choice_affected_definitions(choice)
+	for definition_id in affected_definitions:
+		if _is_weapon_family_equipped(definition_id):
+			_append_unique_string(preview_definitions, definition_id)
+	if preview_definitions.is_empty() and affected_definitions.is_empty():
+		var effects := _upgrade_choice_effects(choice)
+		if effects.has("damage_multiplier_add") or effects.has("fire_rate_multiplier_add"):
+			for instance in _equipped_weapon_instances:
+				_append_unique_string(preview_definitions, str(instance.get("definition_id", "")))
+	return preview_definitions
 
 
 func _confirm_level_up_choice() -> void:
@@ -12376,6 +12678,7 @@ func _confirm_level_up_choice() -> void:
 	var was_sector_reward := _sector_reward_active
 	var selected_upgrade := _upgrade_choices[_upgrade_selected_index]
 	if str(selected_upgrade.get("kind", "stat_upgrade")) == "weapon_loot":
+		_clear_upgrade_choice_preview()
 		_open_weapon_reward_decision(selected_upgrade, was_sector_reward)
 		return
 	_apply_upgrade(selected_upgrade)
@@ -12383,6 +12686,7 @@ func _confirm_level_up_choice() -> void:
 
 
 func _finish_level_up_choice(was_sector_reward: bool) -> void:
+	_clear_upgrade_choice_preview()
 	_upgrade_choices.clear()
 	if _level_up_panel:
 		_level_up_panel.visible = false
@@ -13000,9 +13304,14 @@ func _update_gameplay_loadout_slots() -> void:
 			var rarity := str(instance.get("rarity", "Common"))
 			var accent := Color.html("#%s" % WeaponCatalog.rarity_accent_hex(rarity)) if WeaponCatalog.rarity_tiers().has(rarity) else Color(0.0, 0.95, 1.0, 0.96)
 			var flash_amount := clampf(float(_gameplay_weapon_slot_flash_timers.get(definition_id, 0.0)) / GAMEPLAY_WEAPON_HUD_FLASH_DURATION, 0.0, 1.0)
+			var preview_active := _upgrade_preview_weapon_definitions.has(definition_id)
 			var fill_color := Color(0.0, 0.010, 0.032, 0.82)
 			var border_color := Color(accent.r, accent.g, accent.b, 0.92)
 			var border_width := 2
+			if preview_active:
+				fill_color = fill_color.lerp(Color(0.0, 0.065, 0.090, 0.95), 0.82)
+				border_color = Color(0.0, 0.96, 1.0, 1.0)
+				border_width = 3
 			if flash_amount > 0.0:
 				fill_color = fill_color.lerp(Color(0.12, 0.10, 0.02, 0.94), flash_amount)
 				border_color = Color(1.0, 0.94, 0.18, 0.96)
@@ -13018,7 +13327,12 @@ func _update_gameplay_loadout_slots() -> void:
 				_weapon_hud_feedback_text(instance)
 			]
 			label.tooltip_text = _weapon_hud_tooltip(instance, i + 1)
-			label.add_theme_color_override("font_color", Color(1.0, 0.96, 0.62, 1.0) if flash_amount > 0.0 else Color(0.88, 1.0, 1.0, 0.96))
+			var label_color := Color(0.88, 1.0, 1.0, 0.96)
+			if preview_active:
+				label_color = Color(0.72, 1.0, 1.0, 1.0)
+			if flash_amount > 0.0:
+				label_color = Color(1.0, 0.96, 0.62, 1.0)
+			label.add_theme_color_override("font_color", label_color)
 		else:
 			panel.add_theme_stylebox_override("panel", _gameplay_loadout_slot_style(Color(0.0, 0.010, 0.032, 0.52), Color(0.18, 0.42, 0.52, 0.50), 1))
 			_set_weapon_icon(icon, "unknown_weapon", true)
