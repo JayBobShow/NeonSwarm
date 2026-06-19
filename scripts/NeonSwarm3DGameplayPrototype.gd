@@ -38,6 +38,8 @@ const PLAYER_CORE_BASE_VISUAL_SCALE := 1.18
 const PLAYER_CORE_VISUAL_SCALE_MULTIPLIER := 1.375
 const PLAYER_CORE_VISUAL_SCALE := PLAYER_CORE_BASE_VISUAL_SCALE * PLAYER_CORE_VISUAL_SCALE_MULTIPLIER
 const PLAYER_CORE_VISUAL_PITCH_DEGREES := 25.0
+const PLAYER_CORE_AIM_FACING_EXPERIMENT_ENABLED := true
+const PLAYER_CORE_AIM_FACING_YAW_RESPONSE := 14.0
 const SCREEN_SHAKE_MAX := 0.32
 const SFX_PLAYER_CAP := 12
 const MUSIC_MIX_RATE := 22050
@@ -274,6 +276,9 @@ var _shake_duration := 0.0
 var _shake_strength := 0.0
 var _player_area: Area3D
 var _player_visual: Node3D
+var _player_core_visual: Node3D
+var _player_core_aim_facing_direction := Vector3.ZERO
+var _player_core_has_aim_facing_direction := false
 var _player_velocity := Vector3.ZERO
 var _player_health := PLAYER_MAX_HEALTH
 var _player_max_health := PLAYER_MAX_HEALTH
@@ -962,6 +967,7 @@ func _process(delta: float) -> void:
 	_update_wave_director(delta)
 	_update_run_event_director(delta)
 	_update_weapons(delta)
+	_update_player_core_aim_facing_visual(delta)
 	_update_enemies(delta)
 	_update_boss_telegraphs(delta)
 	_update_projectiles(delta)
@@ -2537,7 +2543,7 @@ func _add_blender_asset_instance(parent: Node3D, node_name: String, path: String
 
 
 func _apply_player_blender_model(root: Node3D) -> void:
-	_add_blender_asset_instance(root, "Blender3DPlayerCoreModel", "res://art/player/exported/3d/player_core.glb", PLAYER_CORE_VISUAL_SCALE, Vector3(0.0, 0.05, 0.0), 0.0, true, PLAYER_CORE_VISUAL_PITCH_DEGREES)
+	_player_core_visual = _add_blender_asset_instance(root, "Blender3DPlayerCoreModel", "res://art/player/exported/3d/player_core.glb", PLAYER_CORE_VISUAL_SCALE, Vector3(0.0, 0.05, 0.0), 0.0, true, PLAYER_CORE_VISUAL_PITCH_DEGREES)
 
 
 func _apply_xp_blender_model(root: Node3D) -> void:
@@ -8850,6 +8856,36 @@ func _update_player(delta: float) -> void:
 	_update_player_presentation_effects(delta)
 
 
+func _set_player_core_aim_facing_direction(direction: Vector3) -> void:
+	if not PLAYER_CORE_AIM_FACING_EXPERIMENT_ENABLED:
+		return
+	var flat_direction := Vector3(direction.x, 0.0, direction.z)
+	if flat_direction.length_squared() < 0.01:
+		return
+	_player_core_aim_facing_direction = flat_direction.normalized()
+	_player_core_has_aim_facing_direction = true
+
+
+func _player_core_local_yaw_for_world_direction(direction: Vector3) -> float:
+	var target_yaw := _yaw_for_direction(direction)
+	var parent_yaw := 0.0
+	if is_instance_valid(_player_core_visual) and _player_core_visual.get_parent() is Node3D:
+		parent_yaw = (_player_core_visual.get_parent() as Node3D).global_rotation.y
+	return wrapf(target_yaw - parent_yaw, -PI, PI)
+
+
+func _update_player_core_aim_facing_visual(delta: float) -> void:
+	if not PLAYER_CORE_AIM_FACING_EXPERIMENT_ENABLED:
+		return
+	if not is_instance_valid(_player_core_visual) or not _player_core_has_aim_facing_direction:
+		return
+	_player_core_visual.rotation.x = deg_to_rad(PLAYER_CORE_VISUAL_PITCH_DEGREES)
+	_player_core_visual.scale = Vector3.ONE * PLAYER_CORE_VISUAL_SCALE
+	var target_yaw := _player_core_local_yaw_for_world_direction(_player_core_aim_facing_direction)
+	var response := clampf(delta * PLAYER_CORE_AIM_FACING_YAW_RESPONSE, 0.0, 1.0)
+	_player_core_visual.rotation.y = lerp_angle(_player_core_visual.rotation.y, target_yaw, response)
+
+
 func _current_player_speed() -> float:
 	return PLAYER_SPEED + _speed_bonus
 
@@ -10692,13 +10728,18 @@ func _update_star_pulse(delta: float) -> void:
 func _get_primary_fire_direction() -> Vector3:
 	var direction := _get_aim_direction()
 	if direction.length_squared() >= 0.01:
+		_set_player_core_aim_facing_direction(direction)
 		return direction
 	var target := _nearest_enemy()
 	if target.is_empty():
 		return Vector3.ZERO
 	direction = (target["node"].position - _player_area.position)
 	direction.y = 0.0
-	return direction.normalized() if direction.length_squared() >= 0.01 else Vector3.ZERO
+	if direction.length_squared() < 0.01:
+		return Vector3.ZERO
+	direction = direction.normalized()
+	_set_player_core_aim_facing_direction(direction)
+	return direction
 
 
 func _get_aim_direction() -> Vector3:
