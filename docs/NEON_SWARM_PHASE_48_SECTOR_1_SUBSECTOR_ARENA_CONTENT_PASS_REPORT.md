@@ -2,7 +2,7 @@
 
 Phase 48 builds the first Sector 1 subsector arena content pass for Neon Grid
 only. The pass keeps 1.0 Awakening Grid on the approved base Sector 1 arena and
-adds visual-only runtime variants for 1A through 1D.
+adds full visual runtime arena-layout variants for 1A through 1D.
 
 No Phase 49 work, Sector 2 subsector art, Sector 3 subsector art, Sector 4
 subsector art, Sector 5 runtime content, final boss content, ending sequence,
@@ -70,9 +70,9 @@ copied.
 - Material / Lighting Artist: keep `NS_S1_` materials, avoid black floor
   collapse, and keep cyan accents restrained so bullets, XP, enemies, ripple,
   and player stay readable.
-- Godot Technical Artist: integrate variants through a Sector 1-only runtime
-  resolver, keep 1.0 on the approved base arena, and avoid preloading missing
-  variants.
+- Godot Technical Artist: integrate full 1A-1D arena layouts through a Sector
+  1-only runtime resolver, keep 1.0 on the approved base arena, and avoid
+  preloading missing variants.
 - Gameplay Readability QA: validate real campaign node switching, no duplicate
   arena roots, no gameplay collision nodes under variant imports, Phase 47 UI
   sequencing, and no Sector 2/Sector 5 changes.
@@ -94,8 +94,9 @@ Runtime GLB exports:
 - `art/arenas/sector_1/exported/sector_1_rail_approach.glb`
 
 The generator sets bevels, weighted normals, Principled BSDF materials, and GLB
-exports. The new GLBs are visual-only overlays and contain no collision,
-cameras, lights, scripts, navigation, or alternate playable scene setup.
+exports. The new GLBs are full visual arena-layout variants and contain no
+collision, cameras, lights, scripts, navigation, or alternate playable scene
+setup.
 
 ## Runtime Integration
 
@@ -103,10 +104,11 @@ Runtime integration is in `scripts/NeonSwarm3DGameplayPrototype.gd`.
 
 - Sector 1 campaign data now includes `arena_variant_key` only for 1A-1D.
 - `SECTOR1_SUBSECTOR_ARENA_SCENE_PATHS` maps those keys to exported GLBs.
-- `_create_sector1_neon_grid_3d_architecture()` still creates the approved base
-  Sector 1 arena first.
-- `_create_sector1_subsector_arena_variant()` adds the current 1A-1D overlay
-  under `Sector1SubsectorArenaVariantRoot`.
+- `_create_sector1_neon_grid_3d_architecture()` creates the approved base
+  Sector 1 arena only for 1.0.
+- `_create_sector1_subsector_arena_variant()` loads the current 1A-1D full
+  layout under `Sector1SubsectorArenaVariantRoot` instead of stacking it on the
+  1.0 base room.
 - `_current_sector1_subsector_arena_variant_key()` returns no variant for 1.0,
   returns the current 1A-1D key during normal subsectors, and lets Rail Approach
   persist into the Grix boss gate after 1D.
@@ -123,6 +125,11 @@ difference came from thin decorative cyan line overlays. The hotfix rebuilds the
 Blender generator and exported GLBs so the variants read through intentional
 modeled hard-surface structures.
 
+The art-direction correction stops the same-base-room approach entirely:
+1A-1D are full replacement visual layouts with their own floor foundation,
+boundary frame, and major modeled landmarks while 1.0 remains the base Sector 1
+arena.
+
 Removed / reduced first-pass line clutter:
 
 - `RelayYardReadableSignalLine`
@@ -138,28 +145,32 @@ meters, lock faces, and contained power cores attached to the modeled forms.
 
 ## Visual Identity
 
-- 1A Relay Yard: raised relay-node pads, inset relay service plates, short
-  antenna masts, signal projector blocks, modeled cable trays, embedded signal
-  windows, emitter cabinets, and perimeter relay wall banks.
-- 1B Data Trench: wide recessed floor lanes, raised metal rims, heavy bridge
-  plates, bolted clamps, a cross-cut service channel, broken memory panel
-  hardware, contained cyan conduits, and end memory buses.
-- 1C Capacitor Field: larger capacitor cell bases, recessed charge wells,
-  glowing charge plates, positive/negative terminals, side power buses,
-  perimeter charge-bank bodies, meter faces, and contained cell traces.
-- 1D Rail Approach: two physical rail lanes with rail feet, raised rail caps,
-  heavy sleeper plates, rail brackets, side defense corridor walls, warning
-  panels embedded in those walls, and a stronger north defense-gate frame.
+- 1A Relay Yard: four large relay station foundations, raised relay-node pads,
+  a central signal hub/receiver, inset relay service plates, short antenna
+  masts, signal projector blocks, modeled station-to-hub cable trays, embedded
+  signal windows, emitter cabinets, and perimeter relay wall banks.
+- 1B Data Trench: major recessed trench lanes, raised deck islands separated by
+  trenches, raised metal rims, heavy bridge plates, bolted clamps, a cross-cut
+  service channel, broken memory panel hardware, contained cyan conduits, and
+  end memory buses.
+- 1C Capacitor Field: a clear capacitor cell-grid layout, larger capacitor cell
+  bases, recessed charge wells, glowing charge plates, positive/negative
+  terminals, side power buses, perimeter charge-bank bodies, meter faces, and
+  contained cell traces.
+- 1D Rail Approach: a strong rail-corridor composition with a central runway
+  recess, two physical rail lanes with rail feet, raised rail caps, heavy
+  sleeper plates, rail brackets, side defense corridor walls, warning panels
+  embedded in those walls, and a stronger north defense-gate frame.
 
 ## Manual Test Checklist
 
 - Start a run and confirm 1.0 Awakening Grid uses the approved base Sector 1
-  arena with no Phase 48 overlay.
+  arena.
 - Use F6/F11 test flow and confirm:
-  - 1A loads Relay Yard.
-  - 1B loads Data Trench.
-  - 1C loads Capacitor Field.
-  - 1D loads Rail Approach.
+  - 1A loads Relay Yard as a full modeled layout, not an overlay.
+  - 1B loads Data Trench as a full modeled layout, not an overlay.
+  - 1C loads Capacitor Field as a full modeled layout, not an overlay.
+  - 1D loads Rail Approach as a full modeled layout, not an overlay.
 - Confirm the boss gate after 1D still leads to Grix the Rail Butcher.
 - Confirm Prism Shard I still unlocks after Grix.
 - Confirm player core, blue ripple, XP, enemies, bullets, HUD, Lyra, story

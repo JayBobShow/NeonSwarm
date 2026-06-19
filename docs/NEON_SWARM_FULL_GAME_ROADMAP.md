@@ -27,7 +27,7 @@ Current approved baseline:
 - Phase 45 adds a lightweight runtime Memory Shard reward system for the four current bosses/sectors without adding a Lore Codex menu, Sector 5, the Null King stage, or an ending.
 - Phase 46 locks the official sector/subsector campaign structure and future implementation sequence without activating subsector runtime progression, adding new arenas, adding Sector 5, or building an ending.
 - Phase 47 adds the first runtime campaign progression foundation for the four active sectors: subsector tracking, timed subsector advancement, boss gates after final approach subsectors, HUD/title-card support, and F11 test-mode advancement, without adding custom arena art, Sector 5, a final boss, or an ending.
-- Phase 48 adds the first Sector 1 subsector arena content pass: visual-only 1A Relay Yard, 1B Data Trench, 1C Capacitor Field, and 1D Rail Approach GLB overlays integrated into the Phase 47 campaign runtime without adding Sector 2 subsector art, Sector 5 runtime, a final boss, or an ending.
+- Phase 48 adds the first Sector 1 subsector arena content pass: visual-only full arena-layout GLBs for 1A Relay Yard, 1B Data Trench, 1C Capacitor Field, and 1D Rail Approach integrated into the Phase 47 campaign runtime without adding Sector 2 subsector art, Sector 5 runtime, a final boss, or an ending.
 
 Major development still needed:
 
@@ -592,7 +592,7 @@ Likely future phases:
 | Phase 45 | Memory Shard System | Adds four active runtime Memory Shard rewards, reveal panel, Lyra reaction lines, per-run unlock flags, and future-only Prism Shard V/VI story-lock notes. No Lore Codex menu, Sector 5, Null King stage, Phase 46 work, or ending sequence is built. |
 | Phase 46 | Sector/Subsector Campaign Structure Expansion Plan | Locks the official 1.0-1D, 2.0-2D, 3.0-3D, 4.0-4D, and future 5.0-5D campaign route, pacing rules, story purpose, and future implementation order. Documentation-only; no runtime progression, new arenas, Sector 5, ending, Lore Codex menu, or Phase 47 work is built. |
 | Phase 47 | Campaign Progression Runtime Foundation | Implements active four-sector subsector runtime progression using placeholder/current arena visuals: five subsectors plus boss gate per active sector, timed normal-node advancement, boss warning/spawn only at boss gates, HUD/title-card support, and F11 test-mode advancement. No custom subsector art, Sector 5, ending, Lore Codex menu, or Phase 48 work is built. |
-| Phase 48 | Sector 1 Subsector Arena Content Pass | Implements visual-only Sector 1 1A-1D arena overlays for Relay Yard, Data Trench, Capacitor Field, and Rail Approach through the existing Phase 47 runtime. No Sector 2 subsector art, Sector 5, ending, or gameplay balance changes are built. |
+| Phase 48 | Sector 1 Subsector Arena Content Pass | Implements visual-only Sector 1 1A-1D full arena-layout variants for Relay Yard, Data Trench, Capacitor Field, and Rail Approach through the existing Phase 47 runtime. No Sector 2 subsector art, Sector 5, ending, or gameplay balance changes are built. |
 | Phase 49 | Sector 2 Subsector Arena Content Pass | Future: build playable 2A-2D variants using Prism Rift art direction and user reference workflow. Do not start without explicit approval. |
 | Phase 50 | Sector 3 Subsector Arena Content Pass | Future: build playable Ember Circuit subsector variants. Do not start without explicit approval. |
 | Phase 51 | Sector 4 Subsector Arena Content Pass | Future: build playable Hyper Grid subsector variants. Do not start without explicit approval. |

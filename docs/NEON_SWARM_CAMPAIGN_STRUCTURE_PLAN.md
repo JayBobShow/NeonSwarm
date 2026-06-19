@@ -236,7 +236,8 @@ Phase 48 Sector 1 art status:
 
 - 1.0 Awakening Grid continues to use the approved base Sector 1 arena.
 - 1A Relay Yard, 1B Data Trench, 1C Capacitor Field, and 1D Rail Approach now
-  load visual-only Sector 1 GLB overlays through the Phase 47 campaign runtime.
+  load full visual-only Sector 1 GLB arena-layout variants through the Phase 47
+  campaign runtime.
 - Rail Approach remains the visual approach during the Grix boss gate after 1D.
 - Memory Shard I remains tied to Grix defeat, not normal subsector clears.
 - No Sector 2, Sector 3, Sector 4, or Sector 5 subsector arena art is added by

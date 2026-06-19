@@ -330,10 +330,14 @@ only.
 Runtime behavior:
 
 - 1.0 Awakening Grid continues to use the approved base Sector 1 Neon Grid GLB.
-- 1A Relay Yard loads a visual-only relay-node / signal-line overlay.
-- 1B Data Trench loads a visual-only data-channel / memory-strip overlay.
-- 1C Capacitor Field loads a visual-only capacitor-cell / charge-bank overlay.
-- 1D Rail Approach loads a visual-only rail / defense-gate approach overlay.
+- 1A Relay Yard loads a full visual-only relay-station / central-hub arena
+  layout.
+- 1B Data Trench loads a full visual-only recessed-trench / bridge-plate arena
+  layout.
+- 1C Capacitor Field loads a full visual-only capacitor-cell / charge-bank arena
+  layout.
+- 1D Rail Approach loads a full visual-only rail-corridor / defense-gate arena
+  layout.
 - The Rail Approach visual remains in place for the Grix boss gate after 1D.
 - Phase 47 subsector timing, title cards, F11 test advancement, boss gate
   behavior, and UI sequencing remain the active runtime structure.

@@ -2,9 +2,9 @@
 
 Phase 48 adds visual-only subsector variants for Sector 1, Neon Grid.
 
-The existing `sector_1_neon_grid_arena.glb` remains the base 1.0 Awakening
-Grid arena. The new 1A-1D GLBs are additive visual overlays loaded only for
-Sector 1 campaign subsectors.
+The existing `sector_1_neon_grid_arena.glb` remains the 1.0 Awakening Grid
+arena. The 1A-1D GLBs are full visual arena-layout variants loaded instead of
+the 1.0 base arena for their specific Sector 1 campaign subsectors.
 
 ## Variant Identity
 
@@ -27,6 +27,9 @@ Phase 48 hotfix notes:
   physical rail feet, rail caps, brackets, corridor walls, and gate hardware.
 - Neon now appears as embedded windows, sockets, meters, lock faces, and power
   cores attached to the modeled structures.
+- The art-direction correction stops stacking 1A-1D over the same base room.
+  Each subsector export includes its own floor foundation, boundary frame, and
+  large layout landmarks.
 
 ## Safety Rules
 
@@ -37,6 +40,8 @@ Phase 48 hotfix notes:
   visibility pass applies.
 - Geometry stays low to the floor and away from player collision assumptions.
 - 1.0 keeps the approved base Sector 1 arena.
+- 1A-1D are not decal layers, random line overlays, or small-box decoration
+  passes over the 1.0 room.
 - Sector 2, Sector 3, Sector 4, Sector 5, weapons, player collision, and boss
   balance are not part of this pass.
 

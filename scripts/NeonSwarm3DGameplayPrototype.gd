@@ -3855,8 +3855,11 @@ func _create_sector1_neon_grid_3d_architecture() -> void:
 	root.name = "Sector1NeonGrid3DArenaArchitectureRoot"
 	_sector_geometry_root.add_child(root)
 	_create_sector1_arena_readability_key_light(root)
-	_create_sector1_blender_arena_kit(root)
-	_create_sector1_subsector_arena_variant(root)
+	var variant_key := _current_sector1_subsector_arena_variant_key()
+	if variant_key == "":
+		_create_sector1_blender_arena_kit(root)
+	else:
+		_create_sector1_subsector_arena_variant(root)
 
 
 func _create_sector1_arena_readability_key_light(parent: Node3D) -> void:

@@ -4,7 +4,7 @@ Sector 1 is Neon Grid: a blue/cyan arcade battlefield built from dark
 hard-surface Grid infrastructure.
 
 Phase 48 keeps the approved 1.0 Awakening Grid arena as the base and adds
-distinct visual-only overlays for 1A through 1D.
+distinct visual-only full arena-layout variants for 1A through 1D.
 
 ## Shared Rules
 
@@ -13,6 +13,8 @@ distinct visual-only overlays for 1A through 1D.
   restrained cyan embedded channels.
 - Keep the center fight space readable from the existing gameplay camera.
 - Keep all geometry visual-only and low-profile.
+- Do not build subsectors as decals, random line overlays, or the same base room
+  with different small boxes drawn on top.
 - Avoid random neon dash noise, bright full-floor grid clutter, black invisible
   floors, tall interior props, and collision complexity.
 - Preserve player, XP, enemies, bullets, ripple, Lyra panel, HUD, boss cards,
@@ -25,6 +27,8 @@ Story purpose: Lyra begins tracing the broken Grid signal.
 Visual language:
 
 - Raised relay-node hardware arranged around the arena.
+- Four large relay station foundations near the edges/corners.
+- A central signal hub / receiver that anchors the layout.
 - Modeled cable trays and tray lips, not free-floating line art.
 - Embedded signal windows attached to trays, pads, cabinets, and wall banks.
 - Perimeter relay wall banks, short antenna masts, and signal projector blocks.
@@ -39,6 +43,8 @@ Story purpose: the player pushes through corrupted Grid memory channels.
 Visual language:
 
 - Long dark data-channel grooves.
+- Two or three immediately readable recessed trench lanes.
+- Raised deck islands separated by the trench lanes.
 - Raised lips and bridge plates across the channels.
 - Broken memory panel hardware and contained cyan conduits inside trenches.
 - Stronger depth read than 1A without hiding pickups or projectiles.
@@ -53,6 +59,7 @@ Story purpose: the Aether Core begins adapting and storing weapon memory.
 Visual language:
 
 - Capacitor plates and storage cells.
+- A readable capacitor cell grid or energy-bank cluster layout.
 - Dark charge wells with restrained cyan bars.
 - Perimeter charge banks.
 - Side power buses, meter faces, terminals, and contained capacitor traces.
@@ -67,6 +74,7 @@ Story purpose: final approach to Grix's defense gate.
 Visual language:
 
 - Physical rail feet, raised rail caps, sleeper plates, and rail brackets.
+- Central rail-corridor runway composition.
 - Heavy north defense-gate approach.
 - Embedded wall warning panels, lane power cores, and stronger military-grid
   structure.
