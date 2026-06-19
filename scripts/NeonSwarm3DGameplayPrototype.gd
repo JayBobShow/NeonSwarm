@@ -117,6 +117,71 @@ const SECTOR_STORY_DATA := [
 		"boss": "The Crown Shard / The Null King, Crown of the Empty Grid"
 	}
 ]
+const BOSS_IDENTITY_CARD_DURATION := 5.0
+const BOSS_DEFEAT_CARD_DURATION := 4.2
+const BOSS_IDENTITY_CARD_FADE_DURATION := 0.34
+const BOSS_IDENTITY_DATA := [
+	{
+		"id": "grix_rail_butcher",
+		"sector_index": 0,
+		"runtime_boss_type": "mini_boss",
+		"name": "Grix the Rail Butcher",
+		"title": "Gridborn Execution Machine",
+		"intro_quote": "Unauthorized light detected. Begin removal.",
+		"defeat_quote": "Defense protocol... broken.",
+		"lyra_warning": "Nova, that defense unit is running execution code. Do not let it touch you."
+	},
+	{
+		"id": "veyraxis_prism_widow",
+		"sector_index": 1,
+		"runtime_boss_type": "fractal_crown",
+		"name": "Veyraxis, Prism Widow",
+		"title": "Prism Rift Memory Predator",
+		"intro_quote": "I have seen every version of you die.",
+		"defeat_quote": "The mirror... lied...",
+		"lyra_warning": "That thing is reading the Rift like a mirror. Keep moving, or it will predict you."
+	},
+	{
+		"id": "lord_cobalt_hex",
+		"sector_index": 2,
+		"runtime_boss_type": "null_octagon",
+		"name": "Lord Cobalt Hex",
+		"title": "Weapon Foundry Commander",
+		"intro_quote": "You are not a hero. You are outdated hardware.",
+		"defeat_quote": "Factory command... lost...",
+		"lyra_warning": "This foundry commander is building weapons out of corrupted Grid metal. Break the factory brain."
+	},
+	{
+		"id": "hollow_warden",
+		"sector_index": 3,
+		"runtime_boss_type": "final_null_octagon",
+		"name": "The Hollow Warden",
+		"title": "Guardian of Mira's Seal",
+		"intro_quote": "The lock must remain. The girl must remain. The king must wake.",
+		"defeat_quote": "Forgive me, Mira Sol...",
+		"lyra_warning": "Nova... that signal is old. It was built to guard something. Or someone."
+	},
+	{
+		"id": "crown_shard",
+		"sector_index": 4,
+		"runtime_boss_type": "crown_shard",
+		"name": "The Crown Shard",
+		"title": "Fragment of the Null King's Crown",
+		"intro_quote": "Bow, little light. Your shape ends here.",
+		"defeat_quote": "The crown... still sees...",
+		"lyra_warning": "That is not a normal commander. It is a piece of the Null King's crown."
+	},
+	{
+		"id": "null_king",
+		"sector_index": 5,
+		"runtime_boss_type": "null_king",
+		"name": "The Null King, Crown of the Empty Grid",
+		"title": "The Shape That Eats Stars",
+		"intro_quote": "You mistake motion for life. You mistake color for meaning. I will correct you.",
+		"defeat_quote": "I am... the final shape...",
+		"lyra_warning": "Nova, all Grid channels are failing. Whatever happens now... do not let the light go out."
+	}
+]
 const UI_RIGHT_STICK_SCROLL_SPEED := 720.0
 const UI_RIGHT_STICK_STASH_DEADZONE := 0.34
 const UI_RIGHT_STICK_STASH_FAST_THRESHOLD := 0.78
@@ -722,6 +787,17 @@ var _sector_story_card_timer := 0.0
 var _sector_story_card_duration := 0.0
 var _sector_story_intro_seen: Dictionary = {}
 var _sector_story_memory_seen: Dictionary = {}
+var _boss_identity_card_panel: Control
+var _boss_identity_eyebrow_label: Label
+var _boss_identity_name_label: Label
+var _boss_identity_title_label: Label
+var _boss_identity_quote_label: Label
+var _boss_identity_card_active := false
+var _boss_identity_card_timer := 0.0
+var _boss_identity_card_duration := 0.0
+var _boss_identity_intro_seen: Dictionary = {}
+var _boss_identity_defeat_seen: Dictionary = {}
+var _boss_identity_warning_seen: Dictionary = {}
 
 
 func _ready() -> void:
@@ -795,6 +871,10 @@ func _input(event: InputEvent) -> void:
 		return
 	if _sector_story_card_active and _sector_story_skip_event(event):
 		_dismiss_sector_story_card()
+		get_viewport().set_input_as_handled()
+		return
+	if _boss_identity_card_active and _boss_identity_skip_event(event):
+		_dismiss_boss_identity_card()
 		get_viewport().set_input_as_handled()
 		return
 	if _handle_run_event_test_input(event):
@@ -1038,6 +1118,7 @@ func _process(delta: float) -> void:
 	_update_tutorial_prompt(delta)
 	_update_lyra_dialogue(delta)
 	_update_sector_story_card(delta)
+	_update_boss_identity_card(delta)
 	_update_combat_notice(delta)
 	_update_run_event_objective_panel()
 	_update_run_event_test_hud()
@@ -1648,6 +1729,7 @@ func _create_audio_foundation() -> void:
 		"damage": _make_tone_sfx(128.0, 0.135, 0.300, -0.54),
 		"warning": _make_tone_sfx(280.0, 0.260, 0.290, 0.12),
 		"boss_warning": _make_tone_sfx(210.0, 0.420, 0.340, -0.08),
+		"boss_identity": _make_tone_sfx(154.0, 0.620, 0.320, -0.22),
 		"boss_death": _make_tone_sfx(82.0, 0.500, 0.350, -0.44),
 		"sector": _make_tone_sfx(520.0, 0.460, 0.320, 0.64),
 		"reward": _make_tone_sfx(940.0, 0.180, 0.270, 0.52),
@@ -1671,6 +1753,7 @@ func _create_audio_foundation() -> void:
 		"damage": -4.0,
 		"warning": -4.4,
 		"boss_warning": -2.8,
+		"boss_identity": -3.2,
 		"boss_death": -2.6,
 		"sector": -3.4,
 		"reward": -5.2,
@@ -2223,6 +2306,150 @@ func _sector_story_blocked_by_menu() -> bool:
 
 func _sector_story_skip_event(event: InputEvent) -> bool:
 	if _weapon_reward_decision_active or _manual_pause or _title_menu_active or _help_visible or _armory_visible or _core_upgrades_visible or _title_options_visible or _pause_options_visible:
+		return false
+	return event.is_action_pressed("cancel")
+
+
+func _boss_identity_data_for_sector(index: int) -> Dictionary:
+	for boss in BOSS_IDENTITY_DATA:
+		var data := Dictionary(boss)
+		if int(data.get("sector_index", -999)) == index:
+			return data.duplicate(true)
+	return {}
+
+
+func _boss_identity_data_for_type(enemy_type: String) -> Dictionary:
+	var sector := _current_sector()
+	if str(sector.get("boss_type", "")) == enemy_type:
+		var sector_data := _boss_identity_data_for_sector(_sector_index)
+		if not sector_data.is_empty():
+			return sector_data
+	for boss in BOSS_IDENTITY_DATA:
+		var data := Dictionary(boss)
+		if str(data.get("runtime_boss_type", "")) == enemy_type:
+			return data.duplicate(true)
+	return {}
+
+
+func _show_boss_identity_intro(enemy_type: String) -> void:
+	var boss := _boss_identity_data_for_type(enemy_type)
+	if boss.is_empty():
+		return
+	var boss_id := str(boss.get("id", enemy_type))
+	var seen_key := "intro_%s" % boss_id
+	if bool(_boss_identity_intro_seen.get(seen_key, false)):
+		return
+	_boss_identity_intro_seen[seen_key] = true
+	_show_boss_identity_card(
+		"BOSS ARRIVAL",
+		str(boss.get("name", _boss_name_for_type(enemy_type))),
+		str(boss.get("title", "Hostile Commander")),
+		str(boss.get("intro_quote", "")),
+		_boss_notice_color(enemy_type),
+		BOSS_IDENTITY_CARD_DURATION
+	)
+	_play_sfx("boss_identity", 0.18)
+
+
+func _show_boss_identity_defeat(enemy_type: String) -> void:
+	var boss := _boss_identity_data_for_type(enemy_type)
+	if boss.is_empty():
+		return
+	var boss_id := str(boss.get("id", enemy_type))
+	var seen_key := "defeat_%s" % boss_id
+	if bool(_boss_identity_defeat_seen.get(seen_key, false)):
+		return
+	_boss_identity_defeat_seen[seen_key] = true
+	_show_boss_identity_card(
+		"BOSS DEFEATED",
+		str(boss.get("name", _boss_name_for_type(enemy_type))),
+		str(boss.get("title", "Hostile Commander")),
+		str(boss.get("defeat_quote", "")),
+		_boss_notice_color(enemy_type),
+		BOSS_DEFEAT_CARD_DURATION
+	)
+
+
+func _queue_boss_identity_lyra_warning(enemy_type: String) -> bool:
+	var boss := _boss_identity_data_for_type(enemy_type)
+	if boss.is_empty():
+		return false
+	var line := str(boss.get("lyra_warning", ""))
+	if line == "":
+		return false
+	var boss_id := str(boss.get("id", enemy_type))
+	var seen_key := "warning_%s" % boss_id
+	if bool(_boss_identity_warning_seen.get(seen_key, false)):
+		return true
+	_boss_identity_warning_seen[seen_key] = true
+	_queue_lyra_dialogue_text("boss_warning_%s" % boss_id, line, true)
+	return true
+
+
+func _show_boss_identity_card(eyebrow: String, boss_name: String, title: String, quote: String, accent: Color, duration := BOSS_IDENTITY_CARD_DURATION) -> void:
+	if not is_instance_valid(_boss_identity_card_panel):
+		return
+	if _boss_identity_eyebrow_label:
+		_boss_identity_eyebrow_label.text = eyebrow
+		_boss_identity_eyebrow_label.add_theme_color_override("font_color", accent)
+	if _boss_identity_name_label:
+		_boss_identity_name_label.text = boss_name
+	if _boss_identity_title_label:
+		_boss_identity_title_label.text = title.to_upper()
+	if _boss_identity_quote_label:
+		_boss_identity_quote_label.text = "\"%s\"" % quote if quote != "" else ""
+		_boss_identity_quote_label.visible = quote != ""
+	var frame := _boss_identity_card_panel as NeonHudPanel
+	if frame:
+		frame.accent_primary = accent
+		frame.queue_redraw()
+	_boss_identity_card_active = true
+	_boss_identity_card_duration = maxf(1.0, duration)
+	_boss_identity_card_timer = _boss_identity_card_duration
+	_boss_identity_card_panel.modulate = Color(1.0, 1.0, 1.0, 0.0)
+	_boss_identity_card_panel.visible = true
+
+
+func _update_boss_identity_card(delta: float) -> void:
+	if not is_instance_valid(_boss_identity_card_panel):
+		return
+	if _boss_identity_blocked_by_menu():
+		_boss_identity_card_panel.visible = false
+		return
+	if not _boss_identity_card_active:
+		_boss_identity_card_panel.visible = false
+		return
+	_boss_identity_card_timer = maxf(0.0, _boss_identity_card_timer - delta)
+	var elapsed := maxf(0.0, _boss_identity_card_duration - _boss_identity_card_timer)
+	var fade_in := clampf(elapsed / BOSS_IDENTITY_CARD_FADE_DURATION, 0.0, 1.0)
+	var fade_out := clampf(_boss_identity_card_timer / BOSS_IDENTITY_CARD_FADE_DURATION, 0.0, 1.0)
+	var alpha := minf(fade_in, fade_out)
+	_boss_identity_card_panel.modulate = Color(1.0, 1.0, 1.0, alpha)
+	_boss_identity_card_panel.visible = true
+	if _boss_identity_card_timer <= 0.0:
+		_dismiss_boss_identity_card()
+
+
+func _dismiss_boss_identity_card() -> void:
+	_boss_identity_card_active = false
+	_boss_identity_card_timer = 0.0
+	if _boss_identity_card_panel:
+		_boss_identity_card_panel.visible = false
+
+
+func _reset_boss_identity_runtime() -> void:
+	_boss_identity_intro_seen.clear()
+	_boss_identity_defeat_seen.clear()
+	_boss_identity_warning_seen.clear()
+	_dismiss_boss_identity_card()
+
+
+func _boss_identity_blocked_by_menu() -> bool:
+	return _opening_intro_active or _title_menu_active or _manual_pause or _help_visible or _armory_visible or _core_upgrades_visible or _title_options_visible or _pause_options_visible
+
+
+func _boss_identity_skip_event(event: InputEvent) -> bool:
+	if _weapon_reward_decision_active or _level_up_active or _manual_pause or _title_menu_active or _help_visible or _armory_visible or _core_upgrades_visible or _title_options_visible or _pause_options_visible:
 		return false
 	return event.is_action_pressed("cancel")
 
@@ -4688,6 +4915,7 @@ func _create_hud() -> void:
 	_create_opening_intro_overlay(_hud_design_root)
 	_create_tutorial_prompt_panel(_hud_design_root)
 	_create_sector_story_card_panel(_hud_design_root)
+	_create_boss_identity_card_panel(_hud_design_root)
 	_create_lyra_dialogue_panel(_hud_design_root)
 	_create_help_menu(_hud_design_root)
 	_create_presentation_flash_overlay()
@@ -5389,6 +5617,60 @@ func _create_sector_story_card_panel(root: Control) -> void:
 	layout.add_child(_sector_story_card_body_label)
 
 
+func _create_boss_identity_card_panel(root: Control) -> void:
+	_boss_identity_card_panel = NeonHudPanel.new()
+	_boss_identity_card_panel.name = "BossIdentityTitleCardPanel"
+	_boss_identity_card_panel.process_mode = Node.PROCESS_MODE_ALWAYS
+	_boss_identity_card_panel.visible = false
+	_boss_identity_card_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_boss_identity_card_panel.z_index = 36
+	_boss_identity_card_panel.configure(Color(1.0, 0.08, 0.24, 0.94), Color(1.0, 0.94, 0.18, 0.72), Vector2(920, 156), 24.0, 2.2)
+	_place_design_control(_boss_identity_card_panel, Rect2(500, 92, 920, 156))
+	root.add_child(_boss_identity_card_panel)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 22)
+	margin.add_theme_constant_override("margin_top", 12)
+	margin.add_theme_constant_override("margin_right", 22)
+	margin.add_theme_constant_override("margin_bottom", 12)
+	_boss_identity_card_panel.add_child(margin)
+
+	var layout := VBoxContainer.new()
+	layout.alignment = BoxContainer.ALIGNMENT_CENTER
+	layout.add_theme_constant_override("separation", 4)
+	margin.add_child(layout)
+
+	_boss_identity_eyebrow_label = _make_hud_label("BOSS ARRIVAL")
+	_boss_identity_eyebrow_label.name = "BossIdentityEyebrowLabel"
+	_boss_identity_eyebrow_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_boss_identity_eyebrow_label.add_theme_font_size_override("font_size", 12)
+	_boss_identity_eyebrow_label.add_theme_color_override("font_color", Color(1.0, 0.16, 0.28))
+	layout.add_child(_boss_identity_eyebrow_label)
+
+	_boss_identity_name_label = _make_hud_label("Grix the Rail Butcher")
+	_boss_identity_name_label.name = "BossIdentityNameLabel"
+	_boss_identity_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_boss_identity_name_label.add_theme_font_size_override("font_size", 28)
+	_boss_identity_name_label.add_theme_color_override("font_color", Color(1.0, 0.96, 0.88))
+	layout.add_child(_boss_identity_name_label)
+
+	_boss_identity_title_label = _make_hud_label("GRIDBORN EXECUTION MACHINE")
+	_boss_identity_title_label.name = "BossIdentityTitleLabel"
+	_boss_identity_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_boss_identity_title_label.add_theme_font_size_override("font_size", 13)
+	_boss_identity_title_label.add_theme_color_override("font_color", Color(1.0, 0.94, 0.18, 0.94))
+	layout.add_child(_boss_identity_title_label)
+
+	_boss_identity_quote_label = _make_hud_label("")
+	_boss_identity_quote_label.name = "BossIdentityQuoteLabel"
+	_boss_identity_quote_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_boss_identity_quote_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_boss_identity_quote_label.custom_minimum_size = Vector2(850, 36)
+	_boss_identity_quote_label.add_theme_font_size_override("font_size", 15)
+	_boss_identity_quote_label.add_theme_color_override("font_color", Color(0.92, 1.0, 1.0, 0.96))
+	layout.add_child(_boss_identity_quote_label)
+
+
 func _create_help_menu(root: Control) -> void:
 	_help_modal_scrim = ColorRect.new()
 	_help_modal_scrim.name = "HowToPlayModalBackdropScrim"
@@ -5990,6 +6272,7 @@ func _enter_title_menu() -> void:
 	_title_menu_active = true
 	_reset_lyra_dialogue_runtime()
 	_reset_sector_story_display()
+	_reset_boss_identity_runtime()
 	_title_menu_nav_cooldown = 0.0
 	_title_menu_selected_index = 0
 	_title_options_visible = false
@@ -6052,6 +6335,7 @@ func _start_title_run(skip_intro := false) -> void:
 		return
 	_reset_lyra_dialogue_runtime()
 	_reset_sector_story_display()
+	_reset_boss_identity_runtime()
 	_clear_run_bonus_weapons()
 	_title_menu_active = false
 	_title_options_visible = false
@@ -6112,6 +6396,7 @@ func _begin_opening_intro() -> void:
 		return
 	_reset_lyra_dialogue_runtime()
 	_reset_sector_story_display()
+	_reset_boss_identity_runtime()
 	_opening_intro_active = true
 	_opening_intro_panel_index = 0
 	_opening_intro_panel_time = 0.0
@@ -6424,6 +6709,7 @@ func _return_to_title_from_pause() -> void:
 	_save_weapon_inventory()
 	_reset_lyra_dialogue_runtime()
 	_reset_sector_story_display()
+	_reset_boss_identity_runtime()
 	_pause_options_visible = false
 	_help_visible = false
 	_manual_pause = false
@@ -9554,7 +9840,8 @@ func _update_wave_director(delta: float) -> void:
 		_trigger_presentation_flash(Color(0.72, 0.96, 1.0) if _sector_index >= 3 else Color(1.0, 0.08, 0.86), 0.12 if _sector_index >= 3 else 0.10, 0.26 if _sector_index >= 3 else 0.24)
 		_trigger_sector_background_reaction(0.86 if _sector_index >= 3 else 0.70, 0.90 if _sector_index >= 3 else 0.78)
 		_add_screen_shake(0.070 if _sector_index >= 3 else 0.055, 0.18 if _sector_index >= 3 else 0.16)
-		_queue_lyra_dialogue("boss_warning", false, "boss_warning_%d" % _sector_index)
+		if not _queue_boss_identity_lyra_warning(boss_type):
+			_queue_lyra_dialogue("boss_warning", false, "boss_warning_%d" % _sector_index)
 	if not _sector_boss_spawned and _sector_elapsed >= float(sector["boss_time"]):
 		_spawn_sector_boss()
 
@@ -10459,6 +10746,7 @@ func _spawn_sector_boss() -> void:
 	_spawn_enemy(boss_type, spawn_position)
 	_spawn_burst(spawn_position, 2.35 if _is_null_boss_type(boss_type) else 1.90, _burst_key_for_enemy(boss_type))
 	_show_combat_notice("FINAL BOSS ARRIVAL // %s // SURVIVE AND DESTROY" % _boss_name_for_type(boss_type) if _sector_index >= 3 else "BOSS ARRIVAL // %s // REWARD UNLOCKS ON DEFEAT" % _boss_name_for_type(boss_type), _boss_notice_color(boss_type), 1.85 if _sector_index >= 3 else 1.70)
+	_show_boss_identity_intro(boss_type)
 	_spawn_timer = 1.35
 	_player_invuln = maxf(_player_invuln, 0.55)
 	_set_music_state("boss")
@@ -12932,6 +13220,7 @@ func _kill_enemy_at(index: int, exploded: bool) -> void:
 			var angle := TAU * float(i) / float(maxi(1, reward_count))
 			_drop_xp(position + Vector3(cos(angle), 0.0, sin(angle)) * 1.2, 2)
 		_show_combat_notice("FINAL BOSS DEFEATED // RUN COMPLETE" if is_final_boss else "%s DEFEATED // SECTOR REWARD UNLOCKED" % _boss_name_for_type(enemy_type), _boss_notice_color(enemy_type), 1.70)
+		_show_boss_identity_defeat(enemy_type)
 	if is_instance_valid(node):
 		node.queue_free()
 	_enemies.remove_at(index)
@@ -13986,6 +14275,7 @@ func _restart_run() -> void:
 	_play_sfx("ui_select", 0.08)
 	_reset_lyra_dialogue_runtime()
 	_reset_sector_story_display()
+	_reset_boss_identity_runtime()
 	get_tree().paused = false
 	_manual_pause = false
 	_help_visible = false

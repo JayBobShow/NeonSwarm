@@ -17,6 +17,7 @@ system, new boss behavior, new enemy behavior, new gameplay systems, or Phase 41
 - `docs/NEON_SWARM_PHASE_41_OPENING_INTRO_SEQUENCE_REPORT.md`
 - `docs/NEON_SWARM_PHASE_42_LYRA_COMPANION_TUTORIAL_LORE_REPORT.md`
 - `docs/NEON_SWARM_PHASE_43_SECTOR_STORY_PROGRESSION_REPORT.md`
+- `docs/NEON_SWARM_PHASE_44_BOSS_IDENTITY_PASS_REPORT.md`
 
 ## Phase 40 Runtime Integration
 
@@ -172,6 +173,41 @@ Implemented memory reveals:
 4. Hyper Grid: "Memory restored: Mira became the living lock that held the Null King in the dark."
 5. The Black Crown: "The Black Crown trembles. The final shape is waking."
 
+## Phase 44 Boss Identity Pass
+
+Phase 44 implements lightweight boss identity presentation for the current
+four-sector runtime and data-locks the future Sector 5 / final boss identity
+records.
+
+Runtime behavior:
+
+- Boss warning time queues a boss-specific Lyra warning line.
+- Boss spawn shows a top-center `BOSS ARRIVAL` card with name, identity title,
+  and intro quote.
+- Boss defeat shows a top-center `BOSS DEFEATED` card with name, identity title,
+  and defeat quote.
+- Boss identity flags reset per run/title/restart path.
+- A short procedural `boss_identity` sting plays on boss arrival.
+- No save schema, gameplay balance, enemy behavior, boss behavior, boss models,
+  Sector 2 art, Memory Shard system, final-boss flow, ending sequence, or Phase
+  45 work is added.
+
+Runtime-active boss lines:
+
+| Sector | Boss | Intro Line | Defeat Line |
+| --- | --- | --- | --- |
+| 1 | Grix the Rail Butcher | "Unauthorized light detected. Begin removal." | "Defense protocol... broken." |
+| 2 | Veyraxis, Prism Widow | "I have seen every version of you die." | "The mirror... lied..." |
+| 3 | Lord Cobalt Hex | "You are not a hero. You are outdated hardware." | "Factory command... lost..." |
+| 4 | The Hollow Warden | "The lock must remain. The girl must remain. The king must wake." | "Forgive me, Mira Sol..." |
+
+Data-ready future boss lines:
+
+| Story Slot | Boss | Intro Line | Defeat Line |
+| --- | --- | --- | --- |
+| Sector 5 Mid-Boss | The Crown Shard | "Bow, little light. Your shape ends here." | "The crown... still sees..." |
+| Final Boss | The Null King, Crown of the Empty Grid | "You mistake motion for life. You mistake color for meaning. I will correct you." | "I am... the final shape..." |
+
 ## Future Ending Implementation Outline
 
 Do not build until explicitly approved.
@@ -192,10 +228,10 @@ Do not build until explicitly approved.
 1. Replace generic labels where safe.
 2. Keep the Phase 43 sector intro / memory reveal foundation small until manual
    readability is approved.
-3. Add boss intro lines as timed combat notices only after manual review approves
-   label readability in a future Phase 44-style pass.
+3. Keep the Phase 44 boss identity cards and Lyra warnings lightweight until
+   manual readability is approved.
 4. Expand Lyra companion barks only after the Phase 42 / Phase 43 panel pacing
-   and readability are manually approved.
+   and Phase 44 boss-card readability are manually approved.
 5. Expand the Phase 41 opening only after manual review approves pacing, text
    readability, and skip behavior.
 6. Add ending cinematic only after final sector and final boss are implemented.

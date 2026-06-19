@@ -10,6 +10,11 @@ phases replace them.
 Phase 40 may rename safe runtime labels, but it does not add new boss behavior,
 new boss models, a final boss fight, or cutscene systems.
 
+Phase 44 adds lightweight runtime boss identity presentation for the current
+four-sector build. It adds boss title cards, intro quotes, defeat quotes, and
+boss-specific Lyra warnings without changing boss behavior, stats, attacks,
+models, rewards, Sector 5, the Memory Shard system, or the ending.
+
 ## Boss Lineup
 
 | Story Slot | Boss | Intro Line | Story Role |
@@ -20,6 +25,29 @@ new boss models, a final boss fight, or cutscene systems.
 | Sector 4 | The Hollow Warden | "The lock must remain. The girl must remain. The king must wake." | Prison guardian and truth-gate; protects the secret that Mira is the living lock. |
 | Sector 5 Mid-Boss | The Crown Shard | "Bow, little light. Your shape ends here." | Fragment of the Null King's crown; last gate before the final breach. |
 | Final Boss | The Null King, Crown of the Empty Grid | "You mistake motion for life. You mistake color for meaning. I will correct you." | Main villain and final erasure force. |
+
+## Phase 44 Runtime Identity Data
+
+| Story Slot | Boss | Runtime Status | Identity Title | Defeat Line | Lyra Warning |
+| --- | --- | --- | --- | --- | --- |
+| Sector 1 | Grix the Rail Butcher | Active in current four-sector run | Gridborn Execution Machine | "Defense protocol... broken." | "Nova, that defense unit is running execution code. Do not let it touch you." |
+| Sector 2 | Veyraxis, Prism Widow | Active in current four-sector run | Prism Rift Memory Predator | "The mirror... lied..." | "That thing is reading the Rift like a mirror. Keep moving, or it will predict you." |
+| Sector 3 | Lord Cobalt Hex | Active in current four-sector run | Weapon Foundry Commander | "Factory command... lost..." | "This foundry commander is building weapons out of corrupted Grid metal. Break the factory brain." |
+| Sector 4 | The Hollow Warden | Active in current four-sector run | Guardian of Mira's Seal | "Forgive me, Mira Sol..." | "Nova... that signal is old. It was built to guard something. Or someone." |
+| Sector 5 Mid-Boss | The Crown Shard | Data-ready only | Fragment of the Null King's Crown | "The crown... still sees..." | "That is not a normal commander. It is a piece of the Null King's crown." |
+| Final Boss | The Null King, Crown of the Empty Grid | Data-ready only | The Shape That Eats Stars | "I am... the final shape..." | "Nova, all Grid channels are failing. Whatever happens now... do not let the light go out." |
+
+Phase 44 runtime presentation:
+
+- Boss warning time queues the boss-specific Lyra warning once per boss
+  appearance.
+- Boss spawn shows a short `BOSS ARRIVAL` title card with boss name, identity
+  title, and intro quote.
+- Boss defeat shows a short `BOSS DEFEATED` title card with boss name, identity
+  title, and defeat quote.
+- The title card auto-fades and does not pause gameplay.
+- The Crown Shard and Null King remain data-ready only until later approved
+  Sector 5 / final boss work.
 
 ## Grix the Rail Butcher
 
