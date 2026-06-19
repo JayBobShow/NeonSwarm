@@ -212,6 +212,9 @@ Phase 47 campaign progression runtime status:
   art is built.
 - Bosses warn and spawn only from boss gates after 1D, 2D, 3D, or 4D.
 - Memory Shards remain boss / sector-clear rewards only.
+- Boss-clear UI sequencing keeps reward / comparison UI, boss defeat cards,
+  Memory Shard reveals, sector story cards, and Lyra dialogue from overlapping
+  as large readable panels.
 - Sector 5, Crown Shard, Null King, the ending sequence, and the Lore Codex menu
   remain future content.
 

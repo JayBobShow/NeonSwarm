@@ -2374,8 +2374,12 @@ func _reset_lyra_dialogue_runtime() -> void:
 	_lyra_low_health_cooldown = 0.0
 
 
+func _major_reward_modal_active() -> bool:
+	return _sector_reward_active or _level_up_active or _weapon_reward_decision_active
+
+
 func _lyra_dialogue_blocked_by_menu() -> bool:
-	return _opening_intro_active or _title_menu_active or _manual_pause or _help_visible or _armory_visible or _core_upgrades_visible or _title_options_visible or _pause_options_visible
+	return _opening_intro_active or _title_menu_active or _manual_pause or _help_visible or _armory_visible or _core_upgrades_visible or _title_options_visible or _pause_options_visible or _major_reward_modal_active() or _boss_identity_card_active or _memory_shard_reveal_active or not _memory_shard_pending_queue.is_empty() or _sector_story_card_active
 
 
 func _lyra_dialogue_skip_event(event: InputEvent) -> bool:
@@ -2471,7 +2475,7 @@ func _reset_sector_story_display() -> void:
 
 
 func _sector_story_blocked_by_menu() -> bool:
-	return _opening_intro_active or _title_menu_active or _manual_pause or _help_visible or _armory_visible or _core_upgrades_visible or _title_options_visible or _pause_options_visible
+	return _opening_intro_active or _title_menu_active or _manual_pause or _help_visible or _armory_visible or _core_upgrades_visible or _title_options_visible or _pause_options_visible or _major_reward_modal_active() or _boss_identity_card_active or _memory_shard_reveal_active or not _memory_shard_pending_queue.is_empty()
 
 
 func _sector_story_skip_event(event: InputEvent) -> bool:
@@ -2573,7 +2577,7 @@ func _reset_memory_shard_runtime() -> void:
 
 
 func _memory_shard_blocked_by_menu() -> bool:
-	return _opening_intro_active or _title_menu_active or _manual_pause or _help_visible or _armory_visible or _core_upgrades_visible or _title_options_visible or _pause_options_visible
+	return _opening_intro_active or _title_menu_active or _manual_pause or _help_visible or _armory_visible or _core_upgrades_visible or _title_options_visible or _pause_options_visible or _major_reward_modal_active() or _boss_identity_card_active
 
 
 func _memory_shard_skip_event(event: InputEvent) -> bool:
@@ -2721,7 +2725,7 @@ func _reset_boss_identity_runtime() -> void:
 
 
 func _boss_identity_blocked_by_menu() -> bool:
-	return _opening_intro_active or _title_menu_active or _manual_pause or _help_visible or _armory_visible or _core_upgrades_visible or _title_options_visible or _pause_options_visible
+	return _opening_intro_active or _title_menu_active or _manual_pause or _help_visible or _armory_visible or _core_upgrades_visible or _title_options_visible or _pause_options_visible or _major_reward_modal_active()
 
 
 func _boss_identity_skip_event(event: InputEvent) -> bool:

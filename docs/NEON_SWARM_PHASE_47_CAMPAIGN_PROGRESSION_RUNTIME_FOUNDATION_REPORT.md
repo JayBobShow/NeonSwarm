@@ -110,6 +110,27 @@ Memory Shards remain major boss / sector-clear rewards only:
 
 No Memory Shards are awarded for normal subsector clears.
 
+## Hotfix: Boss-Clear UI Sequencing
+
+Manual review found that boss defeat could stack too many readable panels at
+once: the Memory Shard reveal, weapon reward / comparison modal, Lyra dialogue,
+boss defeat card, and normal HUD elements could compete for the same attention.
+
+The runtime UI guards now enforce one large readable panel path during boss
+clear. The chosen priority order is:
+
+1. Reward / level-up / weapon reward-comparison modal.
+2. Boss identity / boss defeat card.
+3. Memory Shard reveal.
+4. Sector story / subsector title card.
+5. Lyra dialogue.
+
+This matches the existing sector-clear reward flow: the reward modal stays
+readable first, the boss defeat card waits until reward input is complete, the
+Memory Shard remains queued until the reward and boss panels are clear, sector
+story waits behind the Memory Shard, and Lyra dialogue waits until major story
+or reward panels are no longer active.
+
 ## Debug / Test Support
 
 Existing event test mode is preserved:
@@ -151,5 +172,9 @@ This keeps campaign skipping behind the existing test-mode gate.
 - Confirm 1A, 1B, 1C, and 1D title cards appear before Grix.
 - Confirm Grix does not warn/spawn before the boss gate.
 - Confirm boss defeat still triggers sector reward and Prism Shard I.
+- Confirm boss-clear panels are readable in sequence: reward modal, boss defeat
+  card, Memory Shard reveal, sector story card, then Lyra dialogue.
+- Confirm Memory Shard and Lyra panels do not overlap weapon reward /
+  comparison UI.
 - Confirm the next sector begins at `2.0 Prism Gate`.
 - Confirm Sector 5, Crown Shard, Null King, and ending content do not appear.

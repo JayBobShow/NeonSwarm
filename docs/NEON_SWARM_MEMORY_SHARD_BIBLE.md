@@ -42,6 +42,9 @@ progress. They are not a replacement for the future Lore Codex.
 - Permanent collection tracking belongs to the future Lore Codex phase.
 - Memory Shard reveal panels should not block sector rewards or hide critical
   combat information for long.
+- During Phase 47 boss clears, Memory Shard reveal panels wait until the reward
+  / comparison modal and boss defeat card are clear. Lyra Memory Shard reactions
+  wait until the Memory Shard and other major story panels are no longer active.
 
 ## Campaign Structure Connection
 

@@ -318,6 +318,9 @@ Runtime behavior:
 - Existing sector visuals are reused as placeholders.
 - F11 advances the campaign node only while the existing F6 event test mode is
   enabled.
+- Phase 47 boss-clear UI sequencing keeps major readable panels ordered as:
+  reward / comparison modal, boss identity card, Memory Shard reveal, sector
+  story card, then Lyra dialogue.
 
 Preserved:
 
