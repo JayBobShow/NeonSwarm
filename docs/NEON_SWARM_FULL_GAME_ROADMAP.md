@@ -22,6 +22,7 @@ Current approved baseline:
 - Phase 40 locks the official story bible, character bible, enemy faction bible, boss bible, five-sector story direction, and naming foundation before cutscene work begins.
 - Phase 41 adds the first skippable opening intro sequence with original Neon Swarm story panels, subtle neon presentation, and a procedural intro music state.
 - Phase 42 adds Lyra Quill as a short companion/tutorial radio voice for key gameplay systems without adding a full cutscene or dialogue framework.
+- Phase 43 adds lightweight sector story progression with title cards, sector-specific Lyra intros, memory reveals, and locked boss-name references without adding a full boss pass or ending sequence.
 
 Major development still needed:
 
@@ -35,7 +36,7 @@ Major development still needed:
 - Better long-term run structure.
 - Continued sector background depth and authored art polish beyond the Phase 26 procedural upgrade.
 - Updated player, enemy, and boss graphics.
-- Story implementation beyond the Phase 42 Lyra companion foundation, including future ending work and deeper sector/boss dialogue.
+- Story implementation beyond the Phase 43 sector story foundation, including future ending work and deeper boss dialogue.
 - Professional audio/music direction beyond placeholder procedural foundations.
 - More polish, balancing, accessibility, and content depth.
 
@@ -58,6 +59,7 @@ Phase 40 story foundation references:
 - `docs/NEON_SWARM_STORY_IMPLEMENTATION_PLAN.md`
 - `docs/NEON_SWARM_PHASE_41_OPENING_INTRO_SEQUENCE_REPORT.md`
 - `docs/NEON_SWARM_PHASE_42_LYRA_COMPANION_TUTORIAL_LORE_REPORT.md`
+- `docs/NEON_SWARM_PHASE_43_SECTOR_STORY_PROGRESSION_REPORT.md`
 
 ## 2. Target Sector Structure
 
@@ -67,11 +69,11 @@ Current and planned sectors:
 
 | Sector | Name | Status | Role | Geometry Identity |
 | --- | --- | --- | --- | --- |
-| 1 | Neon Grid | Implemented with Phase 38 visual-only Blender-built 3D aluminum arena kit after disabling the old Sector 1 HD plate and procedural tile roots | Opening sector, teaches movement, XP, rewards, and boss clear flow. | Blender-authored 7x7 aluminum/gunmetal floor panel kit with bevels, inset plates, cyan neon seams, raised border walls aligned to the gameplay boundary, top rails, corner pylons, and subtle depth buttresses. |
-| 2 | Prism Rift | Phase 39 approved arena identity preserved; Phase 40 locks story role and boss name | First memory of Mira, prism fracture pressure, Veyraxis reveal. | Purple/magenta fractured prism/glass arena. Current Blender arena work remains preserved; future story work must not overwrite the approved Sector 2 arena direction. |
-| 3 | Ember Circuit | Planned story identity; current runtime slot may still use older prototype assets until a future approved art/content phase | The war begins, old weapon factory, Lord Cobalt Hex reveal. | Red/orange molten neon factory, cobalt machine authority, weapon-memory furnaces. |
-| 4 | Hyper Grid | Phase 35 active content pass implemented; Phase 40 locks the story role and Hollow Warden name | Truth of the seal, high-speed Grid storm, Mira lock reveal. | High-speed cyan/pink digital storm with rails, lock glyphs, and overclocked Grid machinery. |
-| 5 | The Black Crown | Planned final assault sector | Crown Shard gatekeeper, Null King final boss, Mira rescue conflict. | Black void, white cracks, dead neon stars, crown fragments, silent geometry. |
+| 1 | Neon Grid | Implemented with Phase 38 visual-only Blender-built 3D aluminum arena kit; Phase 43 adds intro and memory text | Opening sector, teaches movement, XP, rewards, and boss clear flow. | Blender-authored 7x7 aluminum/gunmetal floor panel kit with bevels, inset plates, cyan neon seams, raised border walls aligned to the gameplay boundary, top rails, corner pylons, and subtle depth buttresses. |
+| 2 | Prism Rift | Phase 39 approved arena identity preserved; Phase 43 adds intro and Mira-memory text | First memory of Mira, prism fracture pressure, Veyraxis reveal. | Purple/magenta fractured prism/glass arena. Current Blender arena work remains preserved; future story work must not overwrite the approved Sector 2 arena direction. |
+| 3 | Ember Circuit | Planned story identity; Phase 43 adds intro and Aether-weapon memory text while current runtime assets remain prototype-level | The war begins, old weapon factory, Lord Cobalt Hex reveal. | Red/orange molten neon factory, cobalt machine authority, weapon-memory furnaces. |
+| 4 | Hyper Grid | Phase 35 active content pass implemented; Phase 43 adds intro and Mira-lock memory text | Truth of the seal, high-speed Grid storm, Mira lock reveal. | High-speed cyan/pink digital storm with rails, lock glyphs, and overclocked Grid machinery. |
+| 5 | The Black Crown | Planned final assault sector; Phase 43 locks data-only intro and placeholder-safe completion text for future implementation | Crown Shard gatekeeper, Null King final boss, Mira rescue conflict. | Black void, white cracks, dead neon stars, crown fragments, silent geometry. |
 
 Sector design rule: each sector should change pacing, enemy mix, boss placement, and geometry identity without requiring alternate playable scenes unless a future phase explicitly approves new level work.
 
@@ -404,6 +406,11 @@ Phase 42 status:
 - Uses the existing generated SFX path; no copyrighted music or external audio
   imports are introduced.
 
+Phase 43 status:
+
+- Reuses the Phase 42 Lyra radio panel for sector-specific mission callouts.
+- Adds no new music, SFX, external audio, or copyrighted audio.
+
 Future audio work:
 
 - More distinct sector music layers.
@@ -451,7 +458,7 @@ Long-term target systems:
 - Stronger boss graphics.
 - Storyline.
 - Opening scene polish and replay controls beyond the Phase 41 foundation.
-- Companion dialogue polish beyond the Phase 42 Lyra foundation.
+- Companion dialogue and sector story polish beyond the Phase 43 foundation.
 - Possible cutscenes.
 - Better audio and music.
 - Professional SFX replacing placeholder procedural sounds over time.
@@ -490,6 +497,7 @@ Likely future phases:
 | Phase 40 | Story Bible + Naming Lock Foundation | Locks Nova Veyr, the Aether Core, Lyra Quill, Rook-7, Mira Sol, the Null King, the Swarm, the five-sector story arc, enemy factions, boss names, future opening outline, future ending outline, and label-only runtime naming. No cutscene system or story scene is built. |
 | Phase 41 | Opening Intro Sequence Foundation | Adds a skippable title-menu-to-gameplay opening sequence with eight Neon Swarm story panels, subtle dark neon motion, original procedural intro music, and safe handoff into the existing run flow. No ending sequence or Phase 42 work is built. |
 | Phase 42 | Lyra Companion / Tutorial Lore Integration | Adds Lyra Quill as a lightweight companion radio voice for first gameplay start, movement, XP, level-up, run weapons, Neon Dust, Forge reference, boss warning, sector transition, low health, death, and sector clear / run victory. No sector story progression, ending sequence, or Phase 43 work is built. |
+| Phase 43 | Sector Story Progression | Adds sector title cards, sector-specific Lyra intros, memory reveal cards, runtime-session one-shot story flags, and lightweight boss-name references for the locked story sectors. No Phase 44 full boss pass or ending sequence is built. |
 | Later approved phase | Real Audio Replacement Pass | Original authored music/SFX replacement direction. Do not start without explicit approval. |
 
 Do not start the next phase until explicitly approved.
@@ -516,6 +524,7 @@ Recommended next production direction:
 - Manually validate the Phase 39 Hard Repair 3 Sector 2 Prism Rift arena against `art/reference/user_original_art/sector2_user_original_floor_reference.jpg` before treating the Sector 2 visual direction as approved.
 - Manually validate the Phase 41 opening intro for readable panel pacing, immediate skip response, controller skip response, music mix, and clean gameplay handoff.
 - Manually validate the Phase 42 Lyra panel for readable placement, nonintrusive pacing, low-health cooldown behavior, reward-menu cancel safety, and clean interaction with the Phase 41 intro.
+- Manually validate the Phase 43 sector title cards and memory reveals for readable placement, nonintrusive timing, cancel dismissal, clean Lyra sequencing, and preserved Sector 2 arena presentation.
 - Expand Armory only through approved focused passes.
 - Keep tuning the four-sector prototype run while architecture work happens.
 - Add stronger boss and graphics variety only through approved focused phases.

@@ -73,6 +73,50 @@ const LYRA_DIALOGUE_LINES := {
 	"death": "Signal lost... no, wait. I still have you. Reboot the Core. We go again.",
 	"sector_clear": "Sector link restored. That is one light back in the universe."
 }
+const SECTOR_STORY_CARD_DURATION := 5.2
+const SECTOR_STORY_CARD_FADE_DURATION := 0.36
+const SECTOR_STORY_DATA := [
+	{
+		"title": "NEON GRID",
+		"subtitle": "Awakening Zone",
+		"role": "Awakening",
+		"lyra_intro": "Nova, this is the outer Grid. If you can survive here, I can trace the breach.",
+		"memory": "Memory restored: Nova Veyr was not born as the Core. Nova entered it willingly.",
+		"boss": "Grix the Rail Butcher"
+	},
+	{
+		"title": "PRISM RIFT",
+		"subtitle": "Broken Mirror Sector",
+		"role": "First memory of Mira",
+		"lyra_intro": "The Rift is reflecting old memories. If you hear a voice that is not mine... follow it carefully.",
+		"memory": "Memory restored: Mira Sol's voice echoes from inside the Prism Shards.",
+		"boss": "Veyraxis, Prism Widow"
+	},
+	{
+		"title": "EMBER CIRCUIT",
+		"subtitle": "Weapon Foundry Sector",
+		"role": "The war begins / old weapon factory",
+		"lyra_intro": "This foundry built Aether weapons before the collapse. Try not to let it build your coffin.",
+		"memory": "Memory restored: the Aether Core weapon system was built to fight the first Null invasion.",
+		"boss": "Lord Cobalt Hex"
+	},
+	{
+		"title": "HYPER GRID",
+		"subtitle": "Central Routing Storm",
+		"role": "Truth of the seal",
+		"lyra_intro": "The Hyper Grid is still alive. Fast, angry, and very bad at welcoming guests.",
+		"memory": "Memory restored: Mira became the living lock that held the Null King in the dark.",
+		"boss": "The Hollow Warden"
+	},
+	{
+		"title": "THE BLACK CROWN",
+		"subtitle": "Dead Center of the Grid",
+		"role": "Final assault",
+		"lyra_intro": "That is where the light stops. Nova... if Mira is anywhere, she is inside that darkness.",
+		"memory": "The Black Crown trembles. The final shape is waking.",
+		"boss": "The Crown Shard / The Null King, Crown of the Empty Grid"
+	}
+]
 const UI_RIGHT_STICK_SCROLL_SPEED := 720.0
 const UI_RIGHT_STICK_STASH_DEADZONE := 0.34
 const UI_RIGHT_STICK_STASH_FAST_THRESHOLD := 0.78
@@ -663,11 +707,21 @@ var _lyra_dialogue_speaker_label: Label
 var _lyra_dialogue_body_label: Label
 var _lyra_dialogue_queue: Array[String] = []
 var _lyra_dialogue_seen: Dictionary = {}
+var _lyra_dialogue_custom_lines: Dictionary = {}
 var _lyra_dialogue_key := ""
 var _lyra_dialogue_active := false
 var _lyra_dialogue_timer := 0.0
 var _lyra_dialogue_duration := 0.0
 var _lyra_low_health_cooldown := 0.0
+var _sector_story_card_panel: Control
+var _sector_story_card_title_label: Label
+var _sector_story_card_subtitle_label: Label
+var _sector_story_card_body_label: Label
+var _sector_story_card_active := false
+var _sector_story_card_timer := 0.0
+var _sector_story_card_duration := 0.0
+var _sector_story_intro_seen: Dictionary = {}
+var _sector_story_memory_seen: Dictionary = {}
 
 
 func _ready() -> void:
@@ -737,6 +791,10 @@ func _input(event: InputEvent) -> void:
 		return
 	if _lyra_dialogue_active and _lyra_dialogue_skip_event(event):
 		_dismiss_lyra_dialogue()
+		get_viewport().set_input_as_handled()
+		return
+	if _sector_story_card_active and _sector_story_skip_event(event):
+		_dismiss_sector_story_card()
 		get_viewport().set_input_as_handled()
 		return
 	if _handle_run_event_test_input(event):
@@ -979,6 +1037,7 @@ func _process(delta: float) -> void:
 	_update_presentation_flash(delta)
 	_update_tutorial_prompt(delta)
 	_update_lyra_dialogue(delta)
+	_update_sector_story_card(delta)
 	_update_combat_notice(delta)
 	_update_run_event_objective_panel()
 	_update_run_event_test_hud()
@@ -1970,7 +2029,7 @@ func _update_tutorial_prompt(delta: float) -> void:
 
 
 func _queue_lyra_dialogue(line_key: String, force := false, seen_key := "", priority := false) -> void:
-	if not LYRA_DIALOGUE_LINES.has(line_key):
+	if not _lyra_dialogue_line_available(line_key):
 		return
 	var memory_key := seen_key if seen_key != "" else line_key
 	if not force and bool(_lyra_dialogue_seen.get(memory_key, false)):
@@ -1986,6 +2045,23 @@ func _queue_lyra_dialogue(line_key: String, force := false, seen_key := "", prio
 		if _lyra_dialogue_panel:
 			_lyra_dialogue_panel.visible = false
 	_lyra_dialogue_queue.append(line_key)
+
+
+func _queue_lyra_dialogue_text(line_key: String, line: String, force := false, seen_key := "", priority := false) -> void:
+	if line_key == "" or line == "":
+		return
+	_lyra_dialogue_custom_lines[line_key] = line
+	_queue_lyra_dialogue(line_key, force, seen_key, priority)
+
+
+func _lyra_dialogue_line_available(line_key: String) -> bool:
+	return LYRA_DIALOGUE_LINES.has(line_key) or _lyra_dialogue_custom_lines.has(line_key)
+
+
+func _lyra_dialogue_line_text(line_key: String) -> String:
+	if _lyra_dialogue_custom_lines.has(line_key):
+		return str(_lyra_dialogue_custom_lines[line_key])
+	return str(LYRA_DIALOGUE_LINES.get(line_key, ""))
 
 
 func _update_lyra_dialogue(delta: float) -> void:
@@ -2016,7 +2092,7 @@ func _show_next_lyra_dialogue() -> void:
 		return
 	while not _lyra_dialogue_queue.is_empty():
 		var line_key := str(_lyra_dialogue_queue.pop_front())
-		var line := str(LYRA_DIALOGUE_LINES.get(line_key, ""))
+		var line := _lyra_dialogue_line_text(line_key)
 		if line == "":
 			continue
 		_lyra_dialogue_key = line_key
@@ -2043,6 +2119,7 @@ func _dismiss_lyra_dialogue() -> void:
 
 func _reset_lyra_dialogue_runtime() -> void:
 	_lyra_dialogue_queue.clear()
+	_lyra_dialogue_custom_lines.clear()
 	_dismiss_lyra_dialogue()
 	_lyra_low_health_cooldown = 0.0
 
@@ -2052,6 +2129,99 @@ func _lyra_dialogue_blocked_by_menu() -> bool:
 
 
 func _lyra_dialogue_skip_event(event: InputEvent) -> bool:
+	if _weapon_reward_decision_active or _manual_pause or _title_menu_active or _help_visible or _armory_visible or _core_upgrades_visible or _title_options_visible or _pause_options_visible:
+		return false
+	return event.is_action_pressed("cancel")
+
+
+func _sector_story_data(index: int) -> Dictionary:
+	var safe_index := clampi(index, 0, SECTOR_STORY_DATA.size() - 1)
+	return Dictionary(SECTOR_STORY_DATA[safe_index]).duplicate(true)
+
+
+func _show_sector_story_intro(index: int) -> void:
+	if index < 0 or index >= SECTOR_STORY_DATA.size():
+		return
+	var seen_key := "intro_%d" % index
+	if bool(_sector_story_intro_seen.get(seen_key, false)):
+		return
+	_sector_story_intro_seen[seen_key] = true
+	var story := _sector_story_data(index)
+	_show_sector_story_card(str(story.get("title", "")), str(story.get("subtitle", "")), "", _sector_color_for_index(index), SECTOR_STORY_CARD_DURATION)
+	_queue_lyra_dialogue_text("sector_intro_%d" % index, str(story.get("lyra_intro", "")), false, "sector_intro_%d" % index)
+
+
+func _show_sector_story_memory(index: int, priority := false) -> void:
+	if index < 0 or index >= SECTOR_STORY_DATA.size():
+		return
+	var seen_key := "memory_%d" % index
+	if bool(_sector_story_memory_seen.get(seen_key, false)):
+		return
+	_sector_story_memory_seen[seen_key] = true
+	var story := _sector_story_data(index)
+	_show_sector_story_card("MEMORY RESTORED", str(story.get("title", "SECTOR")), str(story.get("memory", "")), _sector_color_for_index(index), SECTOR_STORY_CARD_DURATION + 1.0, priority)
+
+
+func _show_sector_story_card(title: String, subtitle: String, body: String, accent: Color, duration := SECTOR_STORY_CARD_DURATION, priority := false) -> void:
+	if not is_instance_valid(_sector_story_card_panel):
+		return
+	if priority:
+		_sector_story_card_active = false
+	if _sector_story_card_title_label:
+		_sector_story_card_title_label.text = title
+		_sector_story_card_title_label.add_theme_color_override("font_color", accent)
+	if _sector_story_card_subtitle_label:
+		_sector_story_card_subtitle_label.text = subtitle
+	if _sector_story_card_body_label:
+		_sector_story_card_body_label.text = body
+		_sector_story_card_body_label.visible = body != ""
+	var frame := _sector_story_card_panel as NeonHudPanel
+	if frame:
+		frame.accent_primary = accent
+		frame.queue_redraw()
+	_sector_story_card_active = true
+	_sector_story_card_duration = maxf(1.0, duration)
+	_sector_story_card_timer = _sector_story_card_duration
+	_sector_story_card_panel.modulate = Color(1.0, 1.0, 1.0, 0.0)
+	_sector_story_card_panel.visible = true
+
+
+func _update_sector_story_card(delta: float) -> void:
+	if not is_instance_valid(_sector_story_card_panel):
+		return
+	if _sector_story_blocked_by_menu():
+		_sector_story_card_panel.visible = false
+		return
+	if not _sector_story_card_active:
+		_sector_story_card_panel.visible = false
+		return
+	_sector_story_card_timer = maxf(0.0, _sector_story_card_timer - delta)
+	var elapsed := maxf(0.0, _sector_story_card_duration - _sector_story_card_timer)
+	var fade_in := clampf(elapsed / SECTOR_STORY_CARD_FADE_DURATION, 0.0, 1.0)
+	var fade_out := clampf(_sector_story_card_timer / SECTOR_STORY_CARD_FADE_DURATION, 0.0, 1.0)
+	var alpha := minf(fade_in, fade_out)
+	_sector_story_card_panel.modulate = Color(1.0, 1.0, 1.0, alpha)
+	_sector_story_card_panel.visible = true
+	if _sector_story_card_timer <= 0.0:
+		_dismiss_sector_story_card()
+
+
+func _dismiss_sector_story_card() -> void:
+	_sector_story_card_active = false
+	_sector_story_card_timer = 0.0
+	if _sector_story_card_panel:
+		_sector_story_card_panel.visible = false
+
+
+func _reset_sector_story_display() -> void:
+	_dismiss_sector_story_card()
+
+
+func _sector_story_blocked_by_menu() -> bool:
+	return _opening_intro_active or _title_menu_active or _manual_pause or _help_visible or _armory_visible or _core_upgrades_visible or _title_options_visible or _pause_options_visible
+
+
+func _sector_story_skip_event(event: InputEvent) -> bool:
 	if _weapon_reward_decision_active or _manual_pause or _title_menu_active or _help_visible or _armory_visible or _core_upgrades_visible or _title_options_visible or _pause_options_visible:
 		return false
 	return event.is_action_pressed("cancel")
@@ -4517,6 +4687,7 @@ func _create_hud() -> void:
 	_create_title_menu(_hud_design_root)
 	_create_opening_intro_overlay(_hud_design_root)
 	_create_tutorial_prompt_panel(_hud_design_root)
+	_create_sector_story_card_panel(_hud_design_root)
 	_create_lyra_dialogue_panel(_hud_design_root)
 	_create_help_menu(_hud_design_root)
 	_create_presentation_flash_overlay()
@@ -5171,6 +5342,53 @@ func _create_lyra_dialogue_panel(root: Control) -> void:
 	layout.add_child(_lyra_dialogue_body_label)
 
 
+func _create_sector_story_card_panel(root: Control) -> void:
+	_sector_story_card_panel = NeonHudPanel.new()
+	_sector_story_card_panel.name = "SectorStoryProgressionCardPanel"
+	_sector_story_card_panel.process_mode = Node.PROCESS_MODE_ALWAYS
+	_sector_story_card_panel.visible = false
+	_sector_story_card_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_sector_story_card_panel.z_index = 32
+	_sector_story_card_panel.configure(Color(0.0, 0.96, 1.0, 0.88), Color(1.0, 0.94, 0.18, 0.70), Vector2(800, 132), 20.0, 2.0)
+	_place_design_control(_sector_story_card_panel, Rect2(560, 230, 800, 132))
+	root.add_child(_sector_story_card_panel)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 18)
+	margin.add_theme_constant_override("margin_top", 12)
+	margin.add_theme_constant_override("margin_right", 18)
+	margin.add_theme_constant_override("margin_bottom", 12)
+	_sector_story_card_panel.add_child(margin)
+
+	var layout := VBoxContainer.new()
+	layout.alignment = BoxContainer.ALIGNMENT_CENTER
+	layout.add_theme_constant_override("separation", 4)
+	margin.add_child(layout)
+
+	_sector_story_card_title_label = _make_hud_label("NEON GRID")
+	_sector_story_card_title_label.name = "SectorStoryCardTitleLabel"
+	_sector_story_card_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_sector_story_card_title_label.add_theme_font_size_override("font_size", 26)
+	_sector_story_card_title_label.add_theme_color_override("font_color", Color(0.0, 0.96, 1.0))
+	layout.add_child(_sector_story_card_title_label)
+
+	_sector_story_card_subtitle_label = _make_hud_label("Awakening Zone")
+	_sector_story_card_subtitle_label.name = "SectorStoryCardSubtitleLabel"
+	_sector_story_card_subtitle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_sector_story_card_subtitle_label.add_theme_font_size_override("font_size", 15)
+	_sector_story_card_subtitle_label.add_theme_color_override("font_color", Color(1.0, 0.94, 0.18, 0.92))
+	layout.add_child(_sector_story_card_subtitle_label)
+
+	_sector_story_card_body_label = _make_hud_label("")
+	_sector_story_card_body_label.name = "SectorStoryCardBodyLabel"
+	_sector_story_card_body_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_sector_story_card_body_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_sector_story_card_body_label.custom_minimum_size = Vector2(740, 44)
+	_sector_story_card_body_label.add_theme_font_size_override("font_size", 14)
+	_sector_story_card_body_label.add_theme_color_override("font_color", Color(0.86, 1.0, 1.0, 0.94))
+	layout.add_child(_sector_story_card_body_label)
+
+
 func _create_help_menu(root: Control) -> void:
 	_help_modal_scrim = ColorRect.new()
 	_help_modal_scrim.name = "HowToPlayModalBackdropScrim"
@@ -5771,6 +5989,7 @@ func _add_gameplay_weapon_slot(parent: Control, slot_index: int) -> void:
 func _enter_title_menu() -> void:
 	_title_menu_active = true
 	_reset_lyra_dialogue_runtime()
+	_reset_sector_story_display()
 	_title_menu_nav_cooldown = 0.0
 	_title_menu_selected_index = 0
 	_title_options_visible = false
@@ -5832,6 +6051,7 @@ func _start_title_run(skip_intro := false) -> void:
 		_begin_opening_intro()
 		return
 	_reset_lyra_dialogue_runtime()
+	_reset_sector_story_display()
 	_clear_run_bonus_weapons()
 	_title_menu_active = false
 	_title_options_visible = false
@@ -5881,6 +6101,7 @@ func _start_title_run(skip_intro := false) -> void:
 	_trigger_presentation_flash(Color(0.0, 0.94, 1.0), 0.08, 0.18)
 	_show_sector_entry_notice(_sector_index, true)
 	_queue_lyra_dialogue("gameplay_start")
+	_show_sector_story_intro(_sector_index)
 
 
 func _begin_opening_intro() -> void:
@@ -5890,6 +6111,7 @@ func _begin_opening_intro() -> void:
 		_start_title_run(true)
 		return
 	_reset_lyra_dialogue_runtime()
+	_reset_sector_story_display()
 	_opening_intro_active = true
 	_opening_intro_panel_index = 0
 	_opening_intro_panel_time = 0.0
@@ -6201,6 +6423,7 @@ func _return_to_title_from_pause() -> void:
 	_save_settings()
 	_save_weapon_inventory()
 	_reset_lyra_dialogue_runtime()
+	_reset_sector_story_display()
 	_pause_options_visible = false
 	_help_visible = false
 	_manual_pause = false
@@ -12789,6 +13012,7 @@ func _begin_sector_clear_reward() -> void:
 	_upgrade_choices = _roll_sector_reward_choices(3)
 	_sector_transition_message = str(sector["transition_message"])
 	var dust_bonus := NEON_DUST_SECTOR_CLEAR_BASE + _sector_index * NEON_DUST_SECTOR_CLEAR_STEP
+	_show_sector_story_memory(_sector_index)
 	_queue_lyra_dialogue("sector_clear", true)
 	_grant_neon_dust(dust_bonus, true)
 	_sector_transition_cleanup_pending = true
@@ -13144,7 +13368,7 @@ func _advance_to_next_sector() -> void:
 	_trigger_presentation_flash(Color(0.0, 0.94, 1.0), 0.08, 0.18)
 	_trigger_sector_background_reaction(0.62, 0.82)
 	_show_sector_entry_notice(_sector_index)
-	_queue_lyra_dialogue("sector_transition", false, "sector_transition_%d" % _sector_index)
+	_show_sector_story_intro(_sector_index)
 	print("Neon Swarm sector transition: sector=%d name=%s clear_condition=%s" % [_sector_index + 1, _current_sector_name(), str(_current_sector()["clear_condition"])])
 
 
@@ -13711,6 +13935,7 @@ func _complete_run() -> void:
 	_update_run_end_summary(true)
 	if _success_panel:
 		_success_panel.visible = true
+	_show_sector_story_memory(_sector_index, true)
 	_queue_lyra_dialogue("sector_clear", true, "", true)
 	_spawn_burst(_player_area.position, 1.72, "burst_cyan")
 	_set_music_state("none")
@@ -13760,6 +13985,7 @@ func _is_start_button_event(event: InputEvent) -> bool:
 func _restart_run() -> void:
 	_play_sfx("ui_select", 0.08)
 	_reset_lyra_dialogue_runtime()
+	_reset_sector_story_display()
 	get_tree().paused = false
 	_manual_pause = false
 	_help_visible = false

@@ -16,6 +16,7 @@ system, new boss behavior, new enemy behavior, new gameplay systems, or Phase 41
 - `docs/NEON_SWARM_FULL_GAME_ROADMAP.md`
 - `docs/NEON_SWARM_PHASE_41_OPENING_INTRO_SEQUENCE_REPORT.md`
 - `docs/NEON_SWARM_PHASE_42_LYRA_COMPANION_TUTORIAL_LORE_REPORT.md`
+- `docs/NEON_SWARM_PHASE_43_SECTOR_STORY_PROGRESSION_REPORT.md`
 
 ## Phase 40 Runtime Integration
 
@@ -135,6 +136,42 @@ Implemented Lyra triggers:
 11. Death / run failed screen.
 12. Sector clear / run victory screen.
 
+## Phase 43 Sector Story Progression
+
+Phase 43 implements the first lightweight sector story progression layer. It
+uses the Phase 40 story lock, Phase 41 opening intro, and Phase 42 Lyra panel
+without adding a full cutscene system.
+
+Runtime behavior:
+
+- A small top-center sector title card appears on gameplay start and sector
+  entry.
+- Sector-specific Lyra mission callouts reuse the Phase 42 radio panel.
+- Clearing a sector shows a short `MEMORY RESTORED` reveal card.
+- Story intro and memory reveal seen flags are runtime-session scoped.
+- The current build remains a four-playable-sector run; The Black Crown text is
+  locked in data for future Sector 5 work only.
+- No save schema, gameplay balance, enemy behavior, boss behavior, Sector 2 art,
+  final-boss flow, ending sequence, or Phase 44 boss pass is added.
+
+Implemented sector intros:
+
+| Sector | Title | Subtitle | Lyra Intro |
+| --- | --- | --- | --- |
+| 1 | NEON GRID | Awakening Zone | "Nova, this is the outer Grid. If you can survive here, I can trace the breach." |
+| 2 | PRISM RIFT | Broken Mirror Sector | "The Rift is reflecting old memories. If you hear a voice that is not mine... follow it carefully." |
+| 3 | EMBER CIRCUIT | Weapon Foundry Sector | "This foundry built Aether weapons before the collapse. Try not to let it build your coffin." |
+| 4 | HYPER GRID | Central Routing Storm | "The Hyper Grid is still alive. Fast, angry, and very bad at welcoming guests." |
+| 5 | THE BLACK CROWN | Dead Center of the Grid | "That is where the light stops. Nova... if Mira is anywhere, she is inside that darkness." |
+
+Implemented memory reveals:
+
+1. Neon Grid: "Memory restored: Nova Veyr was not born as the Core. Nova entered it willingly."
+2. Prism Rift: "Memory restored: Mira Sol's voice echoes from inside the Prism Shards."
+3. Ember Circuit: "Memory restored: the Aether Core weapon system was built to fight the first Null invasion."
+4. Hyper Grid: "Memory restored: Mira became the living lock that held the Null King in the dark."
+5. The Black Crown: "The Black Crown trembles. The final shape is waking."
+
 ## Future Ending Implementation Outline
 
 Do not build until explicitly approved.
@@ -153,10 +190,14 @@ Do not build until explicitly approved.
 ## Dialogue Implementation Order
 
 1. Replace generic labels where safe.
-2. Add short sector intro text after labels are stable.
-3. Add boss intro lines as timed combat notices only after manual review approves label readability.
-4. Expand Lyra companion barks only after the Phase 42 panel pacing and readability are manually approved.
-5. Expand the Phase 41 opening only after manual review approves pacing, text readability, and skip behavior.
+2. Keep the Phase 43 sector intro / memory reveal foundation small until manual
+   readability is approved.
+3. Add boss intro lines as timed combat notices only after manual review approves
+   label readability in a future Phase 44-style pass.
+4. Expand Lyra companion barks only after the Phase 42 / Phase 43 panel pacing
+   and readability are manually approved.
+5. Expand the Phase 41 opening only after manual review approves pacing, text
+   readability, and skip behavior.
 6. Add ending cinematic only after final sector and final boss are implemented.
 
 ## System Lore Hooks
