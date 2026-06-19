@@ -27,3 +27,35 @@ Regeneration:
 ```bash
 blender --background --python art/arenas/sector_2/source/blender/build_sector_2_prism_rift_arena.py
 ```
+
+## Phase 49 Subsector Variants
+
+Phase 49 keeps the approved base arena above as `2.0 Prism Gate` and adds
+visual-only full arena-layout variants for:
+
+- `2A Mirror Flats`
+- `2B Fracture Hall`
+- `2C Violet Glassway`
+- `2D Rift Lens`
+
+Primary reference:
+
+- `art/reference/sector_2_prism_rift/sector_2_reference_sheet.png`
+
+Subsector source:
+
+- `build_sector_2_subsector_arena_kit.py`
+- `sector_2_subsector_arena_kit.blend`
+- `sector_2_subsector_art_notes.md`
+
+Runtime exports:
+
+- `../../exported/sector_2_mirror_flats.glb`
+- `../../exported/sector_2_fracture_hall.glb`
+- `../../exported/sector_2_violet_glassway.glb`
+- `../../exported/sector_2_rift_lens.glb`
+
+These variants are not random line overlays or flipped versions of the same
+room. They are separate modeled layouts using plates, glass inserts, ribs,
+route structures, focal rings, prism shards, and boundary architecture. They
+add no gameplay collision and do not alter the approved 2.0 base arena.

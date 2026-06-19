@@ -28,10 +28,11 @@ Current approved baseline:
 - Phase 46 locks the official sector/subsector campaign structure and future implementation sequence without activating subsector runtime progression, adding new arenas, adding Sector 5, or building an ending.
 - Phase 47 adds the first runtime campaign progression foundation for the four active sectors: subsector tracking, timed subsector advancement, boss gates after final approach subsectors, HUD/title-card support, and F11 test-mode advancement, without adding custom arena art, Sector 5, a final boss, or an ending.
 - Phase 48 adds the first Sector 1 subsector arena content pass: visual-only full arena-layout GLBs for 1A Relay Yard, 1B Data Trench, 1C Capacitor Field, and 1D Rail Approach integrated into the Phase 47 campaign runtime without adding Sector 2 subsector art, Sector 5 runtime, a final boss, or an ending.
+- Phase 49 adds the Sector 2 subsector arena content pass: visual-only full arena-layout GLBs for 2A Mirror Flats, 2B Fracture Hall, 2C Violet Glassway, and 2D Rift Lens integrated into the Phase 47 campaign runtime without adding Sector 3 subsector art, Sector 5 runtime, a final boss, or an ending.
 
 Major development still needed:
 
-- Sector 2, Sector 3, and Sector 4 subsector arena variants beyond the current placeholder/current arena visuals.
+- Sector 3 and Sector 4 subsector arena variants beyond the current placeholder/current arena visuals.
 - More sectors beyond the current prototype foundation, including future Sector 5 only after an approved phase.
 - More enemy families and behavior variety.
 - More bosses and boss patterns.
@@ -74,6 +75,8 @@ Phase 40 story foundation references:
 - `docs/NEON_SWARM_PHASE_47_CAMPAIGN_PROGRESSION_RUNTIME_FOUNDATION_REPORT.md`
 - `docs/NEON_SWARM_PHASE_48_SECTOR_1_SUBSECTOR_ARENA_CONTENT_PASS_REPORT.md`
 - `docs/NEON_SWARM_SECTOR_1_SUBSECTOR_ARENA_ART_DIRECTION.md`
+- `docs/NEON_SWARM_PHASE_49_SECTOR_2_SUBSECTOR_ARENA_CONTENT_PASS_REPORT.md`
+- `docs/NEON_SWARM_SECTOR_2_SUBSECTOR_ARENA_ART_DIRECTION.md`
 
 ## 2. Target Sector Structure
 
@@ -84,7 +87,7 @@ Current and planned sectors:
 | Sector | Name | Status | Role | Geometry Identity |
 | --- | --- | --- | --- | --- |
 | 1 | Neon Grid | Implemented with Phase 38 visual-only Blender-built 3D aluminum arena kit; Phase 45 adds Prism Shard I reward | Opening sector, teaches movement, XP, rewards, and boss clear flow. | Blender-authored 7x7 aluminum/gunmetal floor panel kit with bevels, inset plates, cyan neon seams, raised border walls aligned to the gameplay boundary, top rails, corner pylons, and subtle depth buttresses. |
-| 2 | Prism Rift | Phase 39 approved arena identity preserved; Phase 45 adds Prism Shard II reward | First memory of Mira, prism fracture pressure, Veyraxis reveal. | Purple/magenta fractured prism/glass arena. Current Blender arena work remains preserved; future story work must not overwrite the approved Sector 2 arena direction. |
+| 2 | Prism Rift | Phase 39 approved arena identity preserved; Phase 45 adds Prism Shard II reward; Phase 49 adds 2A-2D visual-only subsector arena variants | First memory of Mira, prism fracture pressure, Veyraxis reveal. | Purple/magenta fractured prism/glass arena. 2.0 uses the approved Prism Gate base; 2A-2D add Mirror Flats, Fracture Hall, Violet Glassway, and Rift Lens modeled GLB layouts. |
 | 3 | Ember Circuit | Planned story identity; Phase 45 adds Prism Shard III reward while current runtime assets remain prototype-level | The war begins, old weapon factory, Lord Cobalt Hex reveal. | Red/orange molten neon factory, cobalt machine authority, weapon-memory furnaces. |
 | 4 | Hyper Grid | Phase 35 active content pass implemented; Phase 45 adds Prism Shard IV reward | Truth of the seal, high-speed Grid storm, Mira lock reveal. | High-speed cyan/pink digital storm with rails, lock glyphs, and overclocked Grid machinery. |
 | 5 | The Black Crown | Future content only; Phase 43 locks data-only intro text, Phase 44 locks future boss identity notes, and Phase 45 locks future shard notes, but no Sector 5 gameplay or Null King stage exists yet | Crown Shard gatekeeper, Null King final boss, Mira rescue conflict. | Black void, white cracks, dead neon stars, crown fragments, silent geometry. |

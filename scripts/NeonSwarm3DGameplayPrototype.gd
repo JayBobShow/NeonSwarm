@@ -266,10 +266,10 @@ const CAMPAIGN_ACTIVE_SECTOR_DATA := [
 		"memory_shard_id": "prism_shard_2_miras_voice",
 		"subsectors": [
 			{"code": "2.0", "name": "Prism Gate", "purpose": "Entry into the fractured mirror dimension."},
-			{"code": "2A", "name": "Mirror Flats", "purpose": "The floor and enemies distort into reflected patterns."},
-			{"code": "2B", "name": "Fracture Hall", "purpose": "Nova begins hearing impossible signal echoes.", "lyra_line": "Careful. The Rift is reflecting more than light now."},
-			{"code": "2C", "name": "Violet Glassway", "purpose": "Mira's voice becomes clearer through Prism Shards."},
-			{"code": "2D", "name": "Rift Lens", "purpose": "Final focus point before Veyraxis."}
+			{"code": "2A", "name": "Mirror Flats", "purpose": "The floor and enemies distort into reflected patterns.", "arena_variant_key": "mirror_flats"},
+			{"code": "2B", "name": "Fracture Hall", "purpose": "Nova begins hearing impossible signal echoes.", "lyra_line": "Careful. The Rift is reflecting more than light now.", "arena_variant_key": "fracture_hall"},
+			{"code": "2C", "name": "Violet Glassway", "purpose": "Mira's voice becomes clearer through Prism Shards.", "arena_variant_key": "violet_glassway"},
+			{"code": "2D", "name": "Rift Lens", "purpose": "Final focus point before Veyraxis.", "arena_variant_key": "rift_lens"}
 		]
 	},
 	{
@@ -379,6 +379,12 @@ const SECTOR1_ARENA_KEY_LIGHT_SPECULAR := 0.42
 const SECTOR1_ARENA_KEY_LIGHT_COLOR := Color(0.62, 0.78, 1.0, 1.0)
 const SECTOR1_ARENA_KEY_LIGHT_ROTATION := Vector3(-54.0, -28.0, 0.0)
 const SECTOR2_BLENDER_ARENA_SCENE_PATH := "res://art/arenas/sector_2/exported/sector_2_prism_rift_arena.glb"
+const SECTOR2_SUBSECTOR_ARENA_SCENE_PATHS := {
+	"mirror_flats": "res://art/arenas/sector_2/exported/sector_2_mirror_flats.glb",
+	"fracture_hall": "res://art/arenas/sector_2/exported/sector_2_fracture_hall.glb",
+	"violet_glassway": "res://art/arenas/sector_2/exported/sector_2_violet_glassway.glb",
+	"rift_lens": "res://art/arenas/sector_2/exported/sector_2_rift_lens.glb"
+}
 const SECTOR2_ARENA_VISUAL_LIGHT_LAYER_MASK := 1 << 18
 const SECTOR2_ARENA_KEY_LIGHT_ENERGY := 0.46
 const SECTOR2_ARENA_KEY_LIGHT_SPECULAR := 0.54
@@ -785,6 +791,7 @@ var _sector_pulse_nodes: Array[Dictionary] = []
 var _sector_sweep_nodes: Array[Dictionary] = []
 var _sector1_arena_panel_motion: Array[Dictionary] = []
 var _sector1_subsector_variant_root: Node3D
+var _sector2_subsector_variant_root: Node3D
 var _sector_transition_nodes: Array[Dictionary] = []
 var _sector_transition_timer := 0.0
 var _sector_transition_duration := 0.82
@@ -3408,6 +3415,7 @@ func _rebuild_sector_geometry_identity() -> void:
 		return
 	_sector1_arena_panel_motion.clear()
 	_sector1_subsector_variant_root = null
+	_sector2_subsector_variant_root = null
 	for child in _sector_geometry_root.get_children():
 		_sector_geometry_root.remove_child(child)
 		child.queue_free()
@@ -4014,7 +4022,11 @@ func _create_sector2_prism_rift_3d_architecture() -> void:
 	root.name = "Sector2PrismRift3DArenaArchitectureRoot"
 	_sector_geometry_root.add_child(root)
 	_create_sector2_arena_readability_key_light(root)
-	_create_sector2_blender_arena_kit(root)
+	var variant_key := _current_sector2_subsector_arena_variant_key()
+	if variant_key == "":
+		_create_sector2_blender_arena_kit(root)
+	else:
+		_create_sector2_subsector_arena_variant(root)
 
 
 func _create_sector2_arena_readability_key_light(parent: Node3D) -> void:
@@ -4046,6 +4058,51 @@ func _create_sector2_blender_arena_kit(parent: Node3D) -> Node3D:
 		var material_visibility_cache: Dictionary = {}
 		_configure_sector2_blender_arena_visuals(instance, material_visibility_cache)
 	return instance
+
+
+func _current_sector2_subsector_arena_variant_key() -> String:
+	if _sector_index != 1:
+		return ""
+	var subsector_count := _campaign_subsector_count(1)
+	if subsector_count <= 0:
+		return ""
+	var subsector_index := _campaign_subsector_index
+	if _campaign_is_boss_step:
+		subsector_index = subsector_count - 1
+	var subsector := _campaign_subsector_data(1, subsector_index)
+	return str(subsector.get("arena_variant_key", ""))
+
+
+func _create_sector2_subsector_arena_variant(parent: Node3D) -> Node3D:
+	_sector2_subsector_variant_root = null
+	var variant_key := _current_sector2_subsector_arena_variant_key()
+	if variant_key == "":
+		return null
+	var scene_path := str(SECTOR2_SUBSECTOR_ARENA_SCENE_PATHS.get(variant_key, ""))
+	if scene_path == "":
+		return null
+	var holder := Node3D.new()
+	holder.name = "Sector2SubsectorArenaVariantRoot"
+	holder.set_meta("arena_variant_key", variant_key)
+	parent.add_child(holder)
+	_sector2_subsector_variant_root = holder
+	var instance := _add_blender_asset_instance(
+		holder,
+		"Blender3DSector2SubsectorVariant_%s" % variant_key.to_pascal_case(),
+		scene_path,
+		1.0,
+		Vector3.ZERO,
+		0.0,
+		false
+	) as Node3D
+	if instance == null:
+		holder.queue_free()
+		_sector2_subsector_variant_root = null
+		return null
+	instance.set_meta("arena_variant_key", variant_key)
+	var material_visibility_cache: Dictionary = {}
+	_configure_sector2_blender_arena_visuals(instance, material_visibility_cache)
+	return holder
 
 
 func _configure_sector2_blender_arena_visuals(root: Node, material_visibility_cache: Dictionary) -> void:

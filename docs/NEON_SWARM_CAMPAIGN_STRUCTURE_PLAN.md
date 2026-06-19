@@ -243,9 +243,19 @@ Phase 48 Sector 1 art status:
 - No Sector 2, Sector 3, Sector 4, or Sector 5 subsector arena art is added by
   Phase 48.
 
+Phase 49 Sector 2 art status:
+
+- 2.0 Prism Gate continues to use the approved base Sector 2 Prism Rift arena.
+- 2A Mirror Flats, 2B Fracture Hall, 2C Violet Glassway, and 2D Rift Lens now
+  load full visual-only Sector 2 GLB arena-layout variants through the Phase 47
+  campaign runtime.
+- Rift Lens remains the visual approach during the Veyraxis boss gate after 2D.
+- Memory Shard II remains tied to Veyraxis defeat, not normal subsector clears.
+- No Sector 3, Sector 4, or Sector 5 subsector arena art is added by Phase 49.
+
 Still deferred:
 
-- Sector 2, Sector 3, and Sector 4 custom subsector arena art.
+- Sector 3 and Sector 4 custom subsector arena art.
 - Sector 5 runtime.
 - Crown Shard / Null King runtime.
 - Ending sequence.
@@ -259,7 +269,7 @@ Still deferred:
 | Phase 46 | Sector/Subsector Campaign Structure Expansion Plan | Lock structure, names, pacing, story purpose, and future implementation rules. |
 | Phase 47 | Campaign Progression Runtime Foundation | Implemented first runtime subsector progression foundation using placeholder/current arenas. |
 | Phase 48 | Sector 1 Subsector Arena Content Pass | Implemented visual-only 1A-1D Neon Grid arena variants safely. |
-| Phase 49 | Sector 2 Subsector Arena Content Pass | Build playable 2A-2D variants using Prism Rift art direction and the user reference workflow. |
+| Phase 49 | Sector 2 Subsector Arena Content Pass | Implemented visual-only 2A-2D Prism Rift arena variants safely. |
 | Phase 50 | Sector 3 Subsector Arena Content Pass | Build playable Ember Circuit subsector variants. |
 | Phase 51 | Sector 4 Subsector Arena Content Pass | Build playable Hyper Grid subsector variants. |
 | Future later | Sector 5 / Black Crown foundation | Add future Sector 5 only after active sectors are stable. |

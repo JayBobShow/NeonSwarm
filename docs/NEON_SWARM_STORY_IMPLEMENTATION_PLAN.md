@@ -358,6 +358,33 @@ Preserved:
 - No new arena art, final boss, ending sequence, Lore Codex menu, save schema,
   weapon balance, movement, collision, or official scene path change is added.
 
+## Phase 49 Sector 2 Subsector Arena Content Pass
+
+Phase 49 adds the second sector-specific subsector arena art pass for Sector 2
+only.
+
+Runtime behavior:
+
+- 2.0 Prism Gate continues to use the approved base Sector 2 Prism Rift GLB.
+- 2A Mirror Flats loads a full visual-only mirrored-prism-floor arena layout.
+- 2B Fracture Hall loads a full visual-only cracked-hall / rift-split arena
+  layout.
+- 2C Violet Glassway loads a full visual-only glassway / lens-node route arena
+  layout.
+- 2D Rift Lens loads a full visual-only focal-lens / Veyraxis-approach arena
+  layout.
+- The Rift Lens visual remains in place for the Veyraxis boss gate after 2D.
+- Phase 47 subsector timing, title cards, F11 test advancement, boss gate
+  behavior, and UI sequencing remain the active runtime structure.
+- Memory Shard II remains tied to Veyraxis defeat and is not awarded for normal
+  subsector clears.
+
+Preserved:
+
+- No Sector 3, Sector 4, or Sector 5 subsector arena content is built.
+- No final boss, ending sequence, Lore Codex menu, save schema, weapon balance,
+  movement, collision, HUD redesign, or official scene path change is added.
+
 ## Future Ending Implementation Outline
 
 Do not build until explicitly approved.
