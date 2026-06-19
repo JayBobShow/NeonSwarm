@@ -55,6 +55,24 @@ const OPENING_INTRO_PANELS := [
 	{"title": "AWAKENING", "body": "Nova... wake up. The universe is not dead yet."},
 	{"title": "START", "body": "The Aether Core ignites."}
 ]
+const LYRA_DIALOGUE_DURATION := 4.8
+const LYRA_DIALOGUE_FADE_DURATION := 0.34
+const LYRA_DIALOGUE_LOW_HEALTH_RATIO := 0.35
+const LYRA_DIALOGUE_LOW_HEALTH_COOLDOWN := 18.0
+const LYRA_DIALOGUE_LINES := {
+	"gameplay_start": "Nova, you are awake. Good. The Grid is breaking, and you are the only Core still burning.",
+	"movement": "Move fast. The Swarm reads hesitation like blood in the water.",
+	"xp_pickup": "Those shards are broken Grid memory. Collect enough and the Core will adapt.",
+	"level_up": "Battle data is stabilizing. Pick an upgrade before the Swarm changes its mind.",
+	"run_weapon": "That is a run weapon. It starts firing now, but it will not replace your Armory loadout.",
+	"neon_dust": "Neon Dust. Purified Swarm residue. Ugly source, beautiful upgrade material.",
+	"forge_reference": "Bring enough Dust back and I can rebuild those weapon memories into something nastier.",
+	"boss_warning": "Large hostile signature ahead. Nova, that is not a swarm fragment. That is a commander.",
+	"sector_transition": "The Grid gate is open. Whatever is beyond it will be worse. Obviously.",
+	"low_health": "Core integrity is dropping. I need you alive, Nova. Preferably in one piece.",
+	"death": "Signal lost... no, wait. I still have you. Reboot the Core. We go again.",
+	"sector_clear": "Sector link restored. That is one light back in the universe."
+}
 const UI_RIGHT_STICK_SCROLL_SPEED := 720.0
 const UI_RIGHT_STICK_STASH_DEADZONE := 0.34
 const UI_RIGHT_STICK_STASH_FAST_THRESHOLD := 0.78
@@ -640,6 +658,16 @@ var _opening_intro_panel_index := 0
 var _opening_intro_panel_time := 0.0
 var _opening_intro_time := 0.0
 var _opening_intro_seen_this_session := false
+var _lyra_dialogue_panel: Control
+var _lyra_dialogue_speaker_label: Label
+var _lyra_dialogue_body_label: Label
+var _lyra_dialogue_queue: Array[String] = []
+var _lyra_dialogue_seen: Dictionary = {}
+var _lyra_dialogue_key := ""
+var _lyra_dialogue_active := false
+var _lyra_dialogue_timer := 0.0
+var _lyra_dialogue_duration := 0.0
+var _lyra_low_health_cooldown := 0.0
 
 
 func _ready() -> void:
@@ -706,6 +734,10 @@ func _input(event: InputEvent) -> void:
 		return
 	if _opening_intro_active:
 		_handle_opening_intro_input(event)
+		return
+	if _lyra_dialogue_active and _lyra_dialogue_skip_event(event):
+		_dismiss_lyra_dialogue()
+		get_viewport().set_input_as_handled()
 		return
 	if _handle_run_event_test_input(event):
 		return
@@ -946,6 +978,7 @@ func _process(delta: float) -> void:
 	_sync_hud_design_scale()
 	_update_presentation_flash(delta)
 	_update_tutorial_prompt(delta)
+	_update_lyra_dialogue(delta)
 	_update_combat_notice(delta)
 	_update_run_event_objective_panel()
 	_update_run_event_test_hud()
@@ -1301,6 +1334,9 @@ func _grant_neon_dust(amount: int, count_for_run := false) -> void:
 	_save_weapon_inventory()
 	_update_armory_ui()
 	_update_core_upgrades_ui()
+	if not _title_menu_active and not _game_over and not _run_success:
+		_queue_lyra_dialogue("neon_dust")
+		_queue_lyra_dialogue("forge_reference")
 
 
 func _next_weapon_instance_id() -> String:
@@ -1379,11 +1415,14 @@ func _prime_runtime_weapon_autofire(definition_id: String) -> void:
 func _activate_run_bonus_weapon(definition_id: String, prime_autofire := false) -> void:
 	if definition_id == "" or not _weapon_state.has(definition_id):
 		return
+	var was_new_run_weapon := not _has_run_bonus_weapon(definition_id)
 	_run_bonus_weapon_definitions[definition_id] = true
 	_refresh_run_weapon_activation()
 	if prime_autofire:
 		_prime_runtime_weapon_autofire(definition_id)
 	_update_run_bonus_weapon_hud()
+	if was_new_run_weapon:
+		_queue_lyra_dialogue("run_weapon")
 
 
 func _clear_run_bonus_weapons() -> void:
@@ -1559,6 +1598,7 @@ func _create_audio_foundation() -> void:
 		"ui_select": _make_tone_sfx(880.0, 0.070, 0.210, 0.30),
 		"ui_back": _make_tone_sfx(420.0, 0.072, 0.200, -0.24),
 		"ui_adjust": _make_tone_sfx(980.0, 0.045, 0.150, 0.20),
+		"lyra_radio": _make_tone_sfx(1180.0, 0.060, 0.120, -0.18),
 		"pause": _make_tone_sfx(500.0, 0.120, 0.210, -0.20),
 		"mute": _make_tone_sfx(330.0, 0.070, 0.180, -0.25)
 	}
@@ -1581,6 +1621,7 @@ func _create_audio_foundation() -> void:
 		"ui_select": -7.0,
 		"ui_back": -7.8,
 		"ui_adjust": -9.0,
+		"lyra_radio": -12.0,
 		"pause": -6.8,
 		"mute": -7.5
 	}
@@ -1926,6 +1967,94 @@ func _update_tutorial_prompt(delta: float) -> void:
 	if _tutorial_prompt_timer <= 0.0:
 		_tutorial_prompt_key = ""
 		_tutorial_prompt_panel.visible = false
+
+
+func _queue_lyra_dialogue(line_key: String, force := false, seen_key := "", priority := false) -> void:
+	if not LYRA_DIALOGUE_LINES.has(line_key):
+		return
+	var memory_key := seen_key if seen_key != "" else line_key
+	if not force and bool(_lyra_dialogue_seen.get(memory_key, false)):
+		return
+	if _lyra_dialogue_key == line_key or _lyra_dialogue_queue.has(line_key):
+		return
+	if not force:
+		_lyra_dialogue_seen[memory_key] = true
+	if priority:
+		_lyra_dialogue_queue.clear()
+		_lyra_dialogue_active = false
+		_lyra_dialogue_key = ""
+		if _lyra_dialogue_panel:
+			_lyra_dialogue_panel.visible = false
+	_lyra_dialogue_queue.append(line_key)
+
+
+func _update_lyra_dialogue(delta: float) -> void:
+	_lyra_low_health_cooldown = maxf(0.0, _lyra_low_health_cooldown - delta)
+	if not is_instance_valid(_lyra_dialogue_panel):
+		return
+	if _lyra_dialogue_blocked_by_menu():
+		_lyra_dialogue_panel.visible = false
+		return
+	if not _lyra_dialogue_active and not _lyra_dialogue_queue.is_empty():
+		_show_next_lyra_dialogue()
+	if not _lyra_dialogue_active:
+		_lyra_dialogue_panel.visible = false
+		return
+	_lyra_dialogue_timer = maxf(0.0, _lyra_dialogue_timer - delta)
+	var elapsed := maxf(0.0, _lyra_dialogue_duration - _lyra_dialogue_timer)
+	var fade_in := clampf(elapsed / LYRA_DIALOGUE_FADE_DURATION, 0.0, 1.0)
+	var fade_out := clampf(_lyra_dialogue_timer / LYRA_DIALOGUE_FADE_DURATION, 0.0, 1.0)
+	var alpha := minf(fade_in, fade_out)
+	_lyra_dialogue_panel.modulate = Color(1.0, 1.0, 1.0, alpha)
+	_lyra_dialogue_panel.visible = true
+	if _lyra_dialogue_timer <= 0.0:
+		_dismiss_lyra_dialogue()
+
+
+func _show_next_lyra_dialogue() -> void:
+	if not is_instance_valid(_lyra_dialogue_panel):
+		return
+	while not _lyra_dialogue_queue.is_empty():
+		var line_key := str(_lyra_dialogue_queue.pop_front())
+		var line := str(LYRA_DIALOGUE_LINES.get(line_key, ""))
+		if line == "":
+			continue
+		_lyra_dialogue_key = line_key
+		_lyra_dialogue_active = true
+		_lyra_dialogue_duration = LYRA_DIALOGUE_DURATION + minf(1.65, float(line.length()) * 0.015)
+		_lyra_dialogue_timer = _lyra_dialogue_duration
+		if _lyra_dialogue_speaker_label:
+			_lyra_dialogue_speaker_label.text = "LYRA QUILL"
+		if _lyra_dialogue_body_label:
+			_lyra_dialogue_body_label.text = line
+		_lyra_dialogue_panel.modulate = Color(1.0, 1.0, 1.0, 0.0)
+		_lyra_dialogue_panel.visible = true
+		_play_sfx("lyra_radio", 0.16)
+		return
+
+
+func _dismiss_lyra_dialogue() -> void:
+	_lyra_dialogue_active = false
+	_lyra_dialogue_key = ""
+	_lyra_dialogue_timer = 0.0
+	if _lyra_dialogue_panel:
+		_lyra_dialogue_panel.visible = false
+
+
+func _reset_lyra_dialogue_runtime() -> void:
+	_lyra_dialogue_queue.clear()
+	_dismiss_lyra_dialogue()
+	_lyra_low_health_cooldown = 0.0
+
+
+func _lyra_dialogue_blocked_by_menu() -> bool:
+	return _opening_intro_active or _title_menu_active or _manual_pause or _help_visible or _armory_visible or _core_upgrades_visible or _title_options_visible or _pause_options_visible
+
+
+func _lyra_dialogue_skip_event(event: InputEvent) -> bool:
+	if _weapon_reward_decision_active or _manual_pause or _title_menu_active or _help_visible or _armory_visible or _core_upgrades_visible or _title_options_visible or _pause_options_visible:
+		return false
+	return event.is_action_pressed("cancel")
 
 
 func _sector_color_for_index(index: int) -> Color:
@@ -4388,6 +4517,7 @@ func _create_hud() -> void:
 	_create_title_menu(_hud_design_root)
 	_create_opening_intro_overlay(_hud_design_root)
 	_create_tutorial_prompt_panel(_hud_design_root)
+	_create_lyra_dialogue_panel(_hud_design_root)
 	_create_help_menu(_hud_design_root)
 	_create_presentation_flash_overlay()
 
@@ -5003,6 +5133,44 @@ func _create_tutorial_prompt_panel(root: Control) -> void:
 	layout.add_child(_tutorial_prompt_body_label)
 
 
+func _create_lyra_dialogue_panel(root: Control) -> void:
+	_lyra_dialogue_panel = NeonHudPanel.new()
+	_lyra_dialogue_panel.name = "LyraQuillCompanionRadioPanel"
+	_lyra_dialogue_panel.process_mode = Node.PROCESS_MODE_ALWAYS
+	_lyra_dialogue_panel.visible = false
+	_lyra_dialogue_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_lyra_dialogue_panel.z_index = 34
+	_lyra_dialogue_panel.configure(Color(1.0, 0.94, 0.18, 0.90), Color(0.0, 0.96, 1.0, 0.72), Vector2(760, 118), 18.0, 1.8)
+	_place_design_control(_lyra_dialogue_panel, Rect2(300, 812, 760, 118))
+	root.add_child(_lyra_dialogue_panel)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 18)
+	margin.add_theme_constant_override("margin_top", 12)
+	margin.add_theme_constant_override("margin_right", 18)
+	margin.add_theme_constant_override("margin_bottom", 12)
+	_lyra_dialogue_panel.add_child(margin)
+
+	var layout := VBoxContainer.new()
+	layout.add_theme_constant_override("separation", 6)
+	margin.add_child(layout)
+
+	_lyra_dialogue_speaker_label = _make_hud_label("LYRA QUILL")
+	_lyra_dialogue_speaker_label.name = "LyraCompanionSpeakerLabel"
+	_lyra_dialogue_speaker_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_lyra_dialogue_speaker_label.add_theme_font_size_override("font_size", 14)
+	_lyra_dialogue_speaker_label.add_theme_color_override("font_color", Color(1.0, 0.94, 0.18))
+	layout.add_child(_lyra_dialogue_speaker_label)
+
+	_lyra_dialogue_body_label = _make_hud_label("")
+	_lyra_dialogue_body_label.name = "LyraCompanionBodyLabel"
+	_lyra_dialogue_body_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_lyra_dialogue_body_label.custom_minimum_size = Vector2(704, 56)
+	_lyra_dialogue_body_label.add_theme_font_size_override("font_size", 15)
+	_lyra_dialogue_body_label.add_theme_color_override("font_color", Color(0.88, 1.0, 1.0, 0.96))
+	layout.add_child(_lyra_dialogue_body_label)
+
+
 func _create_help_menu(root: Control) -> void:
 	_help_modal_scrim = ColorRect.new()
 	_help_modal_scrim.name = "HowToPlayModalBackdropScrim"
@@ -5602,6 +5770,7 @@ func _add_gameplay_weapon_slot(parent: Control, slot_index: int) -> void:
 
 func _enter_title_menu() -> void:
 	_title_menu_active = true
+	_reset_lyra_dialogue_runtime()
 	_title_menu_nav_cooldown = 0.0
 	_title_menu_selected_index = 0
 	_title_options_visible = false
@@ -5662,6 +5831,7 @@ func _start_title_run(skip_intro := false) -> void:
 	if not skip_intro and not _opening_intro_seen_this_session:
 		_begin_opening_intro()
 		return
+	_reset_lyra_dialogue_runtime()
 	_clear_run_bonus_weapons()
 	_title_menu_active = false
 	_title_options_visible = false
@@ -5710,6 +5880,7 @@ func _start_title_run(skip_intro := false) -> void:
 	_play_sfx("ui_select", 0.08)
 	_trigger_presentation_flash(Color(0.0, 0.94, 1.0), 0.08, 0.18)
 	_show_sector_entry_notice(_sector_index, true)
+	_queue_lyra_dialogue("gameplay_start")
 
 
 func _begin_opening_intro() -> void:
@@ -5718,6 +5889,7 @@ func _begin_opening_intro() -> void:
 	if not is_instance_valid(_opening_intro_root):
 		_start_title_run(true)
 		return
+	_reset_lyra_dialogue_runtime()
 	_opening_intro_active = true
 	_opening_intro_panel_index = 0
 	_opening_intro_panel_time = 0.0
@@ -6028,6 +6200,7 @@ func _resume_gameplay_from_pause() -> void:
 func _return_to_title_from_pause() -> void:
 	_save_settings()
 	_save_weapon_inventory()
+	_reset_lyra_dialogue_runtime()
 	_pause_options_visible = false
 	_help_visible = false
 	_manual_pause = false
@@ -9081,6 +9254,7 @@ func _update_player(delta: float) -> void:
 	var movement := Vector3(input_vector.x, 0.0, input_vector.y)
 	if movement.length_squared() > 0.001:
 		movement = movement.normalized()
+		_queue_lyra_dialogue("movement")
 	var target_velocity := movement * _current_player_speed()
 	var acceleration := PLAYER_ACCELERATION if movement.length_squared() > 0.001 else PLAYER_DECELERATION
 	_player_velocity = _player_velocity.move_toward(target_velocity, acceleration * delta)
@@ -9157,6 +9331,7 @@ func _update_wave_director(delta: float) -> void:
 		_trigger_presentation_flash(Color(0.72, 0.96, 1.0) if _sector_index >= 3 else Color(1.0, 0.08, 0.86), 0.12 if _sector_index >= 3 else 0.10, 0.26 if _sector_index >= 3 else 0.24)
 		_trigger_sector_background_reaction(0.86 if _sector_index >= 3 else 0.70, 0.90 if _sector_index >= 3 else 0.78)
 		_add_screen_shake(0.070 if _sector_index >= 3 else 0.055, 0.18 if _sector_index >= 3 else 0.16)
+		_queue_lyra_dialogue("boss_warning", false, "boss_warning_%d" % _sector_index)
 	if not _sector_boss_spawned and _sector_elapsed >= float(sector["boss_time"]):
 		_spawn_sector_boss()
 
@@ -12614,6 +12789,7 @@ func _begin_sector_clear_reward() -> void:
 	_upgrade_choices = _roll_sector_reward_choices(3)
 	_sector_transition_message = str(sector["transition_message"])
 	var dust_bonus := NEON_DUST_SECTOR_CLEAR_BASE + _sector_index * NEON_DUST_SECTOR_CLEAR_STEP
+	_queue_lyra_dialogue("sector_clear", true)
 	_grant_neon_dust(dust_bonus, true)
 	_sector_transition_cleanup_pending = true
 	if _level_up_title:
@@ -12968,6 +13144,7 @@ func _advance_to_next_sector() -> void:
 	_trigger_presentation_flash(Color(0.0, 0.94, 1.0), 0.08, 0.18)
 	_trigger_sector_background_reaction(0.62, 0.82)
 	_show_sector_entry_notice(_sector_index)
+	_queue_lyra_dialogue("sector_transition", false, "sector_transition_%d" % _sector_index)
 	print("Neon Swarm sector transition: sector=%d name=%s clear_condition=%s" % [_sector_index + 1, _current_sector_name(), str(_current_sector()["clear_condition"])])
 
 
@@ -13092,6 +13269,7 @@ func _update_xp_orbs(delta: float) -> void:
 func _collect_xp(value: int) -> void:
 	_player_xp += value
 	_score += value * 5
+	_queue_lyra_dialogue("xp_pickup")
 	_play_sfx("xp", 0.030)
 	if not _level_up_active and _player_xp >= _xp_required:
 		_player_xp -= _xp_required
@@ -13103,6 +13281,7 @@ func _collect_xp(value: int) -> void:
 func _begin_level_up() -> void:
 	_clear_chain_link_effects()
 	_level_up_active = true
+	_queue_lyra_dialogue("level_up")
 	_upgrade_selected_index = 0
 	_level_nav_cooldown = 0.0
 	_upgrade_choices = _roll_upgrade_choices(3)
@@ -13532,6 +13711,7 @@ func _complete_run() -> void:
 	_update_run_end_summary(true)
 	if _success_panel:
 		_success_panel.visible = true
+	_queue_lyra_dialogue("sector_clear", true, "", true)
 	_spawn_burst(_player_area.position, 1.72, "burst_cyan")
 	_set_music_state("none")
 	_play_music_sting("run_complete")
@@ -13566,7 +13746,11 @@ func _damage_player(amount: float) -> void:
 		_play_sfx("death", 0.20)
 		_trigger_presentation_flash(Color(1.0, 0.06, 0.12), 0.20, 0.30)
 		_trigger_sector_background_reaction(0.90, 0.90)
+		_queue_lyra_dialogue("death", true, "", true)
 		print(get_review_build_summary())
+	elif _player_health / maxf(_player_max_health, 1.0) <= LYRA_DIALOGUE_LOW_HEALTH_RATIO and _lyra_low_health_cooldown <= 0.0:
+		_lyra_low_health_cooldown = LYRA_DIALOGUE_LOW_HEALTH_COOLDOWN
+		_queue_lyra_dialogue("low_health", true)
 
 
 func _is_start_button_event(event: InputEvent) -> bool:
@@ -13575,6 +13759,7 @@ func _is_start_button_event(event: InputEvent) -> bool:
 
 func _restart_run() -> void:
 	_play_sfx("ui_select", 0.08)
+	_reset_lyra_dialogue_runtime()
 	get_tree().paused = false
 	_manual_pause = false
 	_help_visible = false

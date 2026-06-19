@@ -15,6 +15,7 @@ system, new boss behavior, new enemy behavior, new gameplay systems, or Phase 41
 - `docs/NEON_SWARM_STORY_IMPLEMENTATION_PLAN.md`
 - `docs/NEON_SWARM_FULL_GAME_ROADMAP.md`
 - `docs/NEON_SWARM_PHASE_41_OPENING_INTRO_SEQUENCE_REPORT.md`
+- `docs/NEON_SWARM_PHASE_42_LYRA_COMPANION_TUTORIAL_LORE_REPORT.md`
 
 ## Phase 40 Runtime Integration
 
@@ -100,6 +101,40 @@ Implementation requirements for future expansion:
 - No long blocking intro on repeated runs unless the player chooses replay.
 - Built on a small, testable presentation path.
 
+## Phase 42 Lyra Companion Tutorial Lore
+
+Phase 42 implements Lyra Quill as a short in-game companion/tutorial radio
+voice. It uses local runtime flags only, adds no save schema, does not pause
+combat, and does not add a full dialogue or cinematic system.
+
+Runtime behavior:
+
+- Lyra lines appear in a small lower-left radio panel separate from the left
+  stat stack, right weapon stack, and top combat notices.
+- Lines are short, automatically fade, and can be dismissed with the cancel
+  input when no reward/menu flow needs that input.
+- First-time system lines use one-shot runtime flags.
+- Low-health warnings use a cooldown.
+- Boss warnings are one per sector boss warning.
+- Death and run-complete/sector-clear lines can appear on their run-end panels.
+- The Phase 41 intro, title flow, HUD layout, Armory, Forge, weapon systems,
+  save data, and official scene path are preserved.
+
+Implemented Lyra triggers:
+
+1. First gameplay start after intro.
+2. First movement/combat start.
+3. First XP pickup.
+4. First level-up / upgrade choice.
+5. First new run weapon activation.
+6. First gameplay Neon Dust gain.
+7. First Forge / weapon-memory reference after Dust gain.
+8. Boss warning, once per sector warning.
+9. Sector transition, once per sector transition.
+10. Low health warning with cooldown.
+11. Death / run failed screen.
+12. Sector clear / run victory screen.
+
 ## Future Ending Implementation Outline
 
 Do not build until explicitly approved.
@@ -120,7 +155,7 @@ Do not build until explicitly approved.
 1. Replace generic labels where safe.
 2. Add short sector intro text after labels are stable.
 3. Add boss intro lines as timed combat notices only after manual review approves label readability.
-4. Add companion barks only after the core combat HUD remains readable.
+4. Expand Lyra companion barks only after the Phase 42 panel pacing and readability are manually approved.
 5. Expand the Phase 41 opening only after manual review approves pacing, text readability, and skip behavior.
 6. Add ending cinematic only after final sector and final boss are implemented.
 
