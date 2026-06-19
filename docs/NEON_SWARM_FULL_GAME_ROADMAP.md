@@ -25,10 +25,13 @@ Current approved baseline:
 - Phase 43 adds lightweight sector story progression with title cards, sector-specific Lyra intros, memory reveals, and locked boss-name references without adding a full boss pass or ending sequence.
 - Phase 44 adds lightweight boss identity presentation for the four current runtime bosses with boss arrival cards, intro quotes, defeat quotes, and boss-specific Lyra warnings without changing boss behavior, adding Sector 5, adding the Null King stage, or building an ending.
 - Phase 45 adds a lightweight runtime Memory Shard reward system for the four current bosses/sectors without adding a Lore Codex menu, Sector 5, the Null King stage, or an ending.
+- Phase 46 locks the official sector/subsector campaign structure and future implementation sequence without activating subsector runtime progression, adding new arenas, adding Sector 5, or building an ending.
 
 Major development still needed:
 
-- More sectors beyond the current prototype foundation.
+- Campaign progression runtime support for the Phase 46 subsector structure.
+- Playable subsector arena variants beyond the current sector-to-boss prototype flow.
+- More sectors beyond the current prototype foundation, including future Sector 5 only after an approved phase.
 - More enemy families and behavior variety.
 - More bosses and boss patterns.
 - More weapons and upgrade synergies.
@@ -59,12 +62,14 @@ Phase 40 story foundation references:
 - `docs/NEON_SWARM_ENEMY_FACTION_BIBLE.md`
 - `docs/NEON_SWARM_BOSS_BIBLE.md`
 - `docs/NEON_SWARM_MEMORY_SHARD_BIBLE.md`
+- `docs/NEON_SWARM_CAMPAIGN_STRUCTURE_PLAN.md`
 - `docs/NEON_SWARM_STORY_IMPLEMENTATION_PLAN.md`
 - `docs/NEON_SWARM_PHASE_41_OPENING_INTRO_SEQUENCE_REPORT.md`
 - `docs/NEON_SWARM_PHASE_42_LYRA_COMPANION_TUTORIAL_LORE_REPORT.md`
 - `docs/NEON_SWARM_PHASE_43_SECTOR_STORY_PROGRESSION_REPORT.md`
 - `docs/NEON_SWARM_PHASE_44_BOSS_IDENTITY_PASS_REPORT.md`
 - `docs/NEON_SWARM_PHASE_45_MEMORY_SHARD_SYSTEM_REPORT.md`
+- `docs/NEON_SWARM_PHASE_46_SECTOR_SUBSECTOR_CAMPAIGN_STRUCTURE_REPORT.md`
 
 ## 2. Target Sector Structure
 
@@ -81,6 +86,21 @@ Current and planned sectors:
 | 5 | The Black Crown | Future content only; Phase 43 locks data-only intro text, Phase 44 locks future boss identity notes, and Phase 45 locks future shard notes, but no Sector 5 gameplay or Null King stage exists yet | Crown Shard gatekeeper, Null King final boss, Mira rescue conflict. | Black void, white cracks, dead neon stars, crown fragments, silent geometry. |
 
 Sector design rule: each sector should change pacing, enemy mix, boss placement, and geometry identity without requiring alternate playable scenes unless a future phase explicitly approves new level work.
+
+Phase 46 campaign expansion lock:
+
+| Sector | Future Subsector Path | Runtime Status |
+| --- | --- | --- |
+| 1 - Neon Grid | 1.0 Awakening Grid -> 1A Relay Yard -> 1B Data Trench -> 1C Capacitor Field -> 1D Rail Approach -> Grix | Structure locked; current runtime progression unchanged. |
+| 2 - Prism Rift | 2.0 Prism Gate -> 2A Mirror Flats -> 2B Fracture Hall -> 2C Violet Glassway -> 2D Rift Lens -> Veyraxis | Structure locked; current runtime progression unchanged. |
+| 3 - Ember Circuit | 3.0 Foundry Gate -> 3A Molten Busway -> 3B Furnace Grid -> 3C Weapon Memory Forge -> 3D Cobalt Assembly Line -> Lord Cobalt Hex | Structure locked; current runtime progression unchanged. |
+| 4 - Hyper Grid | 4.0 Storm Entry -> 4A Routing Spine -> 4B Overclock Field -> 4C Signal Cyclone -> 4D Lockbreaker Gate -> The Hollow Warden | Structure locked; current runtime progression unchanged. |
+| 5 - The Black Crown | 5.0 Dead Grid -> 5A Crown Wound -> 5B Silent Starfield -> 5C Null Cathedral -> 5D Mira's Prison -> The Crown Shard -> The Null King | Future story-locked only; not active runtime content. |
+
+Future pacing rule: each sector should eventually feel like entry arena,
+escalation arena, pressure arena, identity arena, boss approach arena, and boss
+fight. Memory Shards remain major boss / sector-clear rewards rather than
+subsector collectibles.
 
 ## 3. Enemy Family Expansion
 
@@ -170,6 +190,17 @@ Phase 45 Memory Shard status:
   the current runtime.
 - No Lore Codex menu, persistent collection schema, Sector 5, Null King stage,
   ending sequence, or gameplay balance change is included.
+
+Phase 46 campaign structure status:
+
+- The official subsector structure is locked for Sectors 1-4 and future Sector
+  5.
+- The plan preserves the main story and adds travel depth, pacing, and buildup.
+- No runtime campaign data, subsector progression, new arenas, Sector 5
+  gameplay, Null King stage, ending sequence, Lore Codex menu, save schema
+  change, or gameplay balance change is included.
+- Future runtime work should begin with a safe campaign progression foundation
+  before any large arena-content pass.
 
 Phase 34 run objective status:
 
@@ -499,6 +530,7 @@ Long-term target systems:
 - Storyline.
 - Opening scene polish and replay controls beyond the Phase 41 foundation.
 - Companion dialogue, sector story, boss identity, Memory Shard, and future Lore Codex polish beyond the Phase 45 foundation.
+- Subsector campaign progression and arena variants following the Phase 46 structure lock.
 - Possible cutscenes.
 - Better audio and music.
 - Professional SFX replacing placeholder procedural sounds over time.
@@ -540,6 +572,15 @@ Likely future phases:
 | Phase 43 | Sector Story Progression | Adds sector title cards, sector-specific Lyra intros, memory reveal cards, runtime-session one-shot story flags, and lightweight boss-name references for the locked story sectors. No Phase 44 full boss pass or ending sequence is built. |
 | Phase 44 | Boss Identity Pass | Adds boss identity data, boss arrival cards, intro quotes, defeat quote cards, boss-specific Lyra warnings, and a procedural boss identity sting for the four active runtime bosses only, with Crown Shard and Null King future/data-ready only and excluded from current runtime boss-card lookup. No Sector 5, Null King stage, Phase 45 Memory Shard system, or ending sequence is built. |
 | Phase 45 | Memory Shard System | Adds four active runtime Memory Shard rewards, reveal panel, Lyra reaction lines, per-run unlock flags, and future-only Prism Shard V/VI story-lock notes. No Lore Codex menu, Sector 5, Null King stage, Phase 46 work, or ending sequence is built. |
+| Phase 46 | Sector/Subsector Campaign Structure Expansion Plan | Locks the official 1.0-1D, 2.0-2D, 3.0-3D, 4.0-4D, and future 5.0-5D campaign route, pacing rules, story purpose, and future implementation order. Documentation-only; no runtime progression, new arenas, Sector 5, ending, Lore Codex menu, or Phase 47 work is built. |
+| Phase 47 | Campaign Progression Runtime Foundation | Future: make the game understand subsector progression safely, likely using placeholder/current arenas first. Do not start without explicit approval. |
+| Phase 48 | Sector 1 Subsector Arena Content Pass | Future: build playable 1A-1D variants safely after runtime progression exists. Do not start without explicit approval. |
+| Phase 49 | Sector 2 Subsector Arena Content Pass | Future: build playable 2A-2D variants using Prism Rift art direction and user reference workflow. Do not start without explicit approval. |
+| Phase 50 | Sector 3 Subsector Arena Content Pass | Future: build playable Ember Circuit subsector variants. Do not start without explicit approval. |
+| Phase 51 | Sector 4 Subsector Arena Content Pass | Future: build playable Hyper Grid subsector variants. Do not start without explicit approval. |
+| Future approved phase | Sector 5 / Black Crown Foundation | Future-only until approved: build Sector 5 runtime content and Crown Shard path without accidentally activating Null King / ending work early. |
+| Future approved phase | Final Boss / Ending Sequence | Future-only until approved: build Null King final flow and ending after Sector 5 exists. |
+| Future approved phase | Lore Codex Menu | Future-only until approved: add persistent lore collection and Memory Shard review. |
 | Later approved phase | Real Audio Replacement Pass | Original authored music/SFX replacement direction. Do not start without explicit approval. |
 
 Do not start the next phase until explicitly approved.
@@ -569,6 +610,7 @@ Recommended next production direction:
 - Manually validate the Phase 43 sector title cards and memory reveals for readable placement, nonintrusive timing, cancel dismissal, clean Lyra sequencing, and preserved Sector 2 arena presentation.
 - Manually validate the Phase 44 boss cards and Lyra warnings for readable placement, nonintrusive timing, quote readability, boss-defeat reward flow, and preserved boss balance.
 - Manually validate the Phase 45 Memory Shard reveals for boss-card sequencing, reward-panel readability, Lyra reaction pacing, non-spam behavior, and no accidental future-shard unlocks.
+- Review the Phase 46 campaign structure before Phase 47 runtime work; confirm the subsector names, pacing, and Sector 5 future-only boundary are approved.
 - Expand Armory only through approved focused passes.
 - Keep tuning the four-sector prototype run while architecture work happens.
 - Add stronger boss and graphics variety only through approved focused phases.

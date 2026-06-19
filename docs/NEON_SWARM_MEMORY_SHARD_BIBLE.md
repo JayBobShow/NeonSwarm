@@ -30,7 +30,30 @@ progress. They are not a replacement for the future Lore Codex.
 - Current runtime unlocks only the first four Memory Shards.
 - Future shards must not trigger without a real approved Sector 5 / final boss
   implementation.
+- Phase 46 campaign expansion keeps Memory Shards as major boss / sector-clear
+  rewards, not subsector collectibles.
+- Future subsectors may add smaller Lyra comments, memory echoes, enemy hints,
+  and objective flavor without replacing Memory Shard reveals.
 - Unlock tracking is runtime-run scoped in Phase 45.
 - Permanent collection tracking belongs to the future Lore Codex phase.
 - Memory Shard reveal panels should not block sector rewards or hide critical
   combat information for long.
+
+## Campaign Structure Connection
+
+The future expanded campaign route is:
+
+- Sector 1: Awakening Grid -> Relay Yard -> Data Trench -> Capacitor Field ->
+  Rail Approach -> Grix -> PRISM SHARD I.
+- Sector 2: Prism Gate -> Mirror Flats -> Fracture Hall -> Violet Glassway ->
+  Rift Lens -> Veyraxis -> PRISM SHARD II.
+- Sector 3: Foundry Gate -> Molten Busway -> Furnace Grid -> Weapon Memory
+  Forge -> Cobalt Assembly Line -> Lord Cobalt Hex -> PRISM SHARD III.
+- Sector 4: Storm Entry -> Routing Spine -> Overclock Field -> Signal Cyclone
+  -> Lockbreaker Gate -> The Hollow Warden -> PRISM SHARD IV.
+- Future Sector 5: Dead Grid -> Crown Wound -> Silent Starfield -> Null
+  Cathedral -> Mira's Prison -> future Crown Shard / Null King content ->
+  future Prism Shards V and VI.
+
+Phase 46 does not activate this expanded route in runtime. Runtime activation is
+deferred to a future approved campaign progression phase.

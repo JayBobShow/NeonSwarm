@@ -102,6 +102,27 @@ anything.
 | 4 | Hyper Grid | Truth of the seal | The Hollow Warden | High-speed cyan/pink digital storm | Mira is alive in some form and became the lock holding back the Null King. |
 | 5 | The Black Crown | Final assault | The Crown Shard, then The Null King | Black void, white cracks, dead neon stars | Nova must defeat the Null King without destroying Mira's trapped light. |
 
+## Campaign Journey Structure Lock
+
+Phase 46 expands the intended journey pacing without rewriting the main story.
+Each active sector is planned as a chain of named subsectors before its boss
+gate. These names are locked for future implementation phases.
+
+| Sector | Subsector Path |
+| --- | --- |
+| Neon Grid | 1.0 Awakening Grid -> 1A Relay Yard -> 1B Data Trench -> 1C Capacitor Field -> 1D Rail Approach -> Grix the Rail Butcher |
+| Prism Rift | 2.0 Prism Gate -> 2A Mirror Flats -> 2B Fracture Hall -> 2C Violet Glassway -> 2D Rift Lens -> Veyraxis, Prism Widow |
+| Ember Circuit | 3.0 Foundry Gate -> 3A Molten Busway -> 3B Furnace Grid -> 3C Weapon Memory Forge -> 3D Cobalt Assembly Line -> Lord Cobalt Hex |
+| Hyper Grid | 4.0 Storm Entry -> 4A Routing Spine -> 4B Overclock Field -> 4C Signal Cyclone -> 4D Lockbreaker Gate -> The Hollow Warden |
+| The Black Crown | 5.0 Dead Grid -> 5A Crown Wound -> 5B Silent Starfield -> 5C Null Cathedral -> 5D Mira's Prison -> The Crown Shard -> The Null King |
+
+The Black Crown path remains future story-locked only until an approved phase
+adds real Sector 5 runtime content.
+
+Subsectors add travel depth, smaller story hints, enemy pressure changes, and
+arena identity. Major story reveals remain tied to boss clears and Memory
+Shards.
+
 ## Main Story Arc
 
 1. Nova awakens as the Aether Core inside the broken Neon Grid.

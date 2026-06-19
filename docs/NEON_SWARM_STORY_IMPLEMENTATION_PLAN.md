@@ -13,6 +13,7 @@ system, new boss behavior, new enemy behavior, new gameplay systems, or Phase 41
 - `docs/NEON_SWARM_ENEMY_FACTION_BIBLE.md`
 - `docs/NEON_SWARM_BOSS_BIBLE.md`
 - `docs/NEON_SWARM_MEMORY_SHARD_BIBLE.md`
+- `docs/NEON_SWARM_CAMPAIGN_STRUCTURE_PLAN.md`
 - `docs/NEON_SWARM_STORY_IMPLEMENTATION_PLAN.md`
 - `docs/NEON_SWARM_FULL_GAME_ROADMAP.md`
 - `docs/NEON_SWARM_PHASE_41_OPENING_INTRO_SEQUENCE_REPORT.md`
@@ -20,6 +21,7 @@ system, new boss behavior, new enemy behavior, new gameplay systems, or Phase 41
 - `docs/NEON_SWARM_PHASE_43_SECTOR_STORY_PROGRESSION_REPORT.md`
 - `docs/NEON_SWARM_PHASE_44_BOSS_IDENTITY_PASS_REPORT.md`
 - `docs/NEON_SWARM_PHASE_45_MEMORY_SHARD_SYSTEM_REPORT.md`
+- `docs/NEON_SWARM_PHASE_46_SECTOR_SUBSECTOR_CAMPAIGN_STRUCTURE_REPORT.md`
 
 ## Phase 40 Runtime Integration
 
@@ -252,6 +254,48 @@ Future story-locked shards:
 | PRISM SHARD V — THE BLACK CROWN | Future Sector 5 content only. |
 | PRISM SHARD VI — THE LAST LIGHT | Future ending / final boss content only. |
 
+## Phase 46 Sector / Subsector Campaign Structure
+
+Phase 46 locks the future campaign journey structure without activating expanded
+runtime progression. It is a documentation and roadmap phase, not a gameplay
+implementation phase.
+
+Story behavior:
+
+- The main Phase 40 story is preserved.
+- The expansion adds travel depth, pacing, and buildup.
+- The intended rhythm becomes sector entry, subsector push, small hints,
+  commander approach, boss defeat, Memory Shard recovery, and deeper Grid
+  travel.
+- Major story reveals stay tied to bosses and Memory Shards.
+- Subsector story beats should remain short: Lyra comments, memory echoes,
+  enemy faction hints, environmental names, and objective flavor.
+
+Locked active-sector paths:
+
+| Sector | Future Subsector Path |
+| --- | --- |
+| Neon Grid | 1.0 Awakening Grid -> 1A Relay Yard -> 1B Data Trench -> 1C Capacitor Field -> 1D Rail Approach -> Grix |
+| Prism Rift | 2.0 Prism Gate -> 2A Mirror Flats -> 2B Fracture Hall -> 2C Violet Glassway -> 2D Rift Lens -> Veyraxis |
+| Ember Circuit | 3.0 Foundry Gate -> 3A Molten Busway -> 3B Furnace Grid -> 3C Weapon Memory Forge -> 3D Cobalt Assembly Line -> Lord Cobalt Hex |
+| Hyper Grid | 4.0 Storm Entry -> 4A Routing Spine -> 4B Overclock Field -> 4C Signal Cyclone -> 4D Lockbreaker Gate -> The Hollow Warden |
+
+Future-only path:
+
+| Future Sector | Future Subsector Path |
+| --- | --- |
+| The Black Crown | 5.0 Dead Grid -> 5A Crown Wound -> 5B Silent Starfield -> 5C Null Cathedral -> 5D Mira's Prison -> The Crown Shard -> The Null King |
+
+Phase 46 runtime decision:
+
+- No runtime campaign data is added.
+- No subsector progression is activated.
+- Sector 5 remains future-only.
+- Phase 45 Memory Shard triggers remain unchanged.
+- Phase 44 active boss scope remains four runtime bosses only.
+- No save schema, official scene path, gameplay balance, boss behavior, arena
+  art, ending sequence, Lore Codex menu, or Phase 47 work is added.
+
 ## Future Ending Implementation Outline
 
 Do not build until explicitly approved.
@@ -274,14 +318,17 @@ Do not build until explicitly approved.
    readability is approved.
 3. Keep the Phase 44 boss identity cards and Lyra warnings lightweight until
    manual readability is approved.
-4. Keep Phase 45 Memory Shards runtime-scoped until the future Phase 46 Lore
-   Codex / persistence pass is approved.
+4. Keep Phase 45 Memory Shards runtime-scoped until a future Lore Codex /
+   persistence pass is approved.
 5. Expand Lyra companion barks only after the Phase 42 / Phase 43 panel pacing,
    Phase 44 boss-card readability, and Phase 45 shard reveal readability are
    manually approved.
-6. Expand the Phase 41 opening only after manual review approves pacing, text
+6. Activate Phase 46 subsector progression only after a future approved runtime
+   foundation phase defines safe data, placeholder arena handling, reward timing,
+   and save compatibility.
+7. Expand the Phase 41 opening only after manual review approves pacing, text
    readability, and skip behavior.
-7. Add ending cinematic only after final sector and final boss are implemented.
+8. Add ending cinematic only after final sector and final boss are implemented.
 
 ## System Lore Hooks
 
