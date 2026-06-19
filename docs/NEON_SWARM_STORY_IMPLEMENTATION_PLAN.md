@@ -14,6 +14,7 @@ system, new boss behavior, new enemy behavior, new gameplay systems, or Phase 41
 - `docs/NEON_SWARM_BOSS_BIBLE.md`
 - `docs/NEON_SWARM_STORY_IMPLEMENTATION_PLAN.md`
 - `docs/NEON_SWARM_FULL_GAME_ROADMAP.md`
+- `docs/NEON_SWARM_PHASE_41_OPENING_INTRO_SEQUENCE_REPORT.md`
 
 ## Phase 40 Runtime Integration
 
@@ -50,9 +51,40 @@ run to the first four story sectors only.
 The Black Crown, The Crown Shard, and The Null King remain planned story content
 until a future approved phase adds Sector 5 and final-boss work.
 
-## Future Opening Implementation Outline
+## Phase 41 Opening Intro Foundation
 
-Do not build until explicitly approved.
+Phase 41 implements the first opening intro foundation before gameplay begins.
+It uses the Phase 40 story names and keeps the official scene path at
+`scenes/Main.tscn`.
+
+Runtime behavior:
+
+- The intro starts from the existing title `START GAME` path before the first
+  gameplay run of the current app session.
+- It uses eight readable story panels with fade timing, a dark neon background,
+  subtle star/rift motion, and original procedural intro music.
+- Keyboard, controller, and mouse input can skip the intro.
+- Completing or skipping the intro resumes the existing gameplay start flow.
+- The current implementation does not add a save flag; it plays once per app
+  session and is always skippable.
+- It does not add an ending sequence, cinematic scene, alternate playable scene,
+  gameplay balance change, enemy behavior, boss behavior, or Phase 42 work.
+
+Panel text:
+
+1. The Legend: "Long ago, the Neon Grid carried light between the stars."
+2. The Fall: "But beneath the Grid, an ancient silence woke."
+3. The Null King: "They called it the Null King - the Shape That Eats Stars."
+4. The Swarm: "Where its shadow touched, cities became empty geometry. Living light shattered into the Swarm."
+5. The Last Core: "One Aether Core still burned in the dark, carrying the lost soul of Nova Veyr."
+6. Lyra's Signal: "Across the broken Grid, Lyra Quill found a signal that should have been impossible."
+7. Awakening: "Nova... wake up. The universe is not dead yet."
+8. Start: "The Aether Core ignites."
+
+## Opening Expansion Notes
+
+The Phase 41 opening foundation is intentionally small and safe. Future approved
+opening work can improve it without changing the official scene path.
 
 1. Establish the ruined Neon Grid with minimal, readable visuals.
 2. Use Lyra Quill's static call as the first voice.
@@ -61,7 +93,7 @@ Do not build until explicitly approved.
 5. Trigger a Swarm breach.
 6. Enter gameplay in Sector 1: Neon Grid.
 
-Implementation requirements for a future phase:
+Implementation requirements for future expansion:
 
 - Skippable.
 - No save incompatibility.
@@ -89,7 +121,7 @@ Do not build until explicitly approved.
 2. Add short sector intro text after labels are stable.
 3. Add boss intro lines as timed combat notices only after manual review approves label readability.
 4. Add companion barks only after the core combat HUD remains readable.
-5. Add opening cinematic only after a future phase explicitly approves it.
+5. Expand the Phase 41 opening only after manual review approves pacing, text readability, and skip behavior.
 6. Add ending cinematic only after final sector and final boss are implemented.
 
 ## System Lore Hooks

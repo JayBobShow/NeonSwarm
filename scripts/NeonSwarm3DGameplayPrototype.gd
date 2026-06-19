@@ -43,6 +43,18 @@ const PLAYER_CORE_AIM_FACING_YAW_RESPONSE := 14.0
 const SCREEN_SHAKE_MAX := 0.32
 const SFX_PLAYER_CAP := 12
 const MUSIC_MIX_RATE := 22050
+const OPENING_INTRO_PANEL_DURATION := 4.35
+const OPENING_INTRO_FADE_DURATION := 0.62
+const OPENING_INTRO_PANELS := [
+	{"title": "THE LEGEND", "body": "Long ago, the Neon Grid carried light between the stars."},
+	{"title": "THE FALL", "body": "But beneath the Grid, an ancient silence woke."},
+	{"title": "THE NULL KING", "body": "They called it the Null King - the Shape That Eats Stars."},
+	{"title": "THE SWARM", "body": "Where its shadow touched, cities became empty geometry. Living light shattered into the Swarm."},
+	{"title": "THE LAST CORE", "body": "One Aether Core still burned in the dark, carrying the lost soul of Nova Veyr."},
+	{"title": "LYRA'S SIGNAL", "body": "Across the broken Grid, Lyra Quill found a signal that should have been impossible."},
+	{"title": "AWAKENING", "body": "Nova... wake up. The universe is not dead yet."},
+	{"title": "START", "body": "The Aether Core ignites."}
+]
 const UI_RIGHT_STICK_SCROLL_SPEED := 720.0
 const UI_RIGHT_STICK_STASH_DEADZONE := 0.34
 const UI_RIGHT_STICK_STASH_FAST_THRESHOLD := 0.78
@@ -615,6 +627,19 @@ var _presentation_flash: ColorRect
 var _presentation_flash_color := Color(0.0, 0.94, 1.0, 0.0)
 var _presentation_flash_alpha := 0.0
 var _presentation_flash_decay := 0.0
+var _opening_intro_root: Control
+var _opening_intro_text_root: Control
+var _opening_intro_title_label: Label
+var _opening_intro_body_label: Label
+var _opening_intro_prompt_label: Label
+var _opening_intro_panel_count_label: Label
+var _opening_intro_stars: Array[ColorRect] = []
+var _opening_intro_rift_lines: Array[ColorRect] = []
+var _opening_intro_active := false
+var _opening_intro_panel_index := 0
+var _opening_intro_panel_time := 0.0
+var _opening_intro_time := 0.0
+var _opening_intro_seen_this_session := false
 
 
 func _ready() -> void:
@@ -678,6 +703,9 @@ func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("mute_audio"):
 		_toggle_audio_mute()
 		get_viewport().set_input_as_handled()
+		return
+	if _opening_intro_active:
+		_handle_opening_intro_input(event)
 		return
 	if _handle_run_event_test_input(event):
 		return
@@ -926,6 +954,9 @@ func _process(delta: float) -> void:
 	_update_right_stick_ui_scroll(delta)
 	_sync_player_presentation_visibility()
 	_update_gameplay_weapon_hud_flash_timers(delta)
+	if _opening_intro_active:
+		_update_opening_intro(delta)
+		return
 	if _title_menu_active:
 		_title_menu_nav_cooldown = maxf(0.0, _title_menu_nav_cooldown - delta)
 		if _help_visible:
@@ -1561,6 +1592,7 @@ func _create_audio_foundation() -> void:
 		add_child(player)
 		_sfx_players.append(player)
 	_music_streams = {
+		"intro": _make_music_loop("intro", 78.0, 10.0, 49.0),
 		"title": _make_music_loop("title", 112.0, 8.0, 55.0),
 		"gameplay": _make_music_loop("gameplay", 146.0, 8.0, 61.735),
 		"boss": _make_music_loop("boss", 164.0, 6.0, 46.25)
@@ -1623,6 +1655,14 @@ func _make_music_loop(kind: String, bpm: float, duration: float, root_frequency:
 	var hat_gain := 0.024
 	var output_gain := 1.48
 	match kind:
+		"intro":
+			drive = 0.62
+			pad_gain = 0.096
+			bass_gain = 0.062
+			arp_gain = 0.028
+			kick_gain = 0.018
+			hat_gain = 0.004
+			output_gain = 1.54
 		"title":
 			drive = 0.74
 			pad_gain = 0.072
@@ -1796,7 +1836,9 @@ func _set_music_state(state: String) -> void:
 func _update_music_state() -> void:
 	if _run_success or _game_over:
 		return
-	if _title_menu_active:
+	if _opening_intro_active:
+		_set_music_state("intro")
+	elif _title_menu_active:
 		_set_music_state("title")
 	elif _sector_boss_active or (_sector_boss_warning_played and not _sector_boss_spawned):
 		_set_music_state("boss")
@@ -4344,6 +4386,7 @@ func _create_hud() -> void:
 	_success_summary_label = _success_panel.find_child("RunEconomySummaryLabel", true, false) as Label
 
 	_create_title_menu(_hud_design_root)
+	_create_opening_intro_overlay(_hud_design_root)
 	_create_tutorial_prompt_panel(_hud_design_root)
 	_create_help_menu(_hud_design_root)
 	_create_presentation_flash_overlay()
@@ -4483,6 +4526,101 @@ func _create_title_menu(root: Control) -> void:
 	_title_menu_panel.add_child(_title_selection_cursor)
 
 	_update_title_menu_labels()
+
+
+func _create_opening_intro_overlay(root: Control) -> void:
+	_opening_intro_root = Control.new()
+	_opening_intro_root.name = "OpeningStoryIntroOverlay"
+	_opening_intro_root.process_mode = Node.PROCESS_MODE_ALWAYS
+	_opening_intro_root.visible = false
+	_opening_intro_root.mouse_filter = Control.MOUSE_FILTER_STOP
+	_place_design_control(_opening_intro_root, Rect2(Vector2.ZERO, HUD_DESIGN_SIZE))
+	root.add_child(_opening_intro_root)
+
+	var background := ColorRect.new()
+	background.name = "OpeningIntroDeepVoidBackground"
+	background.color = Color(0.0, 0.0, 0.010, 0.98)
+	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_place_design_control(background, Rect2(Vector2.ZERO, HUD_DESIGN_SIZE))
+	_opening_intro_root.add_child(background)
+
+	_opening_intro_stars.clear()
+	for i in range(44):
+		var star := ColorRect.new()
+		star.name = "OpeningIntroMemoryStar%02d" % i
+		star.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var x := fposmod(137.0 + float(i * 379), HUD_DESIGN_SIZE.x)
+		var y := fposmod(83.0 + float(i * 223), HUD_DESIGN_SIZE.y)
+		var size := 2.0 + float(i % 3)
+		_place_design_control(star, Rect2(Vector2(x, y), Vector2(size, size)))
+		star.color = Color(0.0, 0.94, 1.0, 0.18 + float(i % 5) * 0.035)
+		_opening_intro_root.add_child(star)
+		_opening_intro_stars.append(star)
+
+	_opening_intro_rift_lines.clear()
+	for i in range(7):
+		var line := ColorRect.new()
+		line.name = "OpeningIntroSlowRiftLine%02d" % i
+		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_place_design_control(line, Rect2(Vector2(250.0 + float(i) * 186.0, 178.0 + float(i % 3) * 190.0), Vector2(760.0 + float(i % 2) * 280.0, 2.0 + float(i % 3))))
+		line.rotation = deg_to_rad(-9.0 + float(i) * 3.0)
+		line.color = Color(0.0, 0.92, 1.0, 0.08 + float(i % 3) * 0.035)
+		_opening_intro_root.add_child(line)
+		_opening_intro_rift_lines.append(line)
+
+	var legend_label := _make_hud_label("ONE LIGHT. ENDLESS SWARM. A UNIVERSE WORTH REMEMBERING.")
+	legend_label.name = "OpeningIntroTagline"
+	legend_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	legend_label.add_theme_font_size_override("font_size", 18)
+	legend_label.add_theme_color_override("font_color", Color(0.72, 0.96, 1.0, 0.78))
+	_place_design_control(legend_label, Rect2(300, 132, 1320, 34))
+	_opening_intro_root.add_child(legend_label)
+
+	var panel := _make_frame(NeonFramePanel.FrameKind.COMMAND_PLATE, Rect2(390, 292, 1140, 430), Color(0.0, 0.95, 1.0, 0.88), Color(1.0, 0.05, 0.86, 0.70), 30.0, 2.2, Vector4(48, 34, 48, 34))
+	panel.name = "OpeningIntroTextPanel"
+	panel.animated = true
+	_opening_intro_root.add_child(panel)
+	_opening_intro_text_root = panel
+
+	var layout := VBoxContainer.new()
+	layout.name = "OpeningIntroTextStack"
+	layout.alignment = BoxContainer.ALIGNMENT_CENTER
+	layout.add_theme_constant_override("separation", 22)
+	_place_design_control(layout, Rect2(58, 44, 1024, 342))
+	panel.add_child(layout)
+
+	_opening_intro_panel_count_label = _make_hud_label("01 / 08")
+	_opening_intro_panel_count_label.name = "OpeningIntroPanelCount"
+	_opening_intro_panel_count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_opening_intro_panel_count_label.add_theme_font_size_override("font_size", 13)
+	_opening_intro_panel_count_label.add_theme_color_override("font_color", Color(1.0, 0.94, 0.18, 0.82))
+	layout.add_child(_opening_intro_panel_count_label)
+
+	_opening_intro_title_label = _make_hud_label("THE LEGEND")
+	_opening_intro_title_label.name = "OpeningIntroPanelTitle"
+	_opening_intro_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_opening_intro_title_label.add_theme_font_size_override("font_size", 28)
+	_opening_intro_title_label.add_theme_color_override("font_color", Color(0.90, 1.0, 1.0))
+	_opening_intro_title_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.96, 1.0, 0.90))
+	layout.add_child(_opening_intro_title_label)
+
+	_opening_intro_body_label = _make_hud_label("")
+	_opening_intro_body_label.name = "OpeningIntroPanelBody"
+	_opening_intro_body_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_opening_intro_body_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_opening_intro_body_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_opening_intro_body_label.custom_minimum_size = Vector2(990, 160)
+	_opening_intro_body_label.add_theme_font_size_override("font_size", 32)
+	_opening_intro_body_label.add_theme_color_override("font_color", Color(0.86, 0.98, 1.0, 0.96))
+	layout.add_child(_opening_intro_body_label)
+
+	_opening_intro_prompt_label = _make_hud_label("PRESS ANY KEY / A TO SKIP")
+	_opening_intro_prompt_label.name = "OpeningIntroSkipPrompt"
+	_opening_intro_prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_opening_intro_prompt_label.add_theme_font_size_override("font_size", 15)
+	_opening_intro_prompt_label.add_theme_color_override("font_color", Color(1.0, 0.94, 0.18, 0.74))
+	_place_design_control(_opening_intro_prompt_label, Rect2(690, 804, 540, 28))
+	_opening_intro_root.add_child(_opening_intro_prompt_label)
 
 
 func _create_title_options_menu() -> void:
@@ -5518,8 +5656,11 @@ func _enter_title_menu() -> void:
 	call_deferred("_focus_title_menu_choice")
 
 
-func _start_title_run() -> void:
+func _start_title_run(skip_intro := false) -> void:
 	if not _title_menu_active:
+		return
+	if not skip_intro and not _opening_intro_seen_this_session:
+		_begin_opening_intro()
 		return
 	_clear_run_bonus_weapons()
 	_title_menu_active = false
@@ -5569,6 +5710,106 @@ func _start_title_run() -> void:
 	_play_sfx("ui_select", 0.08)
 	_trigger_presentation_flash(Color(0.0, 0.94, 1.0), 0.08, 0.18)
 	_show_sector_entry_notice(_sector_index, true)
+
+
+func _begin_opening_intro() -> void:
+	if _opening_intro_active:
+		return
+	if not is_instance_valid(_opening_intro_root):
+		_start_title_run(true)
+		return
+	_opening_intro_active = true
+	_opening_intro_panel_index = 0
+	_opening_intro_panel_time = 0.0
+	_opening_intro_time = 0.0
+	get_tree().paused = true
+	_set_gameplay_hud_visible(false)
+	if _title_menu_panel:
+		_title_menu_panel.visible = false
+	if _title_selection_cursor:
+		_title_selection_cursor.visible = false
+	if _title_modal_scrim:
+		_title_modal_scrim.visible = false
+	_opening_intro_root.visible = true
+	_opening_intro_root.modulate = Color.WHITE
+	_show_opening_intro_panel(0)
+	_set_music_state("intro")
+	_play_sfx("sector", 0.12)
+
+
+func _show_opening_intro_panel(index: int) -> void:
+	_opening_intro_panel_index = clampi(index, 0, OPENING_INTRO_PANELS.size() - 1)
+	_opening_intro_panel_time = 0.0
+	var panel: Dictionary = OPENING_INTRO_PANELS[_opening_intro_panel_index]
+	if _opening_intro_title_label:
+		_opening_intro_title_label.text = str(panel.get("title", ""))
+	if _opening_intro_body_label:
+		_opening_intro_body_label.text = str(panel.get("body", ""))
+	if _opening_intro_panel_count_label:
+		_opening_intro_panel_count_label.text = "%02d / %02d" % [_opening_intro_panel_index + 1, OPENING_INTRO_PANELS.size()]
+	if _opening_intro_text_root:
+		_opening_intro_text_root.modulate = Color(1.0, 1.0, 1.0, 0.0)
+
+
+func _update_opening_intro(delta: float) -> void:
+	if not _opening_intro_active:
+		return
+	_opening_intro_time += delta
+	_opening_intro_panel_time += delta
+	var fade_in := clampf(_opening_intro_panel_time / OPENING_INTRO_FADE_DURATION, 0.0, 1.0)
+	var fade_out := clampf((OPENING_INTRO_PANEL_DURATION - _opening_intro_panel_time) / OPENING_INTRO_FADE_DURATION, 0.0, 1.0)
+	var text_alpha := minf(fade_in, fade_out)
+	if _opening_intro_text_root:
+		_opening_intro_text_root.modulate = Color(1.0, 1.0, 1.0, text_alpha)
+	if _opening_intro_prompt_label:
+		var prompt_alpha := 0.46 + (sin(_opening_intro_time * 3.4) * 0.5 + 0.5) * 0.34
+		_opening_intro_prompt_label.modulate = Color(1.0, 1.0, 1.0, prompt_alpha)
+	for i in range(_opening_intro_stars.size()):
+		var star := _opening_intro_stars[i]
+		if is_instance_valid(star):
+			var alpha := 0.10 + (sin(_opening_intro_time * (0.8 + float(i % 5) * 0.09) + float(i)) * 0.5 + 0.5) * 0.22
+			star.color = Color(star.color.r, star.color.g, star.color.b, alpha)
+	for i in range(_opening_intro_rift_lines.size()):
+		var line := _opening_intro_rift_lines[i]
+		if is_instance_valid(line):
+			var alpha := 0.06 + (sin(_opening_intro_time * 0.9 + float(i) * 0.7) * 0.5 + 0.5) * 0.10
+			line.color = Color(line.color.r, line.color.g, line.color.b, alpha)
+	if _opening_intro_panel_time >= OPENING_INTRO_PANEL_DURATION:
+		if _opening_intro_panel_index >= OPENING_INTRO_PANELS.size() - 1:
+			_finish_opening_intro(false)
+		else:
+			_show_opening_intro_panel(_opening_intro_panel_index + 1)
+
+
+func _handle_opening_intro_input(event: InputEvent) -> void:
+	if _opening_intro_skip_event(event):
+		_finish_opening_intro(true)
+		get_viewport().set_input_as_handled()
+
+
+func _opening_intro_skip_event(event: InputEvent) -> bool:
+	if event is InputEventKey:
+		var key_event := event as InputEventKey
+		return key_event.pressed and not key_event.echo
+	if event is InputEventJoypadButton:
+		return (event as InputEventJoypadButton).pressed
+	if event is InputEventMouseButton:
+		return (event as InputEventMouseButton).pressed
+	return event.is_action_pressed("confirm") or event.is_action_pressed("cancel") or event.is_action_pressed("pause")
+
+
+func _finish_opening_intro(skipped: bool) -> void:
+	if not _opening_intro_active:
+		return
+	_opening_intro_active = false
+	_opening_intro_seen_this_session = true
+	if _opening_intro_root:
+		_opening_intro_root.visible = false
+	if skipped:
+		_play_sfx("ui_select", 0.08)
+	else:
+		_play_sfx("reward", 0.12)
+	_start_title_run(true)
 
 
 func _toggle_title_options() -> void:

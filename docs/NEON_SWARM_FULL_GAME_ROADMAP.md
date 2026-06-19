@@ -20,6 +20,7 @@ Current approved baseline:
 - Phase 37 leaves the active player presentation as a blue shader propulsion ripple under the player after rejected spotlight work was removed.
 - Phase 38 prototypes the first Level 1 / Sector 1 visual-only 3D arena architecture layer while preserving the existing 2D gameplay plane.
 - Phase 40 locks the official story bible, character bible, enemy faction bible, boss bible, five-sector story direction, and naming foundation before cutscene work begins.
+- Phase 41 adds the first skippable opening intro sequence with original Neon Swarm story panels, subtle neon presentation, and a procedural intro music state.
 
 Major development still needed:
 
@@ -33,7 +34,7 @@ Major development still needed:
 - Better long-term run structure.
 - Continued sector background depth and authored art polish beyond the Phase 26 procedural upgrade.
 - Updated player, enemy, and boss graphics.
-- Story implementation beyond the Phase 40 bible lock, including future opening and ending cutscenes.
+- Story implementation beyond the Phase 41 opening foundation, including future ending work and deeper companion/boss dialogue.
 - Professional audio/music direction beyond placeholder procedural foundations.
 - More polish, balancing, accessibility, and content depth.
 
@@ -54,6 +55,7 @@ Phase 40 story foundation references:
 - `docs/NEON_SWARM_ENEMY_FACTION_BIBLE.md`
 - `docs/NEON_SWARM_BOSS_BIBLE.md`
 - `docs/NEON_SWARM_STORY_IMPLEMENTATION_PLAN.md`
+- `docs/NEON_SWARM_PHASE_41_OPENING_INTRO_SEQUENCE_REPORT.md`
 
 ## 2. Target Sector Structure
 
@@ -387,6 +389,12 @@ Visual rules stay locked:
 
 Current procedural music/SFX foundation should remain.
 
+Phase 41 status:
+
+- Adds an original procedural `intro` music state for the opening story panels.
+- Uses the existing generated audio path; no copyrighted music or external audio
+  imports are introduced.
+
 Future audio work:
 
 - More distinct sector music layers.
@@ -433,7 +441,7 @@ Long-term target systems:
 - Updated enemy graphics.
 - Stronger boss graphics.
 - Storyline.
-- Opening scene.
+- Opening scene polish and replay controls beyond the Phase 41 foundation.
 - Possible cutscenes.
 - Better audio and music.
 - Professional SFX replacing placeholder procedural sounds over time.
@@ -470,6 +478,7 @@ Likely future phases:
 | Phase 38 | Level 1 3D Arena Map Architecture Prototype | Adds and hard-repairs Sector 1-only visual 3D map architecture with a Blender source/GLB pipeline: aluminum/gunmetal beveled floor panels, cyan seams, camera/bounds fit, raised border walls, neon rails, corner pylons, and subtle depth pieces while preserving flat gameplay. |
 | Phase 39 | Sector 2 3D Prism Rift Arena Map Architecture Prototype | Approved/preserved Sector 2 Blender source/GLB Prism Rift arena direction. Hard Repair 3 uses the user-owned original floor reference for large readable octagonal glass panels, dark machined grid structure, contained magenta/violet fracture detail, Sector 2-only runtime integration, and preserved flat gameplay. |
 | Phase 40 | Story Bible + Naming Lock Foundation | Locks Nova Veyr, the Aether Core, Lyra Quill, Rook-7, Mira Sol, the Null King, the Swarm, the five-sector story arc, enemy factions, boss names, future opening outline, future ending outline, and label-only runtime naming. No cutscene system or story scene is built. |
+| Phase 41 | Opening Intro Sequence Foundation | Adds a skippable title-menu-to-gameplay opening sequence with eight Neon Swarm story panels, subtle dark neon motion, original procedural intro music, and safe handoff into the existing run flow. No ending sequence or Phase 42 work is built. |
 | Later approved phase | Real Audio Replacement Pass | Original authored music/SFX replacement direction. Do not start without explicit approval. |
 
 Do not start the next phase until explicitly approved.
@@ -494,6 +503,7 @@ Recommended next production direction:
 - Manually review Phase 36 notice timing/readability during a complete run, especially stacked event/boss/reward moments.
 - Manually validate the Phase 38 Sector 1 3D arena prototype for border clarity, readability under swarm pressure, and Phase 37 ripple visibility before expanding the architecture system to other sectors.
 - Manually validate the Phase 39 Hard Repair 3 Sector 2 Prism Rift arena against `art/reference/user_original_art/sector2_user_original_floor_reference.jpg` before treating the Sector 2 visual direction as approved.
+- Manually validate the Phase 41 opening intro for readable panel pacing, immediate skip response, controller skip response, music mix, and clean gameplay handoff.
 - Expand Armory only through approved focused passes.
 - Keep tuning the four-sector prototype run while architecture work happens.
 - Add stronger boss and graphics variety only through approved focused phases.
