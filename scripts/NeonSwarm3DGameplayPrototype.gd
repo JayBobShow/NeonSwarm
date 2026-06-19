@@ -34,6 +34,10 @@ const PLAYER_DECELERATION := 60.0
 const PLAYER_RADIUS := 0.72
 const PLAYER_MAX_HEALTH := 100.0
 const PLAYER_INVULN_TIME := 0.42
+const PLAYER_CORE_BASE_VISUAL_SCALE := 1.18
+const PLAYER_CORE_VISUAL_SCALE_MULTIPLIER := 1.10
+const PLAYER_CORE_VISUAL_SCALE := PLAYER_CORE_BASE_VISUAL_SCALE * PLAYER_CORE_VISUAL_SCALE_MULTIPLIER
+const PLAYER_CORE_VISUAL_PITCH_DEGREES := 15.0
 const SCREEN_SHAKE_MAX := 0.32
 const SFX_PLAYER_CAP := 12
 const MUSIC_MIX_RATE := 22050
@@ -2517,7 +2521,7 @@ func _asset_scale_vector(scale_value) -> Vector3:
 	return Vector3.ONE
 
 
-func _add_blender_asset_instance(parent: Node3D, node_name: String, path: String, scale_value = 1.0, local_position := Vector3.ZERO, yaw := 0.0, hide_existing := true):
+func _add_blender_asset_instance(parent: Node3D, node_name: String, path: String, scale_value = 1.0, local_position := Vector3.ZERO, yaw := 0.0, hide_existing := true, pitch_degrees := 0.0):
 	if hide_existing:
 		_hide_existing_visual_children(parent)
 	var instance := _load_blender_asset_scene(path) as Node3D
@@ -2526,13 +2530,14 @@ func _add_blender_asset_instance(parent: Node3D, node_name: String, path: String
 	instance.name = node_name
 	instance.position = local_position
 	instance.rotation.y = yaw
+	instance.rotation.x = deg_to_rad(pitch_degrees)
 	instance.scale = _asset_scale_vector(scale_value)
 	parent.add_child(instance)
 	return instance
 
 
 func _apply_player_blender_model(root: Node3D) -> void:
-	_add_blender_asset_instance(root, "Blender3DPlayerCoreModel", "res://art/player/exported/3d/player_core.glb", 1.18, Vector3(0.0, 0.05, 0.0), 0.0, true)
+	_add_blender_asset_instance(root, "Blender3DPlayerCoreModel", "res://art/player/exported/3d/player_core.glb", PLAYER_CORE_VISUAL_SCALE, Vector3(0.0, 0.05, 0.0), 0.0, true, PLAYER_CORE_VISUAL_PITCH_DEGREES)
 
 
 func _apply_xp_blender_model(root: Node3D) -> void:
