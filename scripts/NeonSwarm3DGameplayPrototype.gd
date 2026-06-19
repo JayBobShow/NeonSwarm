@@ -1906,13 +1906,13 @@ func _sector_display_title(index: int) -> String:
 func _sector_identity_text(index: int) -> String:
 	match clampi(index, 0, SECTOR_COUNT - 1):
 		0:
-			return "BASELINE SWARM PRESSURE"
+			return "AETHER CORE AWAKENING"
 		1:
-			return "DISTORTED PRISM FORMATIONS"
+			return "MIRA MEMORY FRACTURES"
 		2:
-			return "VOID PRESSURE RISING"
+			return "OLD WEAPON FACTORY"
 		_:
-			return "OVERCLOCKED RAIL NETWORK"
+			return "SEAL TRUTH STORM"
 
 
 func _show_sector_entry_notice(index: int, run_start := false) -> void:
@@ -8911,7 +8911,7 @@ func _update_wave_director(delta: float) -> void:
 			_null_octagon_warning_played = true
 			_null_octagon_warning_start = _survival_time
 		_set_music_state("boss")
-		_show_combat_notice("FINAL BOSS WARNING // NULL OCTAGON PRIME // RUN COMPLETE ON DEFEAT" if _sector_index >= 3 else "BOSS WARNING // %s // DEFEAT TO CLEAR SECTOR" % _boss_name_for_type(boss_type), _boss_notice_color(boss_type), 1.85)
+		_show_combat_notice("FINAL BOSS WARNING // %s // RUN COMPLETE ON DEFEAT" % _boss_name_for_type(boss_type) if _sector_index >= 3 else "BOSS WARNING // %s // DEFEAT TO CLEAR SECTOR" % _boss_name_for_type(boss_type), _boss_notice_color(boss_type), 1.85)
 		_play_sfx("boss_warning", 0.40)
 		_trigger_presentation_flash(Color(0.72, 0.96, 1.0) if _sector_index >= 3 else Color(1.0, 0.08, 0.86), 0.12 if _sector_index >= 3 else 0.10, 0.26 if _sector_index >= 3 else 0.24)
 		_trigger_sector_background_reaction(0.86 if _sector_index >= 3 else 0.70, 0.90 if _sector_index >= 3 else 0.78)
@@ -10294,15 +10294,18 @@ func _is_boss_type(enemy_type: String) -> bool:
 
 
 func _boss_name_for_type(enemy_type: String) -> String:
+	var current_sector := _current_sector()
+	if str(current_sector.get("boss_type", "")) == enemy_type:
+		return str(current_sector.get("boss_name", "BOSS"))
 	match enemy_type:
 		"fractal_crown":
-			return "FRACTAL CROWN"
+			return "VEYRAXIS, PRISM WIDOW"
 		"final_null_octagon":
-			return "NULL OCTAGON PRIME"
+			return "THE HOLLOW WARDEN"
 		"null_octagon":
-			return "NULL OCTAGON"
+			return "LORD COBALT HEX"
 		"mini_boss":
-			return "PRISM WARDEN"
+			return "GRIX THE RAIL BUTCHER"
 		_:
 			return str(_current_sector().get("boss_name", "BOSS"))
 
@@ -12076,7 +12079,7 @@ func _update_enemies(delta: float) -> void:
 				enemy["flash"] = 0.30
 				enemy["boss_attack_cd"] = 0.72
 				_spawn_burst(node.position, 2.00, "burst_fractal")
-				_show_combat_notice("FRACTAL CROWN // PHASE SHIFT", Color(1.0, 0.42, 0.04), 1.45)
+				_show_combat_notice("%s // PHASE SHIFT" % _boss_name_for_type(type_name), Color(1.0, 0.42, 0.04), 1.45)
 				_play_sfx("warning", 0.32)
 				_add_screen_shake(0.14, 0.25)
 			if not bool(enemy.get("boss_attack_pending", false)):

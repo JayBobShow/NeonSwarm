@@ -19,6 +19,7 @@ Current approved baseline:
 - Phase 36 adds a full-run clarity pass so sector entry, sector rewards, boss states, weapon progression, Neon Dust, death, and run-complete outcomes are easier to understand.
 - Phase 37 leaves the active player presentation as a blue shader propulsion ripple under the player after rejected spotlight work was removed.
 - Phase 38 prototypes the first Level 1 / Sector 1 visual-only 3D arena architecture layer while preserving the existing 2D gameplay plane.
+- Phase 40 locks the official story bible, character bible, enemy faction bible, boss bible, five-sector story direction, and naming foundation before cutscene work begins.
 
 Major development still needed:
 
@@ -32,7 +33,7 @@ Major development still needed:
 - Better long-term run structure.
 - Continued sector background depth and authored art polish beyond the Phase 26 procedural upgrade.
 - Updated player, enemy, and boss graphics.
-- Storyline, opening scene, and possible cutscenes.
+- Story implementation beyond the Phase 40 bible lock, including future opening and ending cutscenes.
 - Professional audio/music direction beyond placeholder procedural foundations.
 - More polish, balancing, accessibility, and content depth.
 
@@ -46,20 +47,27 @@ Phase 19 foundation references:
 - `docs/NEON_SWARM_WEAPON_RARITY_AND_STAT_ROLLS.md`
 - `docs/NEON_SWARM_STASH_ARMORY_PLAN.md`
 
+Phase 40 story foundation references:
+
+- `docs/NEON_SWARM_STORY_BIBLE.md`
+- `docs/NEON_SWARM_CHARACTER_BIBLE.md`
+- `docs/NEON_SWARM_ENEMY_FACTION_BIBLE.md`
+- `docs/NEON_SWARM_BOSS_BIBLE.md`
+- `docs/NEON_SWARM_STORY_IMPLEMENTATION_PLAN.md`
+
 ## 2. Target Sector Structure
 
-Target full-game sector count: six core sectors before optional challenge/remix modes.
+Target full-game sector count: five core story sectors before optional challenge/remix modes.
 
 Current and planned sectors:
 
 | Sector | Name | Status | Role | Geometry Identity |
 | --- | --- | --- | --- | --- |
 | 1 | Neon Grid | Implemented with Phase 38 visual-only Blender-built 3D aluminum arena kit after disabling the old Sector 1 HD plate and procedural tile roots | Opening sector, teaches movement, XP, rewards, and boss clear flow. | Blender-authored 7x7 aluminum/gunmetal floor panel kit with bevels, inset plates, cyan neon seams, raised border walls aligned to the gameplay boundary, top rails, corner pylons, and subtle depth buttresses. |
-| 2 | Prism Rift | Phase 39 Hard Repair 2 Blender-built 3D arena candidate is active and awaiting user visual review | Middle pressure, fractures, stronger enemy mixes, Fractal Crown event. | Current candidate targets a readable fractured prism/glass sci-fi deck with thick gunmetal support panels, raised violet/amethyst glass insets, recessed seams, short embedded neon channels, angular boundary rails, and clear bounds at gameplay camera distance. Future Blender work must follow the documentation-first art workflow. |
-| 3 | Null Zone | Implemented with Phase 26 Hard Reset HD background plate | Darker late-run escalation and Null Octagon gatekeeper. | HD octagon/hex black-glass plate with slow purple/cyan polygon edge lighting. |
-| 4 | Hyper Grid | Phase 35 active content pass implemented | Late-game/final-sector pressure using Rail Skimmer dash enemies, Grid Splitters, Hyper Grid elite variants, stronger event pressure, and Null Octagon Prime final buildup. | HD rail/stretched-diamond hyperlane plate with fast cyan/white lane runners. |
-| 5 | Fractal Core | Planned | Deep build-check sector with heavier pattern variety. | Stacked triangles, recursive shards, crown-core motifs. |
-| 6 | Singularity Swarm | Planned | Full-game final sector with dense but readable endgame pressure. | Rings, lens shapes, gravity arcs, singularity cages. |
+| 2 | Prism Rift | Phase 39 approved arena identity preserved; Phase 40 locks story role and boss name | First memory of Mira, prism fracture pressure, Veyraxis reveal. | Purple/magenta fractured prism/glass arena. Current Blender arena work remains preserved; future story work must not overwrite the approved Sector 2 arena direction. |
+| 3 | Ember Circuit | Planned story identity; current runtime slot may still use older prototype assets until a future approved art/content phase | The war begins, old weapon factory, Lord Cobalt Hex reveal. | Red/orange molten neon factory, cobalt machine authority, weapon-memory furnaces. |
+| 4 | Hyper Grid | Phase 35 active content pass implemented; Phase 40 locks the story role and Hollow Warden name | Truth of the seal, high-speed Grid storm, Mira lock reveal. | High-speed cyan/pink digital storm with rails, lock glyphs, and overclocked Grid machinery. |
+| 5 | The Black Crown | Planned final assault sector | Crown Shard gatekeeper, Null King final boss, Mira rescue conflict. | Black void, white cracks, dead neon stars, crown fragments, silent geometry. |
 
 Sector design rule: each sector should change pacing, enemy mix, boss placement, and geometry identity without requiring alternate playable scenes unless a future phase explicitly approves new level work.
 
@@ -81,7 +89,7 @@ Current enemy families:
 Phase 30 Wave Director status:
 
 - Sector spawn profiles now use a simple director model with intro, pressure, peak, warning, boss, and cleanup pacing.
-- Sector enemy mixes are weighted differently so Neon Grid, Prism Rift, Null Zone, and Hyper Grid no longer feel like the same spawn rhythm.
+- Sector enemy mixes are weighted differently so Neon Grid, Prism Rift, Ember Circuit, and Hyper Grid no longer feel like the same spawn rhythm.
 - Elite variants are implemented on existing enemy families only: Overcharged, Armored, Shielded, Volatile, and Splitter Elite.
 - Elites are capped by sector, delayed out of the opening wave, blocked during active boss fights, and separated by cooldowns.
 - Elite rewards currently add extra XP/score and a small chance for Neon Dust without creating a new loot-drop system.
@@ -102,18 +110,14 @@ Enemy expansion rules:
 
 ## 4. Boss Roster
 
-Current bosses/events:
+Official Phase 40 boss roster:
 
-- Prism Warden: Sector 1 boss, octahedron command threat.
-- Fractal Crown: Sector 2 boss event, stacked triangle/crown threat.
-- Null Octagon: Sector 3 gatekeeper boss.
-- Null Octagon Prime: current Sector 4 final prototype boss.
-
-Planned boss roster:
-
-- Hyper Rail Monarch: planned Sector 4 alternate boss candidate, stretched diamond/rail language.
-- Fractal Core Regent: planned Sector 5 major boss, recursive triangle/crown language.
-- Singularity Heart: planned Sector 6 final boss, ring/lens/gravity cage language.
+- Grix the Rail Butcher: Sector 1 boss, corrupted Gridborn execution machine.
+- Veyraxis, Prism Widow: Sector 2 boss, prism-memory predator.
+- Lord Cobalt Hex: Sector 3 boss, old Aether Core weapon-factory commander.
+- The Hollow Warden: Sector 4 boss, guardian of Mira's seal.
+- The Crown Shard: Sector 5 mid-boss, fragment of the Null King's crown.
+- The Null King, Crown of the Empty Grid: final boss and main villain.
 - Optional remix bosses: later challenge-mode variants only after base content is stable.
 
 Boss rules:
@@ -125,10 +129,11 @@ Boss rules:
 Phase 31 boss encounter status:
 
 - Boss attacks now use a capped telegraph queue before release instead of firing every major attack instantly.
-- Prism Warden rotates between shard fan, beam lane, and shield-pulse patterns.
-- Fractal Crown telegraphs crown burst, line pattern, and shard-summon attacks with phase-two escalation.
-- Null Octagon telegraphs void ring, void pulse, and add-vector attacks with phase feedback.
-- Null Octagon Prime adds stronger multi-ring and Hyper Grid rail-sweep telegraphs.
+- Current prototype boss behaviors remain under the hood until future approved boss content phases replace them.
+- Grix the Rail Butcher currently maps to the old Sector 1 boss behavior.
+- Veyraxis, Prism Widow currently maps to the old Sector 2 boss behavior.
+- Lord Cobalt Hex currently maps to the old Sector 3 boss behavior.
+- The Hollow Warden currently maps to the old Sector 4 boss behavior.
 - Boss HUD labels append `PHASE 2` when a boss enters escalation.
 
 Phase 34 run objective status:
@@ -463,7 +468,8 @@ Likely future phases:
 | Phase 36 | Full Run Polish / Player Progression Clarity Pass | Adds clearer run start, sector entry, sector clear, boss, event reward, weapon progression, Forge, Neon Dust, death, and run-complete messaging without changing gameplay balance. |
 | Phase 37 | Player Propulsion Ripple Presentation | Removes rejected spotlight work and preserves the active blue/cyan shader ripple under the player as visual-only presentation. |
 | Phase 38 | Level 1 3D Arena Map Architecture Prototype | Adds and hard-repairs Sector 1-only visual 3D map architecture with a Blender source/GLB pipeline: aluminum/gunmetal beveled floor panels, cyan seams, camera/bounds fit, raised border walls, neon rails, corner pylons, and subtle depth pieces while preserving flat gameplay. |
-| Phase 39 | Sector 2 3D Prism Rift Arena Map Architecture Prototype | In progress/user-review pending: rebuilds Sector 2 as a Blender source/GLB Prism Rift arena. Hard Repair 3 uses the user-owned original floor reference for large readable octagonal glass panels, dark machined grid structure, contained magenta/violet fracture detail, Sector 2-only runtime integration, and preserved flat gameplay. |
+| Phase 39 | Sector 2 3D Prism Rift Arena Map Architecture Prototype | Approved/preserved Sector 2 Blender source/GLB Prism Rift arena direction. Hard Repair 3 uses the user-owned original floor reference for large readable octagonal glass panels, dark machined grid structure, contained magenta/violet fracture detail, Sector 2-only runtime integration, and preserved flat gameplay. |
+| Phase 40 | Story Bible + Naming Lock Foundation | Locks Nova Veyr, the Aether Core, Lyra Quill, Rook-7, Mira Sol, the Null King, the Swarm, the five-sector story arc, enemy factions, boss names, future opening outline, future ending outline, and label-only runtime naming. No cutscene system or story scene is built. |
 | Later approved phase | Real Audio Replacement Pass | Original authored music/SFX replacement direction. Do not start without explicit approval. |
 
 Do not start the next phase until explicitly approved.
