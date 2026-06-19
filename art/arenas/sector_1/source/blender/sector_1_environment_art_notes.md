@@ -51,3 +51,11 @@ Hotfix 6 outer rail cleanup notes:
 - Removed `Sector1AAAFarNorth/South/West/EastRestrainedCyanRail` meshes from the Blender build.
 - Kept `Sector1AAASegmentedWall_*_*`, `Sector1AAASegmentedWall_*_*_SegmentedCyanTopRail`, `Sector1AAACornerMachineryAnchor*`, and `Sector1AAAMidWallPylon_*_*` as the actual readable arena boundary.
 - Do not re-add decorative rails past the arena half-size unless they are clearly outside the camera/playfield composition and approved as background architecture.
+
+Phase 48 Sector 1 subsector notes:
+
+- `sector_1_neon_grid_arena.glb` remains the 1.0 Awakening Grid base arena.
+- `sector_1_relay_yard.glb`, `sector_1_data_trench.glb`, `sector_1_capacitor_field.glb`, and `sector_1_rail_approach.glb` are visual-only overlays for 1A-1D.
+- The subsector overlays are built from `build_sector_1_subsector_arena_kit.py` and `sector_1_subsector_arena_kit.blend`.
+- Keep these overlays low-profile, collision-free, and inside the existing blue/cyan Neon Grid family.
+- Do not use Phase 48 as precedent for Sector 2/3/4 art; those require separate approved content phases.

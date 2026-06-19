@@ -34,6 +34,9 @@ progress. They are not a replacement for the future Lore Codex.
   rewards, not subsector collectibles.
 - Phase 47 runtime subsector progression does not award Memory Shards for
   normal subsector clears.
+- Phase 48 Sector 1 subsector arena art does not change Memory Shard timing:
+  Relay Yard, Data Trench, Capacitor Field, and Rail Approach are visual/story
+  buildup only.
 - Boss gates remain the Memory Shard reward source: Grix, Veyraxis, Lord Cobalt
   Hex, and The Hollow Warden.
 - Future subsectors may add smaller Lyra comments, memory echoes, enemy hints,
@@ -66,4 +69,5 @@ Phase 46 does not activate this expanded route in runtime. Runtime activation is
 deferred to a future approved campaign progression phase.
 
 Phase 47 activates only the active four-sector subsector route and keeps Prism
-Shards V and VI future-only.
+Shards V and VI future-only. Phase 48 gives Sector 1 subsectors their first
+visual-only arena variants while keeping Memory Shard I tied to Grix.

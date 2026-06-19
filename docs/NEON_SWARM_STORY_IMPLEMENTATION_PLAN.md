@@ -322,6 +322,30 @@ Runtime behavior:
   reward / comparison modal, boss identity card, Memory Shard reveal, sector
   story card, then Lyra dialogue.
 
+## Phase 48 Sector 1 Subsector Arena Content Pass
+
+Phase 48 adds the first sector-specific subsector arena art pass for Sector 1
+only.
+
+Runtime behavior:
+
+- 1.0 Awakening Grid continues to use the approved base Sector 1 Neon Grid GLB.
+- 1A Relay Yard loads a visual-only relay-node / signal-line overlay.
+- 1B Data Trench loads a visual-only data-channel / memory-strip overlay.
+- 1C Capacitor Field loads a visual-only capacitor-cell / charge-bank overlay.
+- 1D Rail Approach loads a visual-only rail / defense-gate approach overlay.
+- The Rail Approach visual remains in place for the Grix boss gate after 1D.
+- Phase 47 subsector timing, title cards, F11 test advancement, boss gate
+  behavior, and UI sequencing remain the active runtime structure.
+- Memory Shard I remains tied to Grix defeat and is not awarded for normal
+  subsector clears.
+
+Preserved:
+
+- No Sector 2, Sector 3, Sector 4, or Sector 5 subsector arena content is built.
+- No final boss, ending sequence, Lore Codex menu, save schema, weapon balance,
+  movement, collision, HUD redesign, or official scene path change is added.
+
 Preserved:
 
 - Phase 45 Memory Shards remain tied to active boss / sector clears only.
@@ -357,8 +381,8 @@ Do not build until explicitly approved.
 5. Expand Lyra companion barks only after the Phase 42 / Phase 43 panel pacing,
    Phase 44 boss-card readability, and Phase 45 shard reveal readability are
    manually approved.
-6. Keep Phase 47 subsector progression on placeholder/current arena visuals
-   until sector-specific arena content phases are approved.
+6. Keep later-sector subsector progression on placeholder/current arena visuals
+   until each sector-specific arena content phase is approved.
 7. Expand the Phase 41 opening only after manual review approves pacing, text
    readability, and skip behavior.
 8. Add ending cinematic only after final sector and final boss are implemented.

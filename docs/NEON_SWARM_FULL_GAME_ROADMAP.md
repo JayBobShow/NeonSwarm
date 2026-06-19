@@ -27,11 +27,11 @@ Current approved baseline:
 - Phase 45 adds a lightweight runtime Memory Shard reward system for the four current bosses/sectors without adding a Lore Codex menu, Sector 5, the Null King stage, or an ending.
 - Phase 46 locks the official sector/subsector campaign structure and future implementation sequence without activating subsector runtime progression, adding new arenas, adding Sector 5, or building an ending.
 - Phase 47 adds the first runtime campaign progression foundation for the four active sectors: subsector tracking, timed subsector advancement, boss gates after final approach subsectors, HUD/title-card support, and F11 test-mode advancement, without adding custom arena art, Sector 5, a final boss, or an ending.
+- Phase 48 adds the first Sector 1 subsector arena content pass: visual-only 1A Relay Yard, 1B Data Trench, 1C Capacitor Field, and 1D Rail Approach GLB overlays integrated into the Phase 47 campaign runtime without adding Sector 2 subsector art, Sector 5 runtime, a final boss, or an ending.
 
 Major development still needed:
 
-- Campaign progression runtime support for the Phase 46 subsector structure.
-- Playable subsector arena variants beyond the current sector-to-boss prototype flow.
+- Sector 2, Sector 3, and Sector 4 subsector arena variants beyond the current placeholder/current arena visuals.
 - More sectors beyond the current prototype foundation, including future Sector 5 only after an approved phase.
 - More enemy families and behavior variety.
 - More bosses and boss patterns.
@@ -72,6 +72,8 @@ Phase 40 story foundation references:
 - `docs/NEON_SWARM_PHASE_45_MEMORY_SHARD_SYSTEM_REPORT.md`
 - `docs/NEON_SWARM_PHASE_46_SECTOR_SUBSECTOR_CAMPAIGN_STRUCTURE_REPORT.md`
 - `docs/NEON_SWARM_PHASE_47_CAMPAIGN_PROGRESSION_RUNTIME_FOUNDATION_REPORT.md`
+- `docs/NEON_SWARM_PHASE_48_SECTOR_1_SUBSECTOR_ARENA_CONTENT_PASS_REPORT.md`
+- `docs/NEON_SWARM_SECTOR_1_SUBSECTOR_ARENA_ART_DIRECTION.md`
 
 ## 2. Target Sector Structure
 
@@ -590,7 +592,7 @@ Likely future phases:
 | Phase 45 | Memory Shard System | Adds four active runtime Memory Shard rewards, reveal panel, Lyra reaction lines, per-run unlock flags, and future-only Prism Shard V/VI story-lock notes. No Lore Codex menu, Sector 5, Null King stage, Phase 46 work, or ending sequence is built. |
 | Phase 46 | Sector/Subsector Campaign Structure Expansion Plan | Locks the official 1.0-1D, 2.0-2D, 3.0-3D, 4.0-4D, and future 5.0-5D campaign route, pacing rules, story purpose, and future implementation order. Documentation-only; no runtime progression, new arenas, Sector 5, ending, Lore Codex menu, or Phase 47 work is built. |
 | Phase 47 | Campaign Progression Runtime Foundation | Implements active four-sector subsector runtime progression using placeholder/current arena visuals: five subsectors plus boss gate per active sector, timed normal-node advancement, boss warning/spawn only at boss gates, HUD/title-card support, and F11 test-mode advancement. No custom subsector art, Sector 5, ending, Lore Codex menu, or Phase 48 work is built. |
-| Phase 48 | Sector 1 Subsector Arena Content Pass | Future: build playable 1A-1D variants safely after runtime progression exists. Do not start without explicit approval. |
+| Phase 48 | Sector 1 Subsector Arena Content Pass | Implements visual-only Sector 1 1A-1D arena overlays for Relay Yard, Data Trench, Capacitor Field, and Rail Approach through the existing Phase 47 runtime. No Sector 2 subsector art, Sector 5, ending, or gameplay balance changes are built. |
 | Phase 49 | Sector 2 Subsector Arena Content Pass | Future: build playable 2A-2D variants using Prism Rift art direction and user reference workflow. Do not start without explicit approval. |
 | Phase 50 | Sector 3 Subsector Arena Content Pass | Future: build playable Ember Circuit subsector variants. Do not start without explicit approval. |
 | Phase 51 | Sector 4 Subsector Arena Content Pass | Future: build playable Hyper Grid subsector variants. Do not start without explicit approval. |
@@ -627,6 +629,7 @@ Recommended next production direction:
 - Manually validate the Phase 44 boss cards and Lyra warnings for readable placement, nonintrusive timing, quote readability, boss-defeat reward flow, and preserved boss balance.
 - Manually validate the Phase 45 Memory Shard reveals for boss-card sequencing, reward-panel readability, Lyra reaction pacing, non-spam behavior, and no accidental future-shard unlocks.
 - Manually validate the Phase 47 campaign progression runtime for subsector timing, F11 test-mode advancement, title-card readability, boss-gate timing, Memory Shard sequencing, and no accidental Sector 5 activation.
+- Manually validate the Phase 48 Sector 1 subsector arena variants for 1.0 base arena preservation, 1A-1D visual identity, no collision changes, no Sector 2 changes, and readable player/ripple/XP/enemy/projectile/HUD/story/reward presentation.
 - Expand Armory only through approved focused passes.
 - Keep tuning the four-sector prototype run while architecture work happens.
 - Add stronger boss and graphics variety only through approved focused phases.

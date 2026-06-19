@@ -251,10 +251,10 @@ const CAMPAIGN_ACTIVE_SECTOR_DATA := [
 		"memory_shard_id": "prism_shard_1_pilot",
 		"subsectors": [
 			{"code": "1.0", "name": "Awakening Grid", "purpose": "Nova wakes up. First combat survival space."},
-			{"code": "1A", "name": "Relay Yard", "purpose": "Lyra begins tracing the broken Grid signal.", "lyra_line": "I can see the relay towers waking up. They are not happy about it."},
-			{"code": "1B", "name": "Data Trench", "purpose": "The player pushes through corrupted Grid memory channels."},
-			{"code": "1C", "name": "Capacitor Field", "purpose": "The Aether Core begins adapting and storing weapon memory."},
-			{"code": "1D", "name": "Rail Approach", "purpose": "Final approach to Grix's defense gate."}
+			{"code": "1A", "name": "Relay Yard", "purpose": "Lyra begins tracing the broken Grid signal.", "lyra_line": "I can see the relay towers waking up. They are not happy about it.", "arena_variant_key": "relay_yard"},
+			{"code": "1B", "name": "Data Trench", "purpose": "The player pushes through corrupted Grid memory channels.", "arena_variant_key": "data_trench"},
+			{"code": "1C", "name": "Capacitor Field", "purpose": "The Aether Core begins adapting and storing weapon memory.", "arena_variant_key": "capacitor_field"},
+			{"code": "1D", "name": "Rail Approach", "purpose": "Final approach to Grix's defense gate.", "arena_variant_key": "rail_approach"}
 		]
 	},
 	{
@@ -367,6 +367,12 @@ const SECTOR1_ARENA_GRID_Y := 0.044
 const SECTOR1_ARENA_RAIL_HALF_SIZE := ARENA_HALF_SIZE
 const SECTOR1_ARENA_DEPTH_HALF_SIZE := ARENA_HALF_SIZE + 3.0
 const SECTOR1_BLENDER_ARENA_SCENE_PATH := "res://art/arenas/sector_1/exported/sector_1_neon_grid_arena.glb"
+const SECTOR1_SUBSECTOR_ARENA_SCENE_PATHS := {
+	"relay_yard": "res://art/arenas/sector_1/exported/sector_1_relay_yard.glb",
+	"data_trench": "res://art/arenas/sector_1/exported/sector_1_data_trench.glb",
+	"capacitor_field": "res://art/arenas/sector_1/exported/sector_1_capacitor_field.glb",
+	"rail_approach": "res://art/arenas/sector_1/exported/sector_1_rail_approach.glb"
+}
 const SECTOR1_ARENA_VISUAL_LIGHT_LAYER_MASK := 1 << 19
 const SECTOR1_ARENA_KEY_LIGHT_ENERGY := 0.30
 const SECTOR1_ARENA_KEY_LIGHT_SPECULAR := 0.42
@@ -778,6 +784,7 @@ var _sector_flow_lines: Array[Dictionary] = []
 var _sector_pulse_nodes: Array[Dictionary] = []
 var _sector_sweep_nodes: Array[Dictionary] = []
 var _sector1_arena_panel_motion: Array[Dictionary] = []
+var _sector1_subsector_variant_root: Node3D
 var _sector_transition_nodes: Array[Dictionary] = []
 var _sector_transition_timer := 0.0
 var _sector_transition_duration := 0.82
@@ -2790,6 +2797,7 @@ func _get_current_campaign_node_data() -> Dictionary:
 		node["name"] = str(subsector.get("name", "Subsector"))
 		node["purpose"] = str(subsector.get("purpose", ""))
 		node["lyra_line"] = str(subsector.get("lyra_line", ""))
+		node["arena_variant_key"] = str(subsector.get("arena_variant_key", ""))
 	return node
 
 
@@ -3399,6 +3407,7 @@ func _rebuild_sector_geometry_identity() -> void:
 	if not is_instance_valid(_sector_geometry_root):
 		return
 	_sector1_arena_panel_motion.clear()
+	_sector1_subsector_variant_root = null
 	for child in _sector_geometry_root.get_children():
 		_sector_geometry_root.remove_child(child)
 		child.queue_free()
@@ -3847,6 +3856,7 @@ func _create_sector1_neon_grid_3d_architecture() -> void:
 	_sector_geometry_root.add_child(root)
 	_create_sector1_arena_readability_key_light(root)
 	_create_sector1_blender_arena_kit(root)
+	_create_sector1_subsector_arena_variant(root)
 
 
 func _create_sector1_arena_readability_key_light(parent: Node3D) -> void:
@@ -3878,6 +3888,51 @@ func _create_sector1_blender_arena_kit(parent: Node3D) -> Node3D:
 		var material_visibility_cache: Dictionary = {}
 		_configure_sector1_blender_arena_visuals(instance, material_visibility_cache)
 	return instance
+
+
+func _current_sector1_subsector_arena_variant_key() -> String:
+	if _sector_index != 0:
+		return ""
+	var subsector_count := _campaign_subsector_count(0)
+	if subsector_count <= 0:
+		return ""
+	var subsector_index := _campaign_subsector_index
+	if _campaign_is_boss_step:
+		subsector_index = subsector_count - 1
+	var subsector := _campaign_subsector_data(0, subsector_index)
+	return str(subsector.get("arena_variant_key", ""))
+
+
+func _create_sector1_subsector_arena_variant(parent: Node3D) -> Node3D:
+	_sector1_subsector_variant_root = null
+	var variant_key := _current_sector1_subsector_arena_variant_key()
+	if variant_key == "":
+		return null
+	var scene_path := str(SECTOR1_SUBSECTOR_ARENA_SCENE_PATHS.get(variant_key, ""))
+	if scene_path == "":
+		return null
+	var holder := Node3D.new()
+	holder.name = "Sector1SubsectorArenaVariantRoot"
+	holder.set_meta("arena_variant_key", variant_key)
+	parent.add_child(holder)
+	_sector1_subsector_variant_root = holder
+	var instance := _add_blender_asset_instance(
+		holder,
+		"Blender3DSector1SubsectorVariant_%s" % variant_key.to_pascal_case(),
+		scene_path,
+		1.0,
+		Vector3.ZERO,
+		0.0,
+		false
+	) as Node3D
+	if instance == null:
+		holder.queue_free()
+		_sector1_subsector_variant_root = null
+		return null
+	instance.set_meta("arena_variant_key", variant_key)
+	var material_visibility_cache: Dictionary = {}
+	_configure_sector1_blender_arena_visuals(instance, material_visibility_cache)
+	return holder
 
 
 func _configure_sector1_blender_arena_visuals(root: Node, material_visibility_cache: Dictionary) -> void:

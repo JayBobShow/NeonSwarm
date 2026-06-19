@@ -225,15 +225,26 @@ Implemented:
   progression.
 - Boss warning and boss spawn timers run only after the final approach
   subsector reaches the boss gate.
-- Existing sector arena visuals are reused as placeholders across subsectors.
+- Existing sector arena visuals are reused as placeholders across subsectors
+  until a sector-specific art pass replaces that sector's placeholders.
 - Subsector title cards reuse the existing sector story card style.
 - The gameplay HUD includes the current campaign node.
 - F11 advances the campaign node only while the existing F6 event test mode is
   enabled.
 
+Phase 48 Sector 1 art status:
+
+- 1.0 Awakening Grid continues to use the approved base Sector 1 arena.
+- 1A Relay Yard, 1B Data Trench, 1C Capacitor Field, and 1D Rail Approach now
+  load visual-only Sector 1 GLB overlays through the Phase 47 campaign runtime.
+- Rail Approach remains the visual approach during the Grix boss gate after 1D.
+- Memory Shard I remains tied to Grix defeat, not normal subsector clears.
+- No Sector 2, Sector 3, Sector 4, or Sector 5 subsector arena art is added by
+  Phase 48.
+
 Still deferred:
 
-- Custom subsector arena art.
+- Sector 2, Sector 3, and Sector 4 custom subsector arena art.
 - Sector 5 runtime.
 - Crown Shard / Null King runtime.
 - Ending sequence.
@@ -246,7 +257,7 @@ Still deferred:
 | --- | --- | --- |
 | Phase 46 | Sector/Subsector Campaign Structure Expansion Plan | Lock structure, names, pacing, story purpose, and future implementation rules. |
 | Phase 47 | Campaign Progression Runtime Foundation | Implemented first runtime subsector progression foundation using placeholder/current arenas. |
-| Phase 48 | Sector 1 Subsector Arena Content Pass | Build playable 1A-1D variants safely. |
+| Phase 48 | Sector 1 Subsector Arena Content Pass | Implemented visual-only 1A-1D Neon Grid arena variants safely. |
 | Phase 49 | Sector 2 Subsector Arena Content Pass | Build playable 2A-2D variants using Prism Rift art direction and the user reference workflow. |
 | Phase 50 | Sector 3 Subsector Arena Content Pass | Build playable Ember Circuit subsector variants. |
 | Phase 51 | Sector 4 Subsector Arena Content Pass | Build playable Hyper Grid subsector variants. |
@@ -262,4 +273,5 @@ Still deferred:
 - Sector 5 is clearly marked future-only.
 - Bosses remain major gates.
 - Memory Shards remain major boss / sector-clear rewards.
-- No Phase 48 custom subsector arena content has been implemented by this plan.
+- Phase 48 implements Sector 1 1A-1D visual-only variants only; later sectors
+  remain future phases.
