@@ -22,6 +22,7 @@ system, new boss behavior, new enemy behavior, new gameplay systems, or Phase 41
 - `docs/NEON_SWARM_PHASE_44_BOSS_IDENTITY_PASS_REPORT.md`
 - `docs/NEON_SWARM_PHASE_45_MEMORY_SHARD_SYSTEM_REPORT.md`
 - `docs/NEON_SWARM_PHASE_46_SECTOR_SUBSECTOR_CAMPAIGN_STRUCTURE_REPORT.md`
+- `docs/NEON_SWARM_PHASE_47_CAMPAIGN_PROGRESSION_RUNTIME_FOUNDATION_REPORT.md`
 
 ## Phase 40 Runtime Integration
 
@@ -296,6 +297,36 @@ Phase 46 runtime decision:
 - No save schema, official scene path, gameplay balance, boss behavior, arena
   art, ending sequence, Lore Codex menu, or Phase 47 work is added.
 
+## Phase 47 Campaign Progression Runtime Foundation
+
+Phase 47 implements the first runtime layer for the Phase 46 campaign
+structure. It activates subsector progression for the four current sectors only.
+
+Runtime behavior:
+
+- The current active campaign node tracks major sector, subsector index,
+  subsector code, subsector name, boss-gate state, and node elapsed time.
+- Active sectors have five subsectors plus one boss gate.
+- Normal subsectors auto-advance after `18.0` seconds when combat/menu/reward
+  blockers are clear.
+- Bosses can warn and spawn only after the final approach subsector has advanced
+  into the boss gate.
+- Boss gate warning delay is `6.0` seconds.
+- Boss gate spawn delay is `13.0` seconds.
+- The HUD displays the current campaign node.
+- Subsector title cards reuse the Phase 43 sector story card style.
+- Existing sector visuals are reused as placeholders.
+- F11 advances the campaign node only while the existing F6 event test mode is
+  enabled.
+
+Preserved:
+
+- Phase 45 Memory Shards remain tied to active boss / sector clears only.
+- Phase 44 boss identity remains four active runtime bosses only.
+- Sector 5 remains future-only.
+- No new arena art, final boss, ending sequence, Lore Codex menu, save schema,
+  weapon balance, movement, collision, or official scene path change is added.
+
 ## Future Ending Implementation Outline
 
 Do not build until explicitly approved.
@@ -323,9 +354,8 @@ Do not build until explicitly approved.
 5. Expand Lyra companion barks only after the Phase 42 / Phase 43 panel pacing,
    Phase 44 boss-card readability, and Phase 45 shard reveal readability are
    manually approved.
-6. Activate Phase 46 subsector progression only after a future approved runtime
-   foundation phase defines safe data, placeholder arena handling, reward timing,
-   and save compatibility.
+6. Keep Phase 47 subsector progression on placeholder/current arena visuals
+   until sector-specific arena content phases are approved.
 7. Expand the Phase 41 opening only after manual review approves pacing, text
    readability, and skip behavior.
 8. Add ending cinematic only after final sector and final boss are implemented.

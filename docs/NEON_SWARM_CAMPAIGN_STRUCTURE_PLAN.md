@@ -197,9 +197,9 @@ Recommended future structure names:
 - `ACTIVE_CAMPAIGN_SECTORS`
 - `FUTURE_CAMPAIGN_SECTORS`
 
-Phase 46 does not add runtime data. Phase 47 should decide the exact data shape
-and activate only a safe progression foundation, likely using placeholder or
-current arenas first.
+Phase 46 did not add runtime data. Phase 47 adds the first safe runtime
+campaign data shape and activates subsector progression with placeholder/current
+arena visuals only.
 
 Future runtime rules:
 
@@ -211,12 +211,41 @@ Future runtime rules:
 - Do not require new playable scenes; the official scene remains
   `scenes/Main.tscn`.
 
+## Phase 47 Runtime Foundation Status
+
+Phase 47 activates the first safe runtime foundation for the active four-sector
+campaign route.
+
+Implemented:
+
+- Four active campaign sectors load from centralized runtime campaign data.
+- Each active sector has five runtime subsectors plus a boss gate.
+- Normal subsectors advance on a simple `18.0` second timer when menus, rewards,
+  run events, boss states, game over, and run success are not blocking
+  progression.
+- Boss warning and boss spawn timers run only after the final approach
+  subsector reaches the boss gate.
+- Existing sector arena visuals are reused as placeholders across subsectors.
+- Subsector title cards reuse the existing sector story card style.
+- The gameplay HUD includes the current campaign node.
+- F11 advances the campaign node only while the existing F6 event test mode is
+  enabled.
+
+Still deferred:
+
+- Custom subsector arena art.
+- Sector 5 runtime.
+- Crown Shard / Null King runtime.
+- Ending sequence.
+- Lore Codex menu.
+- Save-schema changes.
+
 ## Future Implementation Roadmap
 
 | Phase | Focus | Goal |
 | --- | --- | --- |
 | Phase 46 | Sector/Subsector Campaign Structure Expansion Plan | Lock structure, names, pacing, story purpose, and future implementation rules. |
-| Phase 47 | Campaign Progression Runtime Foundation | Make the game understand subsector progression safely, likely using placeholder/current arenas first. |
+| Phase 47 | Campaign Progression Runtime Foundation | Implemented first runtime subsector progression foundation using placeholder/current arenas. |
 | Phase 48 | Sector 1 Subsector Arena Content Pass | Build playable 1A-1D variants safely. |
 | Phase 49 | Sector 2 Subsector Arena Content Pass | Build playable 2A-2D variants using Prism Rift art direction and the user reference workflow. |
 | Phase 50 | Sector 3 Subsector Arena Content Pass | Build playable Ember Circuit subsector variants. |
@@ -233,4 +262,4 @@ Future runtime rules:
 - Sector 5 is clearly marked future-only.
 - Bosses remain major gates.
 - Memory Shards remain major boss / sector-clear rewards.
-- No Phase 47 runtime progression has been implemented by this plan.
+- No Phase 48 custom subsector arena content has been implemented by this plan.

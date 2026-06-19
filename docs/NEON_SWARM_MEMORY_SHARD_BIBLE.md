@@ -32,6 +32,10 @@ progress. They are not a replacement for the future Lore Codex.
   implementation.
 - Phase 46 campaign expansion keeps Memory Shards as major boss / sector-clear
   rewards, not subsector collectibles.
+- Phase 47 runtime subsector progression does not award Memory Shards for
+  normal subsector clears.
+- Boss gates remain the Memory Shard reward source: Grix, Veyraxis, Lord Cobalt
+  Hex, and The Hollow Warden.
 - Future subsectors may add smaller Lyra comments, memory echoes, enemy hints,
   and objective flavor without replacing Memory Shard reveals.
 - Unlock tracking is runtime-run scoped in Phase 45.
@@ -57,3 +61,6 @@ The future expanded campaign route is:
 
 Phase 46 does not activate this expanded route in runtime. Runtime activation is
 deferred to a future approved campaign progression phase.
+
+Phase 47 activates only the active four-sector subsector route and keeps Prism
+Shards V and VI future-only.

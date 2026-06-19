@@ -77,6 +77,11 @@ const SECTOR_STORY_CARD_DURATION := 5.2
 const SECTOR_STORY_CARD_FADE_DURATION := 0.36
 const MEMORY_SHARD_REVEAL_DURATION := 6.2
 const MEMORY_SHARD_REVEAL_FADE_DURATION := 0.34
+const CAMPAIGN_RUNTIME_SUBSECTORS_ENABLED := true
+const CAMPAIGN_SUBSECTOR_CLEAR_TIME_SECONDS := 18.0
+const CAMPAIGN_BOSS_WARNING_DELAY_SECONDS := 6.0
+const CAMPAIGN_BOSS_SPAWN_DELAY_SECONDS := 13.0
+const CAMPAIGN_SUBSECTOR_CARD_DURATION := 3.9
 const SECTOR_STORY_DATA := [
 	{
 		"title": "NEON GRID",
@@ -234,6 +239,87 @@ const MEMORY_SHARD_FUTURE_STORY_LOCK_DATA := [
 		"name": "PRISM SHARD VI — THE LAST LIGHT",
 		"reveal": "The Aether Core was never meant to destroy the Grid. It was meant to remember it.",
 		"status": "future ending/final boss content only"
+	}
+]
+const CAMPAIGN_ACTIVE_SECTOR_DATA := [
+	{
+		"sector_index": 0,
+		"sector_name": "Neon Grid",
+		"sector_title": "NEON GRID",
+		"story_role": "Awakening",
+		"boss_name": "Grix the Rail Butcher",
+		"memory_shard_id": "prism_shard_1_pilot",
+		"subsectors": [
+			{"code": "1.0", "name": "Awakening Grid", "purpose": "Nova wakes up. First combat survival space."},
+			{"code": "1A", "name": "Relay Yard", "purpose": "Lyra begins tracing the broken Grid signal.", "lyra_line": "I can see the relay towers waking up. They are not happy about it."},
+			{"code": "1B", "name": "Data Trench", "purpose": "The player pushes through corrupted Grid memory channels."},
+			{"code": "1C", "name": "Capacitor Field", "purpose": "The Aether Core begins adapting and storing weapon memory."},
+			{"code": "1D", "name": "Rail Approach", "purpose": "Final approach to Grix's defense gate."}
+		]
+	},
+	{
+		"sector_index": 1,
+		"sector_name": "Prism Rift",
+		"sector_title": "PRISM RIFT",
+		"story_role": "First memory of Mira",
+		"boss_name": "Veyraxis, Prism Widow",
+		"memory_shard_id": "prism_shard_2_miras_voice",
+		"subsectors": [
+			{"code": "2.0", "name": "Prism Gate", "purpose": "Entry into the fractured mirror dimension."},
+			{"code": "2A", "name": "Mirror Flats", "purpose": "The floor and enemies distort into reflected patterns."},
+			{"code": "2B", "name": "Fracture Hall", "purpose": "Nova begins hearing impossible signal echoes.", "lyra_line": "Careful. The Rift is reflecting more than light now."},
+			{"code": "2C", "name": "Violet Glassway", "purpose": "Mira's voice becomes clearer through Prism Shards."},
+			{"code": "2D", "name": "Rift Lens", "purpose": "Final focus point before Veyraxis."}
+		]
+	},
+	{
+		"sector_index": 2,
+		"sector_name": "Ember Circuit",
+		"sector_title": "EMBER CIRCUIT",
+		"story_role": "The war begins / old weapon factory",
+		"boss_name": "Lord Cobalt Hex",
+		"memory_shard_id": "prism_shard_3_first_invasion",
+		"subsectors": [
+			{"code": "3.0", "name": "Foundry Gate", "purpose": "Entry into the corrupted weapon foundry."},
+			{"code": "3A", "name": "Molten Busway", "purpose": "The player crosses unstable power channels."},
+			{"code": "3B", "name": "Furnace Grid", "purpose": "Old Grid machinery is burning itself alive."},
+			{"code": "3C", "name": "Weapon Memory Forge", "purpose": "The story connects weapons, Forge, and combat memories.", "lyra_line": "This place remembers every weapon it ever built."},
+			{"code": "3D", "name": "Cobalt Assembly Line", "purpose": "Final production corridor before Lord Cobalt Hex."}
+		]
+	},
+	{
+		"sector_index": 3,
+		"sector_name": "Hyper Grid",
+		"sector_title": "HYPER GRID",
+		"story_role": "Truth of the seal",
+		"boss_name": "The Hollow Warden",
+		"memory_shard_id": "prism_shard_4_living_lock",
+		"subsectors": [
+			{"code": "4.0", "name": "Storm Entry", "purpose": "Entry into the central routing storm."},
+			{"code": "4A", "name": "Routing Spine", "purpose": "The player fights through the Grid's main signal bones."},
+			{"code": "4B", "name": "Overclock Field", "purpose": "Enemies and events become faster and more aggressive."},
+			{"code": "4C", "name": "Signal Cyclone", "purpose": "Mira's signal and Null interference collide."},
+			{"code": "4D", "name": "Lockbreaker Gate", "purpose": "Final defense before The Hollow Warden.", "lyra_line": "That gate is older than me, and I hate that sentence."}
+		]
+	}
+]
+const CAMPAIGN_FUTURE_SECTOR_DATA := [
+	{
+		"sector_index": 4,
+		"sector_name": "The Black Crown",
+		"sector_title": "THE BLACK CROWN",
+		"runtime_status": "future_story_locked",
+		"story_role": "Final assault",
+		"boss_name": "The Crown Shard",
+		"final_boss_name": "The Null King, Crown of the Empty Grid",
+		"memory_shard_ids": ["prism_shard_5_black_crown", "prism_shard_6_last_light"],
+		"subsectors": [
+			{"code": "5.0", "name": "Dead Grid", "purpose": "Entry into dead-space Grid territory."},
+			{"code": "5A", "name": "Crown Wound", "purpose": "The first breach inside the Null King's influence."},
+			{"code": "5B", "name": "Silent Starfield", "purpose": "Stars exist here, but no longer emit sound or memory."},
+			{"code": "5C", "name": "Null Cathedral", "purpose": "The final architecture of the Null King's philosophy."},
+			{"code": "5D", "name": "Mira's Prison", "purpose": "Nova reaches the place where Mira's living light holds the lock."}
+		]
 	}
 ]
 const UI_RIGHT_STICK_SCROLL_SPEED := 720.0
@@ -561,6 +647,9 @@ var _fullscreen_enabled := false
 var _survival_time := 0.0
 var _sector_index := 0
 var _sector_elapsed := 0.0
+var _campaign_subsector_index := 0
+var _campaign_is_boss_step := false
+var _campaign_node_elapsed := 0.0
 var _sector_boss_spawned := false
 var _sector_boss_active := false
 var _sector_boss_warning_played := false
@@ -997,6 +1086,10 @@ func _handle_run_event_test_input(event: InputEvent) -> bool:
 			if not _run_event_test_enabled or not _run_event_test_input_allowed():
 				return false
 			_jump_to_sector4_test_state()
+		KEY_F11:
+			if not _run_event_test_enabled or not _run_event_test_input_allowed():
+				return false
+			_force_advance_campaign_node_test()
 		_:
 			return false
 	get_viewport().set_input_as_handled()
@@ -1057,6 +1150,7 @@ func _jump_to_sector4_test_state() -> void:
 		_enemies.remove_at(i)
 	_sector_index = SECTOR_COUNT - 1
 	_sector_elapsed = 0.0
+	_reset_campaign_for_sector()
 	_sector_boss_spawned = false
 	_sector_boss_active = false
 	_sector_boss_warning_played = false
@@ -1078,6 +1172,7 @@ func _jump_to_sector4_test_state() -> void:
 	_update_hud()
 	_set_music_state("gameplay")
 	_show_combat_notice("EVENT TEST MODE // SECTOR 4 HYPER GRID", Color(0.72, 0.96, 1.0), 1.50)
+	_show_current_subsector_title()
 	_update_run_event_test_hud()
 
 
@@ -1097,7 +1192,7 @@ func _update_run_event_test_hud() -> void:
 	var active_text := "NONE"
 	if _run_event_active:
 		active_text = "%s // %s // %.0fs" % [_run_event_display_name(_run_event_type).to_upper(), _run_event_stage.to_upper(), _run_event_timer]
-	_run_event_test_label.text = "EVENT TEST MODE  //  SELECTED: %s\nF7 CYCLE  |  F8 SPAWN  |  F9 CLEAR  |  F10 S4  //  ACTIVE: %s" % [
+	_run_event_test_label.text = "EVENT TEST MODE  //  SELECTED: %s\nF7 CYCLE  |  F8 SPAWN  |  F9 CLEAR  |  F10 S4  |  F11 CAMPAIGN  //  ACTIVE: %s" % [
 		_run_event_display_name(_run_event_test_selected_type()).to_upper(),
 		active_text
 	]
@@ -1234,8 +1329,10 @@ func _process(delta: float) -> void:
 
 	_survival_time += delta
 	_sector_elapsed += delta
+	_campaign_node_elapsed += delta
 	_player_invuln = maxf(0.0, _player_invuln - delta)
 	_update_player(delta)
+	_update_campaign_progression()
 	_update_wave_director(delta)
 	_update_run_event_director(delta)
 	_update_weapons(delta)
@@ -1261,10 +1358,12 @@ func _process(delta: float) -> void:
 
 
 func get_review_build_summary() -> String:
-	return "Neon Swarm runtime summary: time=%.1f sector=%d:%s sector_time=%.1f wave=%s enemies=%d/%d xp=%d/%d player_projectiles=%d/%d enemy_projectiles=%d/%d mines=%d/%d beams=%d/%d bursts=%d/%d kills=%d score=%d sector_boss_active=%s" % [
+	return "Neon Swarm runtime summary: time=%.1f sector=%d:%s campaign_node=%s node_time=%.1f sector_time=%.1f wave=%s enemies=%d/%d xp=%d/%d player_projectiles=%d/%d enemy_projectiles=%d/%d mines=%d/%d beams=%d/%d bursts=%d/%d kills=%d score=%d sector_boss_active=%s" % [
 		_survival_time,
 		_sector_index + 1,
 		_current_sector_name(),
+		_campaign_current_node_display_text(),
+		_campaign_node_elapsed,
 		_sector_elapsed,
 		_wave_name,
 		_enemies.size(),
@@ -2298,7 +2397,10 @@ func _show_sector_story_intro(index: int) -> void:
 		return
 	_sector_story_intro_seen[seen_key] = true
 	var story := _sector_story_data(index)
-	_show_sector_story_card(str(story.get("title", "")), str(story.get("subtitle", "")), "", _sector_color_for_index(index), SECTOR_STORY_CARD_DURATION)
+	if CAMPAIGN_RUNTIME_SUBSECTORS_ENABLED and index == _sector_index:
+		_show_current_subsector_title()
+	else:
+		_show_sector_story_card(str(story.get("title", "")), str(story.get("subtitle", "")), "", _sector_color_for_index(index), SECTOR_STORY_CARD_DURATION)
 	_queue_lyra_dialogue_text("sector_intro_%d" % index, str(story.get("lyra_intro", "")), false, "sector_intro_%d" % index)
 
 
@@ -2628,6 +2730,249 @@ func _boss_identity_skip_event(event: InputEvent) -> bool:
 	return event.is_action_pressed("cancel")
 
 
+func _campaign_active_sector_data() -> Array:
+	return CAMPAIGN_ACTIVE_SECTOR_DATA.duplicate(true)
+
+
+func _campaign_future_sector_data() -> Array:
+	return CAMPAIGN_FUTURE_SECTOR_DATA.duplicate(true)
+
+
+func _campaign_sector_data(index: int) -> Dictionary:
+	if CAMPAIGN_ACTIVE_SECTOR_DATA.is_empty():
+		return {}
+	var safe_index := clampi(index, 0, CAMPAIGN_ACTIVE_SECTOR_DATA.size() - 1)
+	return Dictionary(CAMPAIGN_ACTIVE_SECTOR_DATA[safe_index]).duplicate(true)
+
+
+func _campaign_subsector_data(sector_index: int, subsector_index: int) -> Dictionary:
+	var campaign_sector := _campaign_sector_data(sector_index)
+	var subsectors: Array = campaign_sector.get("subsectors", [])
+	if subsectors.is_empty():
+		return {}
+	var safe_index := clampi(subsector_index, 0, subsectors.size() - 1)
+	return Dictionary(subsectors[safe_index]).duplicate(true)
+
+
+func _campaign_subsector_count(sector_index: int) -> int:
+	var campaign_sector := _campaign_sector_data(sector_index)
+	var subsectors: Array = campaign_sector.get("subsectors", [])
+	return subsectors.size()
+
+
+func _current_campaign_subsector_data() -> Dictionary:
+	return _campaign_subsector_data(_sector_index, _campaign_subsector_index)
+
+
+func _get_current_campaign_node_data() -> Dictionary:
+	var campaign_sector := _campaign_sector_data(_sector_index)
+	if campaign_sector.is_empty():
+		return {}
+	var node := {
+		"sector_index": _sector_index,
+		"sector_name": str(campaign_sector.get("sector_name", _current_sector_name())),
+		"sector_title": str(campaign_sector.get("sector_title", _current_sector_name().to_upper())),
+		"is_boss_step": _campaign_is_boss_step,
+		"node_elapsed": _campaign_node_elapsed
+	}
+	if _campaign_is_boss_step:
+		node["code"] = "BOSS"
+		node["name"] = str(campaign_sector.get("boss_name", _current_sector().get("boss_name", "BOSS")))
+		node["boss_name"] = node["name"]
+		node["memory_shard_id"] = str(campaign_sector.get("memory_shard_id", ""))
+	else:
+		var subsector := _current_campaign_subsector_data()
+		node["code"] = str(subsector.get("code", "%d.%d" % [_sector_index + 1, _campaign_subsector_index]))
+		node["name"] = str(subsector.get("name", "Subsector"))
+		node["purpose"] = str(subsector.get("purpose", ""))
+		node["lyra_line"] = str(subsector.get("lyra_line", ""))
+	return node
+
+
+func _campaign_boss_gate_active() -> bool:
+	return not CAMPAIGN_RUNTIME_SUBSECTORS_ENABLED or _campaign_is_boss_step
+
+
+func _campaign_current_subsector_code() -> String:
+	return str(_get_current_campaign_node_data().get("code", ""))
+
+
+func _campaign_current_subsector_name() -> String:
+	return str(_get_current_campaign_node_data().get("name", ""))
+
+
+func _campaign_current_node_display_text() -> String:
+	var node := _get_current_campaign_node_data()
+	if node.is_empty():
+		return _current_sector_name().to_upper()
+	if bool(node.get("is_boss_step", false)):
+		return "BOSS GATE // %s" % str(node.get("boss_name", "BOSS")).to_upper()
+	return "%s %s" % [str(node.get("code", "")), str(node.get("name", "")).to_upper()]
+
+
+func _campaign_current_node_hud_text() -> String:
+	var node := _get_current_campaign_node_data()
+	if node.is_empty():
+		return _current_sector_name().to_upper()
+	if bool(node.get("is_boss_step", false)):
+		return "BOSS // %s" % str(node.get("boss_name", "BOSS")).to_upper()
+	return "%s %s" % [str(node.get("code", "")), str(node.get("name", "")).to_upper()]
+
+
+func _campaign_current_warning_time() -> float:
+	if not CAMPAIGN_RUNTIME_SUBSECTORS_ENABLED:
+		return float(_current_sector().get("warning_time", 60.0))
+	if _campaign_is_boss_step:
+		return CAMPAIGN_BOSS_WARNING_DELAY_SECONDS
+	return CAMPAIGN_SUBSECTOR_CLEAR_TIME_SECONDS
+
+
+func _campaign_current_boss_time() -> float:
+	if not CAMPAIGN_RUNTIME_SUBSECTORS_ENABLED:
+		return float(_current_sector().get("boss_time", 75.0))
+	return CAMPAIGN_BOSS_SPAWN_DELAY_SECONDS
+
+
+func _reset_campaign_runtime() -> void:
+	_campaign_subsector_index = 0
+	_campaign_is_boss_step = false
+	_campaign_node_elapsed = 0.0
+
+
+func _reset_campaign_for_sector() -> void:
+	_campaign_subsector_index = 0
+	_campaign_is_boss_step = false
+	_campaign_node_elapsed = 0.0
+
+
+func _campaign_can_advance_subsector() -> bool:
+	if not CAMPAIGN_RUNTIME_SUBSECTORS_ENABLED:
+		return false
+	if _campaign_is_boss_step or _sector_boss_active or _sector_boss_spawned:
+		return false
+	if _sector_reward_active or _level_up_active or _weapon_reward_decision_active:
+		return false
+	if _title_menu_active or _manual_pause or _game_over or _run_success:
+		return false
+	if _run_event_active:
+		return false
+	return _campaign_node_elapsed >= CAMPAIGN_SUBSECTOR_CLEAR_TIME_SECONDS
+
+
+func _update_campaign_progression() -> void:
+	if not _campaign_can_advance_subsector():
+		return
+	_advance_campaign_node(false)
+
+
+func _advance_campaign_node(force := false) -> bool:
+	if not CAMPAIGN_RUNTIME_SUBSECTORS_ENABLED:
+		return false
+	if _campaign_is_boss_step:
+		return false
+	if not force and not _campaign_can_advance_subsector():
+		return false
+	var subsector_count := _campaign_subsector_count(_sector_index)
+	if subsector_count <= 0:
+		return false
+	if _campaign_subsector_index < subsector_count - 1:
+		_campaign_subsector_index += 1
+		_enter_campaign_subsector_node()
+	else:
+		_enter_campaign_boss_gate_node()
+	return true
+
+
+func _enter_campaign_subsector_node() -> void:
+	_campaign_is_boss_step = false
+	_campaign_node_elapsed = 0.0
+	_sector_boss_warning_played = false
+	_sector_boss_spawned = false
+	_sector_boss_active = false
+	_mini_boss_warning_played = false
+	_null_octagon_warning_played = false
+	_null_octagon_warning_start = -1.0
+	_wave_index = 0
+	_wave_name = str(_current_sector().get("intro_wave", "SUBSECTOR ENTRY"))
+	_spawn_timer = 0.55
+	_player_invuln = maxf(_player_invuln, 0.75)
+	_clear_transition_combat_state()
+	_clear_run_event_state()
+	_apply_sector_visual_identity()
+	_trigger_sector_transition_scan()
+	_spawn_sector_opening_wave()
+	_show_current_subsector_title()
+	_show_combat_notice("SUBSECTOR ENTRY // %s" % _campaign_current_node_display_text(), _sector_color_for_index(_sector_index), 1.55)
+	_set_music_state("gameplay")
+	_play_sfx("sector", 0.16)
+	_trigger_presentation_flash(_sector_color_for_index(_sector_index), 0.075, 0.18)
+	_trigger_sector_background_reaction(0.52, 0.72)
+	_update_hud()
+	print("Neon Swarm campaign node: sector=%d subsector=%s name=%s boss_gate=false" % [_sector_index + 1, _campaign_current_subsector_code(), _campaign_current_subsector_name()])
+
+
+func _enter_campaign_boss_gate_node() -> void:
+	_campaign_is_boss_step = true
+	_campaign_node_elapsed = 0.0
+	_sector_boss_warning_played = false
+	_sector_boss_spawned = false
+	_sector_boss_active = false
+	_mini_boss_warning_played = false
+	_null_octagon_warning_played = false
+	_null_octagon_warning_start = -1.0
+	_wave_index = 0
+	_wave_name = "BOSS GATE"
+	_spawn_timer = 0.62
+	_player_invuln = maxf(_player_invuln, 0.90)
+	_clear_transition_combat_state()
+	_clear_run_event_state()
+	_trigger_sector_transition_scan()
+	_spawn_sector_opening_wave()
+	_show_current_subsector_title()
+	_show_combat_notice("BOSS GATE OPEN // %s INBOUND" % str(_current_sector().get("boss_name", "BOSS")).to_upper(), _sector_color_for_index(_sector_index), 1.75)
+	_set_music_state("gameplay")
+	_play_sfx("boss_warning", 0.22)
+	_trigger_presentation_flash(Color(1.0, 0.08, 0.86), 0.10, 0.22)
+	_trigger_sector_background_reaction(0.72, 0.86)
+	_update_hud()
+	print("Neon Swarm campaign node: sector=%d subsector=BOSS name=%s boss_gate=true" % [_sector_index + 1, str(_current_sector().get("boss_name", "BOSS"))])
+
+
+func _show_current_subsector_title() -> void:
+	if not CAMPAIGN_RUNTIME_SUBSECTORS_ENABLED:
+		return
+	var campaign_sector := _campaign_sector_data(_sector_index)
+	if campaign_sector.is_empty():
+		return
+	var title := str(campaign_sector.get("sector_title", _current_sector_name().to_upper()))
+	var node := _get_current_campaign_node_data()
+	var subtitle := ""
+	var body := ""
+	if bool(node.get("is_boss_step", false)):
+		subtitle = "BOSS GATE — %s" % str(node.get("boss_name", "BOSS")).to_upper()
+		body = "Commander signal locked. Memory Shard reward remains tied to boss defeat."
+	else:
+		subtitle = "%s — %s" % [str(node.get("code", "")), str(node.get("name", "")).to_upper()]
+		body = str(node.get("purpose", ""))
+		var lyra_line := str(node.get("lyra_line", ""))
+		if lyra_line != "":
+			_queue_lyra_dialogue_text("campaign_subsector_%s" % str(node.get("code", "")).to_lower().replace(".", "_"), lyra_line, false, "campaign_subsector_%s" % str(node.get("code", "")).to_lower().replace(".", "_"))
+	_show_sector_story_card(title, subtitle, body, _sector_color_for_index(_sector_index), CAMPAIGN_SUBSECTOR_CARD_DURATION)
+
+
+func _force_advance_campaign_node_test() -> void:
+	if not CAMPAIGN_RUNTIME_SUBSECTORS_ENABLED:
+		_show_combat_notice("CAMPAIGN TEST BLOCKED // SUBSECTORS DISABLED", Color(1.0, 0.58, 0.04), 1.20)
+		return
+	if _campaign_is_boss_step:
+		_show_combat_notice("CAMPAIGN TEST // ALREADY AT BOSS GATE", Color(1.0, 0.94, 0.18), 1.20)
+		return
+	if _advance_campaign_node(true):
+		_show_combat_notice("CAMPAIGN TEST ADVANCE // %s" % _campaign_current_node_display_text(), Color(1.0, 0.94, 0.18), 1.25)
+	else:
+		_show_combat_notice("CAMPAIGN TEST ADVANCE BLOCKED", Color(1.0, 0.58, 0.04), 1.20)
+
+
 func _sector_color_for_index(index: int) -> Color:
 	match clampi(index, 0, SECTOR_COUNT - 1):
 		0:
@@ -2659,7 +3004,8 @@ func _sector_identity_text(index: int) -> String:
 
 func _show_sector_entry_notice(index: int, run_start := false) -> void:
 	var prefix := "RUN START" if run_start else "SECTOR ENTRY"
-	_show_combat_notice("%s // %s // %s" % [prefix, _sector_display_title(index), _sector_identity_text(index)], _sector_color_for_index(index), 2.15)
+	var node_text := _campaign_current_node_display_text() if CAMPAIGN_RUNTIME_SUBSECTORS_ENABLED and index == _sector_index else _sector_identity_text(index)
+	_show_combat_notice("%s // %s // %s" % [prefix, _sector_display_title(index), node_text], _sector_color_for_index(index), 2.15)
 
 
 func _show_combat_notice(text: String, color := Color(1.0, 0.94, 0.18), duration := 1.45) -> void:
@@ -6496,6 +6842,7 @@ func _enter_title_menu() -> void:
 	_reset_sector_story_display()
 	_reset_boss_identity_runtime()
 	_reset_memory_shard_runtime()
+	_reset_campaign_runtime()
 	_title_menu_nav_cooldown = 0.0
 	_title_menu_selected_index = 0
 	_title_options_visible = false
@@ -6560,6 +6907,7 @@ func _start_title_run(skip_intro := false) -> void:
 	_reset_sector_story_display()
 	_reset_boss_identity_runtime()
 	_reset_memory_shard_runtime()
+	_reset_campaign_runtime()
 	_clear_run_bonus_weapons()
 	_title_menu_active = false
 	_title_options_visible = false
@@ -6622,6 +6970,7 @@ func _begin_opening_intro() -> void:
 	_reset_sector_story_display()
 	_reset_boss_identity_runtime()
 	_reset_memory_shard_runtime()
+	_reset_campaign_runtime()
 	_opening_intro_active = true
 	_opening_intro_panel_index = 0
 	_opening_intro_panel_time = 0.0
@@ -10052,7 +10401,8 @@ func _update_wave_director(delta: float) -> void:
 	_update_wave_state()
 	_wave_director_elite_cooldown = maxf(0.0, _wave_director_elite_cooldown - delta)
 	var sector := _current_sector()
-	if not _sector_boss_warning_played and not _sector_boss_spawned and _sector_elapsed >= float(sector["warning_time"]):
+	var campaign_elapsed := _campaign_node_elapsed if CAMPAIGN_RUNTIME_SUBSECTORS_ENABLED else _sector_elapsed
+	if _campaign_boss_gate_active() and not _sector_boss_warning_played and not _sector_boss_spawned and campaign_elapsed >= _campaign_current_warning_time():
 		_sector_boss_warning_played = true
 		var boss_type := str(sector["boss_type"])
 		if boss_type == "mini_boss":
@@ -10068,7 +10418,7 @@ func _update_wave_director(delta: float) -> void:
 		_add_screen_shake(0.070 if _sector_index >= 3 else 0.055, 0.18 if _sector_index >= 3 else 0.16)
 		if not _queue_boss_identity_lyra_warning(boss_type):
 			_queue_lyra_dialogue("boss_warning", false, "boss_warning_%d" % _sector_index)
-	if not _sector_boss_spawned and _sector_elapsed >= float(sector["boss_time"]):
+	if _campaign_boss_gate_active() and not _sector_boss_spawned and campaign_elapsed >= _campaign_current_boss_time():
 		_spawn_sector_boss()
 
 	_spawn_timer -= delta
@@ -10092,19 +10442,21 @@ func _update_wave_director(delta: float) -> void:
 
 func _update_wave_state() -> void:
 	var sector := _current_sector()
+	var campaign_elapsed := _campaign_node_elapsed if CAMPAIGN_RUNTIME_SUBSECTORS_ENABLED else _sector_elapsed
+	var warning_time := _campaign_current_warning_time()
 	if _sector_boss_active:
 		_wave_index = 4
 		_wave_name = str(sector["boss_wave"])
 	elif _sector_boss_spawned:
 		_wave_index = 5
 		_wave_name = "SECTOR CLEANUP"
-	elif _sector_boss_warning_played or _sector_elapsed >= float(sector["warning_time"]):
+	elif _campaign_boss_gate_active() and (_sector_boss_warning_played or campaign_elapsed >= warning_time):
 		_wave_index = 3
 		_wave_name = str(sector["warning_wave"])
-	elif _sector_elapsed < float(sector["warning_time"]) * 0.38:
+	elif campaign_elapsed < warning_time * 0.38:
 		_wave_index = 0
 		_wave_name = str(sector["intro_wave"])
-	elif _sector_elapsed < float(sector["warning_time"]) * 0.72:
+	elif campaign_elapsed < warning_time * 0.72:
 		_wave_index = 1
 		_wave_name = str(sector["pressure_wave"])
 	else:
@@ -10119,7 +10471,7 @@ func _spawn_interval_for_wave() -> float:
 	interval *= 1.0 - intensity * 0.10
 	if _wave_index == 0:
 		interval += maxf(0.02, 0.14 - float(_sector_index) * 0.030)
-	if _sector_boss_warning_played and not _sector_boss_spawned:
+	if _campaign_boss_gate_active() and _sector_boss_warning_played and not _sector_boss_spawned:
 		interval *= 1.06
 	return clampf(interval, 0.46, 1.24)
 
@@ -10141,9 +10493,9 @@ func _spawn_count_for_wave() -> int:
 
 
 func _wave_director_intensity() -> float:
-	var sector := _current_sector()
-	var warning_time := maxf(1.0, float(sector.get("warning_time", 60.0)))
-	var time_ramp := clampf(_sector_elapsed / warning_time, 0.0, 1.0)
+	var warning_time := maxf(1.0, _campaign_current_warning_time())
+	var campaign_elapsed := _campaign_node_elapsed if CAMPAIGN_RUNTIME_SUBSECTORS_ENABLED else _sector_elapsed
+	var time_ramp := clampf(campaign_elapsed / warning_time, 0.0, 1.0)
 	var wave_boosts := [0.0, 0.14, 0.26, 0.18, 0.06, 0.20]
 	var wave_boost := float(wave_boosts[clampi(_wave_index, 0, wave_boosts.size() - 1)])
 	var sector_boost := float(_sector_index) * 0.075
@@ -10954,6 +11306,8 @@ func _spawn_null_octagon() -> void:
 
 func _spawn_sector_boss() -> void:
 	if _sector_boss_spawned:
+		return
+	if CAMPAIGN_RUNTIME_SUBSECTORS_ENABLED and not _campaign_is_boss_step:
 		return
 	var sector := _current_sector()
 	var boss_type := str(sector["boss_type"])
@@ -13860,6 +14214,7 @@ func _sector_reward_pool() -> Array[Dictionary]:
 func _advance_to_next_sector() -> void:
 	_sector_index = clampi(_sector_index + 1, 0, SECTOR_COUNT - 1)
 	_sector_elapsed = 0.0
+	_reset_campaign_for_sector()
 	_sector_boss_spawned = false
 	_sector_boss_active = false
 	_sector_boss_warning_played = false
@@ -13884,7 +14239,7 @@ func _advance_to_next_sector() -> void:
 	_trigger_sector_background_reaction(0.62, 0.82)
 	_show_sector_entry_notice(_sector_index)
 	_show_sector_story_intro(_sector_index)
-	print("Neon Swarm sector transition: sector=%d name=%s clear_condition=%s" % [_sector_index + 1, _current_sector_name(), str(_current_sector()["clear_condition"])])
+	print("Neon Swarm sector transition: sector=%d name=%s campaign_node=%s clear_condition=%s" % [_sector_index + 1, _current_sector_name(), _campaign_current_node_display_text(), str(_current_sector()["clear_condition"])])
 
 
 func _spawn_sector_opening_wave() -> void:
@@ -14503,6 +14858,7 @@ func _restart_run() -> void:
 	_reset_sector_story_display()
 	_reset_boss_identity_runtime()
 	_reset_memory_shard_runtime()
+	_reset_campaign_runtime()
 	get_tree().paused = false
 	_manual_pause = false
 	_help_visible = false
@@ -14548,7 +14904,7 @@ func _update_hud() -> void:
 		var seconds := int(_survival_time)
 		_timer_label.text = "%02d:%02d" % [seconds / 60, seconds % 60]
 	if _sector_label:
-		_sector_label.text = "SECTOR %02d   %s" % [_sector_index + 1, _current_sector_name().to_upper()]
+		_sector_label.text = "S%02d %s  //  %s" % [_sector_index + 1, _current_sector_name().to_upper(), _campaign_current_node_hud_text()]
 		_sector_label.add_theme_color_override("font_color", _sector_hud_color())
 	if _level_label:
 		_level_label.text = "LV %02d" % _player_level
