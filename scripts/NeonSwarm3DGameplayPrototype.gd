@@ -75,6 +75,8 @@ const LYRA_DIALOGUE_LINES := {
 }
 const SECTOR_STORY_CARD_DURATION := 5.2
 const SECTOR_STORY_CARD_FADE_DURATION := 0.36
+const MEMORY_SHARD_REVEAL_DURATION := 6.2
+const MEMORY_SHARD_REVEAL_FADE_DURATION := 0.34
 const SECTOR_STORY_DATA := [
 	{
 		"title": "NEON GRID",
@@ -182,6 +184,56 @@ const BOSS_IDENTITY_FUTURE_STORY_LOCK_DATA := [
 		"intro_quote": "You mistake motion for life. You mistake color for meaning. I will correct you.",
 		"defeat_quote": "I am... the final shape...",
 		"lyra_warning": "Nova, all Grid channels are failing. Whatever happens now... do not let the light go out."
+	}
+]
+const MEMORY_SHARD_ACTIVE_DATA := [
+	{
+		"id": "prism_shard_1_pilot",
+		"sector_index": 0,
+		"boss_name": "Grix the Rail Butcher",
+		"name": "PRISM SHARD I — THE PILOT",
+		"reveal": "Memory restored: Nova Veyr was not born as the Core. Nova entered it willingly.",
+		"lyra_line": "Nova... that was not weapon data. That was you."
+	},
+	{
+		"id": "prism_shard_2_miras_voice",
+		"sector_index": 1,
+		"boss_name": "Veyraxis, Prism Widow",
+		"name": "PRISM SHARD II — MIRA’S VOICE",
+		"reveal": "Memory restored: Mira Sol’s voice echoes from inside the Prism Shards.",
+		"lyra_line": "I heard her too. That signal should not exist."
+	},
+	{
+		"id": "prism_shard_3_first_invasion",
+		"sector_index": 2,
+		"boss_name": "Lord Cobalt Hex",
+		"name": "PRISM SHARD III — THE FIRST INVASION",
+		"reveal": "Memory restored: the Aether Core weapon system was built to fight the first Null invasion.",
+		"lyra_line": "So the Core was not just a weapon. It was a promise."
+	},
+	{
+		"id": "prism_shard_4_living_lock",
+		"sector_index": 3,
+		"boss_name": "The Hollow Warden",
+		"name": "PRISM SHARD IV — THE LIVING LOCK",
+		"reveal": "Memory restored: Mira became the living lock that held the Null King in the dark.",
+		"lyra_line": "Nova... if Mira is the lock, then breaking the King means saving her first."
+	}
+]
+const MEMORY_SHARD_FUTURE_STORY_LOCK_DATA := [
+	{
+		"id": "prism_shard_5_black_crown",
+		"sector_index": 4,
+		"name": "PRISM SHARD V — THE BLACK CROWN",
+		"reveal": "The Black Crown trembles. The final shape is waking.",
+		"status": "future story-locked only"
+	},
+	{
+		"id": "prism_shard_6_last_light",
+		"sector_index": 5,
+		"name": "PRISM SHARD VI — THE LAST LIGHT",
+		"reveal": "The Aether Core was never meant to destroy the Grid. It was meant to remember it.",
+		"status": "future ending/final boss content only"
 	}
 ]
 const UI_RIGHT_STICK_SCROLL_SPEED := 720.0
@@ -789,6 +841,15 @@ var _sector_story_card_timer := 0.0
 var _sector_story_card_duration := 0.0
 var _sector_story_intro_seen: Dictionary = {}
 var _sector_story_memory_seen: Dictionary = {}
+var _memory_shard_reveal_panel: Control
+var _memory_shard_reveal_eyebrow_label: Label
+var _memory_shard_reveal_name_label: Label
+var _memory_shard_reveal_body_label: Label
+var _memory_shard_reveal_active := false
+var _memory_shard_reveal_timer := 0.0
+var _memory_shard_reveal_duration := 0.0
+var _memory_shard_pending_queue: Array[Dictionary] = []
+var _memory_shards_unlocked_this_run: Dictionary = {}
 var _boss_identity_card_panel: Control
 var _boss_identity_eyebrow_label: Label
 var _boss_identity_name_label: Label
@@ -877,6 +938,10 @@ func _input(event: InputEvent) -> void:
 		return
 	if _boss_identity_card_active and _boss_identity_skip_event(event):
 		_dismiss_boss_identity_card()
+		get_viewport().set_input_as_handled()
+		return
+	if _memory_shard_reveal_active and _memory_shard_skip_event(event):
+		_dismiss_memory_shard_reveal()
 		get_viewport().set_input_as_handled()
 		return
 	if _handle_run_event_test_input(event):
@@ -1121,6 +1186,7 @@ func _process(delta: float) -> void:
 	_update_lyra_dialogue(delta)
 	_update_sector_story_card(delta)
 	_update_boss_identity_card(delta)
+	_update_memory_shard_reveal(delta)
 	_update_combat_notice(delta)
 	_update_run_event_objective_panel()
 	_update_run_event_test_hud()
@@ -2308,6 +2374,108 @@ func _sector_story_blocked_by_menu() -> bool:
 
 func _sector_story_skip_event(event: InputEvent) -> bool:
 	if _weapon_reward_decision_active or _manual_pause or _title_menu_active or _help_visible or _armory_visible or _core_upgrades_visible or _title_options_visible or _pause_options_visible:
+		return false
+	return event.is_action_pressed("cancel")
+
+
+func _memory_shard_data_for_sector(index: int) -> Dictionary:
+	for shard in MEMORY_SHARD_ACTIVE_DATA:
+		var data := Dictionary(shard)
+		if int(data.get("sector_index", -999)) == index:
+			return data.duplicate(true)
+	return {}
+
+
+func _memory_shard_future_story_lock_data() -> Array:
+	return MEMORY_SHARD_FUTURE_STORY_LOCK_DATA.duplicate(true)
+
+
+func _queue_memory_shard_unlock_for_sector(index: int) -> bool:
+	var shard := _memory_shard_data_for_sector(index)
+	if shard.is_empty():
+		return false
+	var shard_id := str(shard.get("id", ""))
+	if shard_id == "":
+		return false
+	if bool(_memory_shards_unlocked_this_run.get(shard_id, false)):
+		return false
+	for pending in _memory_shard_pending_queue:
+		if str(pending.get("id", "")) == shard_id:
+			return false
+	_memory_shards_unlocked_this_run[shard_id] = true
+	_memory_shard_pending_queue.append(shard)
+	return true
+
+
+func _update_memory_shard_reveal(delta: float) -> void:
+	if not is_instance_valid(_memory_shard_reveal_panel):
+		return
+	if _memory_shard_blocked_by_menu():
+		_memory_shard_reveal_panel.visible = false
+		return
+	if not _memory_shard_reveal_active and not _memory_shard_pending_queue.is_empty() and not _boss_identity_card_active:
+		_show_next_memory_shard_reveal()
+	if not _memory_shard_reveal_active:
+		_memory_shard_reveal_panel.visible = false
+		return
+	_memory_shard_reveal_timer = maxf(0.0, _memory_shard_reveal_timer - delta)
+	var elapsed := maxf(0.0, _memory_shard_reveal_duration - _memory_shard_reveal_timer)
+	var fade_in := clampf(elapsed / MEMORY_SHARD_REVEAL_FADE_DURATION, 0.0, 1.0)
+	var fade_out := clampf(_memory_shard_reveal_timer / MEMORY_SHARD_REVEAL_FADE_DURATION, 0.0, 1.0)
+	var alpha := minf(fade_in, fade_out)
+	_memory_shard_reveal_panel.modulate = Color(1.0, 1.0, 1.0, alpha)
+	_memory_shard_reveal_panel.visible = true
+	if _memory_shard_reveal_timer <= 0.0:
+		_dismiss_memory_shard_reveal()
+
+
+func _show_next_memory_shard_reveal() -> void:
+	if not is_instance_valid(_memory_shard_reveal_panel):
+		return
+	while not _memory_shard_pending_queue.is_empty():
+		var shard: Dictionary = _memory_shard_pending_queue.pop_front()
+		var shard_name := str(shard.get("name", ""))
+		var reveal := str(shard.get("reveal", ""))
+		if shard_name == "" or reveal == "":
+			continue
+		_memory_shard_reveal_active = true
+		_memory_shard_reveal_duration = MEMORY_SHARD_REVEAL_DURATION
+		_memory_shard_reveal_timer = _memory_shard_reveal_duration
+		if _memory_shard_reveal_eyebrow_label:
+			_memory_shard_reveal_eyebrow_label.text = "MEMORY SHARD RECOVERED"
+		if _memory_shard_reveal_name_label:
+			_memory_shard_reveal_name_label.text = shard_name
+		if _memory_shard_reveal_body_label:
+			_memory_shard_reveal_body_label.text = reveal
+		_memory_shard_reveal_panel.modulate = Color(1.0, 1.0, 1.0, 0.0)
+		_memory_shard_reveal_panel.visible = true
+		var lyra_line := str(shard.get("lyra_line", ""))
+		if lyra_line != "":
+			_queue_lyra_dialogue_text("memory_shard_%s" % str(shard.get("id", "")), lyra_line, false)
+		_play_sfx("sector", 0.24)
+		_trigger_presentation_flash(Color(0.72, 0.20, 1.0), 0.09, 0.18)
+		return
+
+
+func _dismiss_memory_shard_reveal() -> void:
+	_memory_shard_reveal_active = false
+	_memory_shard_reveal_timer = 0.0
+	if _memory_shard_reveal_panel:
+		_memory_shard_reveal_panel.visible = false
+
+
+func _reset_memory_shard_runtime() -> void:
+	_memory_shard_pending_queue.clear()
+	_memory_shards_unlocked_this_run.clear()
+	_dismiss_memory_shard_reveal()
+
+
+func _memory_shard_blocked_by_menu() -> bool:
+	return _opening_intro_active or _title_menu_active or _manual_pause or _help_visible or _armory_visible or _core_upgrades_visible or _title_options_visible or _pause_options_visible
+
+
+func _memory_shard_skip_event(event: InputEvent) -> bool:
+	if _weapon_reward_decision_active or _level_up_active or _manual_pause or _title_menu_active or _help_visible or _armory_visible or _core_upgrades_visible or _title_options_visible or _pause_options_visible:
 		return false
 	return event.is_action_pressed("cancel")
 
@@ -4922,6 +5090,7 @@ func _create_hud() -> void:
 	_create_tutorial_prompt_panel(_hud_design_root)
 	_create_sector_story_card_panel(_hud_design_root)
 	_create_boss_identity_card_panel(_hud_design_root)
+	_create_memory_shard_reveal_panel(_hud_design_root)
 	_create_lyra_dialogue_panel(_hud_design_root)
 	_create_help_menu(_hud_design_root)
 	_create_presentation_flash_overlay()
@@ -5677,6 +5846,53 @@ func _create_boss_identity_card_panel(root: Control) -> void:
 	layout.add_child(_boss_identity_quote_label)
 
 
+func _create_memory_shard_reveal_panel(root: Control) -> void:
+	_memory_shard_reveal_panel = NeonHudPanel.new()
+	_memory_shard_reveal_panel.name = "MemoryShardRevealPanel"
+	_memory_shard_reveal_panel.process_mode = Node.PROCESS_MODE_ALWAYS
+	_memory_shard_reveal_panel.visible = false
+	_memory_shard_reveal_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_memory_shard_reveal_panel.z_index = 35
+	_memory_shard_reveal_panel.configure(Color(0.72, 0.20, 1.0, 0.94), Color(0.0, 0.96, 1.0, 0.72), Vector2(920, 154), 23.0, 2.2)
+	_place_design_control(_memory_shard_reveal_panel, Rect2(500, 212, 920, 154))
+	root.add_child(_memory_shard_reveal_panel)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 22)
+	margin.add_theme_constant_override("margin_top", 12)
+	margin.add_theme_constant_override("margin_right", 22)
+	margin.add_theme_constant_override("margin_bottom", 12)
+	_memory_shard_reveal_panel.add_child(margin)
+
+	var layout := VBoxContainer.new()
+	layout.alignment = BoxContainer.ALIGNMENT_CENTER
+	layout.add_theme_constant_override("separation", 5)
+	margin.add_child(layout)
+
+	_memory_shard_reveal_eyebrow_label = _make_hud_label("MEMORY SHARD RECOVERED")
+	_memory_shard_reveal_eyebrow_label.name = "MemoryShardRevealEyebrowLabel"
+	_memory_shard_reveal_eyebrow_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_memory_shard_reveal_eyebrow_label.add_theme_font_size_override("font_size", 12)
+	_memory_shard_reveal_eyebrow_label.add_theme_color_override("font_color", Color(0.82, 0.46, 1.0))
+	layout.add_child(_memory_shard_reveal_eyebrow_label)
+
+	_memory_shard_reveal_name_label = _make_hud_label("PRISM SHARD I — THE PILOT")
+	_memory_shard_reveal_name_label.name = "MemoryShardRevealNameLabel"
+	_memory_shard_reveal_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_memory_shard_reveal_name_label.add_theme_font_size_override("font_size", 22)
+	_memory_shard_reveal_name_label.add_theme_color_override("font_color", Color(1.0, 0.94, 0.18))
+	layout.add_child(_memory_shard_reveal_name_label)
+
+	_memory_shard_reveal_body_label = _make_hud_label("")
+	_memory_shard_reveal_body_label.name = "MemoryShardRevealBodyLabel"
+	_memory_shard_reveal_body_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_memory_shard_reveal_body_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_memory_shard_reveal_body_label.custom_minimum_size = Vector2(850, 50)
+	_memory_shard_reveal_body_label.add_theme_font_size_override("font_size", 15)
+	_memory_shard_reveal_body_label.add_theme_color_override("font_color", Color(0.92, 1.0, 1.0, 0.96))
+	layout.add_child(_memory_shard_reveal_body_label)
+
+
 func _create_help_menu(root: Control) -> void:
 	_help_modal_scrim = ColorRect.new()
 	_help_modal_scrim.name = "HowToPlayModalBackdropScrim"
@@ -6279,6 +6495,7 @@ func _enter_title_menu() -> void:
 	_reset_lyra_dialogue_runtime()
 	_reset_sector_story_display()
 	_reset_boss_identity_runtime()
+	_reset_memory_shard_runtime()
 	_title_menu_nav_cooldown = 0.0
 	_title_menu_selected_index = 0
 	_title_options_visible = false
@@ -6342,6 +6559,7 @@ func _start_title_run(skip_intro := false) -> void:
 	_reset_lyra_dialogue_runtime()
 	_reset_sector_story_display()
 	_reset_boss_identity_runtime()
+	_reset_memory_shard_runtime()
 	_clear_run_bonus_weapons()
 	_title_menu_active = false
 	_title_options_visible = false
@@ -6403,6 +6621,7 @@ func _begin_opening_intro() -> void:
 	_reset_lyra_dialogue_runtime()
 	_reset_sector_story_display()
 	_reset_boss_identity_runtime()
+	_reset_memory_shard_runtime()
 	_opening_intro_active = true
 	_opening_intro_panel_index = 0
 	_opening_intro_panel_time = 0.0
@@ -6716,6 +6935,7 @@ func _return_to_title_from_pause() -> void:
 	_reset_lyra_dialogue_runtime()
 	_reset_sector_story_display()
 	_reset_boss_identity_runtime()
+	_reset_memory_shard_runtime()
 	_pause_options_visible = false
 	_help_visible = false
 	_manual_pause = false
@@ -13307,7 +13527,7 @@ func _begin_sector_clear_reward() -> void:
 	_upgrade_choices = _roll_sector_reward_choices(3)
 	_sector_transition_message = str(sector["transition_message"])
 	var dust_bonus := NEON_DUST_SECTOR_CLEAR_BASE + _sector_index * NEON_DUST_SECTOR_CLEAR_STEP
-	_show_sector_story_memory(_sector_index)
+	_queue_memory_shard_unlock_for_sector(_sector_index)
 	_queue_lyra_dialogue("sector_clear", true)
 	_grant_neon_dust(dust_bonus, true)
 	_sector_transition_cleanup_pending = true
@@ -14230,7 +14450,7 @@ func _complete_run() -> void:
 	_update_run_end_summary(true)
 	if _success_panel:
 		_success_panel.visible = true
-	_show_sector_story_memory(_sector_index, true)
+	_queue_memory_shard_unlock_for_sector(_sector_index)
 	_queue_lyra_dialogue("sector_clear", true, "", true)
 	_spawn_burst(_player_area.position, 1.72, "burst_cyan")
 	_set_music_state("none")
@@ -14282,6 +14502,7 @@ func _restart_run() -> void:
 	_reset_lyra_dialogue_runtime()
 	_reset_sector_story_display()
 	_reset_boss_identity_runtime()
+	_reset_memory_shard_runtime()
 	get_tree().paused = false
 	_manual_pause = false
 	_help_visible = false

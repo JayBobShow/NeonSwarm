@@ -12,12 +12,14 @@ system, new boss behavior, new enemy behavior, new gameplay systems, or Phase 41
 - `docs/NEON_SWARM_CHARACTER_BIBLE.md`
 - `docs/NEON_SWARM_ENEMY_FACTION_BIBLE.md`
 - `docs/NEON_SWARM_BOSS_BIBLE.md`
+- `docs/NEON_SWARM_MEMORY_SHARD_BIBLE.md`
 - `docs/NEON_SWARM_STORY_IMPLEMENTATION_PLAN.md`
 - `docs/NEON_SWARM_FULL_GAME_ROADMAP.md`
 - `docs/NEON_SWARM_PHASE_41_OPENING_INTRO_SEQUENCE_REPORT.md`
 - `docs/NEON_SWARM_PHASE_42_LYRA_COMPANION_TUTORIAL_LORE_REPORT.md`
 - `docs/NEON_SWARM_PHASE_43_SECTOR_STORY_PROGRESSION_REPORT.md`
 - `docs/NEON_SWARM_PHASE_44_BOSS_IDENTITY_PASS_REPORT.md`
+- `docs/NEON_SWARM_PHASE_45_MEMORY_SHARD_SYSTEM_REPORT.md`
 
 ## Phase 40 Runtime Integration
 
@@ -148,7 +150,7 @@ Runtime behavior:
 - A small top-center sector title card appears on gameplay start and sector
   entry.
 - Sector-specific Lyra mission callouts reuse the Phase 42 radio panel.
-- Clearing a sector shows a short `MEMORY RESTORED` reveal card.
+- Phase 45 upgrades sector completion memory reveals into Memory Shard rewards.
 - Story intro and memory reveal seen flags are runtime-session scoped.
 - The current build remains a four-playable-sector run; The Black Crown text is
   locked in data for future Sector 5 work only.
@@ -215,6 +217,41 @@ These future story-locked boss lines must remain out of current runtime
 presentation until a later approved phase adds a real Sector 5 / final boss
 system.
 
+## Phase 45 Memory Shard System
+
+Phase 45 implements lightweight Memory Shard rewards for the four active runtime
+bosses / sectors. It uses runtime-run flags only and does not add a Lore Codex
+menu or save schema.
+
+Runtime behavior:
+
+- Sector clear / boss clear queues the matching active Memory Shard.
+- The Memory Shard reveal waits for the Phase 44 boss defeat card to clear.
+- The panel shows `MEMORY SHARD RECOVERED`, shard name, and short reveal text.
+- Lyra reaction lines use the Phase 42 radio panel.
+- Phase 43 sector completion memory text now routes through Memory Shards to
+  avoid duplicate completion story panels.
+- Future shards remain story-locked only and do not trigger in the current
+  runtime.
+- No Sector 5 gameplay, Null King stage, Lore Codex menu, ending sequence,
+  gameplay balance change, or save schema change is added.
+
+Active Memory Shards:
+
+| Shard | Unlock Source | Reveal Text |
+| --- | --- | --- |
+| PRISM SHARD I — THE PILOT | Grix / Sector 1 clear | "Memory restored: Nova Veyr was not born as the Core. Nova entered it willingly." |
+| PRISM SHARD II — MIRA’S VOICE | Veyraxis / Sector 2 clear | "Memory restored: Mira Sol’s voice echoes from inside the Prism Shards." |
+| PRISM SHARD III — THE FIRST INVASION | Lord Cobalt Hex / Sector 3 clear | "Memory restored: the Aether Core weapon system was built to fight the first Null invasion." |
+| PRISM SHARD IV — THE LIVING LOCK | The Hollow Warden / current run complete | "Memory restored: Mira became the living lock that held the Null King in the dark." |
+
+Future story-locked shards:
+
+| Shard | Status |
+| --- | --- |
+| PRISM SHARD V — THE BLACK CROWN | Future Sector 5 content only. |
+| PRISM SHARD VI — THE LAST LIGHT | Future ending / final boss content only. |
+
 ## Future Ending Implementation Outline
 
 Do not build until explicitly approved.
@@ -237,11 +274,14 @@ Do not build until explicitly approved.
    readability is approved.
 3. Keep the Phase 44 boss identity cards and Lyra warnings lightweight until
    manual readability is approved.
-4. Expand Lyra companion barks only after the Phase 42 / Phase 43 panel pacing
-   and Phase 44 boss-card readability are manually approved.
-5. Expand the Phase 41 opening only after manual review approves pacing, text
+4. Keep Phase 45 Memory Shards runtime-scoped until the future Phase 46 Lore
+   Codex / persistence pass is approved.
+5. Expand Lyra companion barks only after the Phase 42 / Phase 43 panel pacing,
+   Phase 44 boss-card readability, and Phase 45 shard reveal readability are
+   manually approved.
+6. Expand the Phase 41 opening only after manual review approves pacing, text
    readability, and skip behavior.
-6. Add ending cinematic only after final sector and final boss are implemented.
+7. Add ending cinematic only after final sector and final boss are implemented.
 
 ## System Lore Hooks
 
