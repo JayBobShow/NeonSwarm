@@ -13,6 +13,7 @@ official scene path change is included.
 
 - `art/reference/README.md`
 - `art/reference/sector_1_neon_grid/`
+- `art/reference/sector_1_neon_grid/sector_1_refference_sheet.png`
 - `art/reference/user_original_art/`
 - `docs/NEON_SWARM_APPROVED_VISUAL_STYLE_LOCK.md`
 - `docs/NEON_SWARM_CAMPAIGN_STRUCTURE_PLAN.md`
@@ -20,10 +21,45 @@ official scene path change is included.
 - Existing Sector 1 arena source and notes under
   `art/arenas/sector_1/source/blender/`
 
-The Sector 1 reference folder only contains the placeholder `.gitkeep`, so the
-art direction follows the approved existing Sector 1 Neon Grid visual language:
-dark gunmetal/aluminum hard-surface floor architecture, restrained cyan/blue
-embedded channels, readable bevels, and low-profile visual detail.
+The Sector 1 reference folder now contains the user-provided reference sheet, so
+the art direction follows that sheet first while preserving the approved Sector
+1 Neon Grid visual language: dark gunmetal/aluminum hard-surface floor
+architecture, restrained cyan/blue embedded channels, readable bevels, and
+low-profile visual detail.
+
+Phase 48 reference-first correction:
+
+- Found image files in `art/reference/sector_1_neon_grid/`:
+  `sector_1_refference_sheet.png`.
+- The image is a 1408x768 multi-image user reference sheet titled
+  `SECTOR 1 REFERENCE SHEET -- NEON GRID`.
+- This is now the primary Sector 1 visual guide.
+- The sheet maps left-to-right to:
+  - Panel 1: `1.0 Awakening Grid` / base starting arena.
+  - Panel 2: `1A Relay Yard` / communications hub.
+  - Panel 3: `1B Data Trench` / memory zone.
+  - Panel 4: `1C Capacitor Field` / power storage.
+  - Panel 5: `1D Rail Approach` / transit corridor.
+- Copied as design intent: top-down hard-surface room composition, large
+  readable floor-layout silhouettes, raised perimeter walls, embedded cyan
+  channels, central or directional landmark structures, bridge/trench depth,
+  capacitor-bank clustering, and rail/gate corridor framing.
+- Not copied directly: the PNG is not used as a floor texture, decal, or pasted
+  plate. The Blender generator rebuilds the ideas as real low-profile 3D
+  geometry with project materials.
+- Blender rebuild plan from the reference:
+  - 1.0 keeps the approved base Sector 1 arena unless a future approved pass
+    requests a base-arena change.
+  - 1A uses the communications-hub panel: four relay stations, a rectangular
+    central receiver/console, orthogonal cable trays, perimeter banks, and
+    signal emitter machinery.
+  - 1B uses the memory-zone panel: a dominant central sunken data trench,
+    narrower side conduits, raised side decks, bridge plates, and darker lower
+    channels.
+  - 1C uses the power-storage panel: central power spine, repeated capacitor
+    cells, charge wells, bank clusters, meter faces, and side power buses.
+  - 1D uses the transit-corridor panel: twin rail lanes, sleeper/bracket
+    hardware, side armor, and a heavier far gate for the Grix approach.
 
 ## Official Docs Reviewed
 
@@ -146,21 +182,23 @@ meters, lock faces, and contained power cores attached to the modeled forms.
 ## Visual Identity
 
 - 1A Relay Yard: four large relay station foundations, raised relay-node pads,
-  a central signal hub/receiver, inset relay service plates, short antenna
-  masts, signal projector blocks, modeled station-to-hub cable trays, embedded
-  signal windows, emitter cabinets, and perimeter relay wall banks.
-- 1B Data Trench: major recessed trench lanes, raised deck islands separated by
-  trenches, raised metal rims, heavy bridge plates, bolted clamps, a cross-cut
-  service channel, broken memory panel hardware, contained cyan conduits, and
-  end memory buses.
-- 1C Capacitor Field: a clear capacitor cell-grid layout, larger capacitor cell
-  bases, recessed charge wells, glowing charge plates, positive/negative
-  terminals, side power buses, perimeter charge-bank bodies, meter faces, and
-  contained cell traces.
+  a rectangular central communications hub/receiver, inset relay service plates,
+  short antenna masts, signal projector blocks, modeled orthogonal
+  station-to-hub cable trays, trunk junction boxes, embedded signal windows,
+  emitter cabinets, and perimeter relay wall banks.
+- 1B Data Trench: a dominant central sunken trench, narrower side conduit
+  trenches, raised deck islands, raised metal rims, heavy bridge plates,
+  bolted clamps, central bridge side guards, a cross-cut service channel, broken
+  memory panel hardware, contained cyan conduits, and end memory buses.
+- 1C Capacitor Field: a clear capacitor cell-grid layout, a central power
+  spine with charge nodes, larger capacitor cell bases, recessed charge wells,
+  glowing charge plates, positive/negative terminals, side power buses,
+  perimeter charge-bank bodies, meter faces, and contained cell traces.
 - 1D Rail Approach: a strong rail-corridor composition with a central runway
   recess, two physical rail lanes with rail feet, raised rail caps, heavy
-  sleeper plates, rail brackets, side defense corridor walls, warning panels
-  embedded in those walls, and a stronger north defense-gate frame.
+  sleeper plates, rail brackets, side defense corridor walls, side armor ribs,
+  warning panels embedded in those walls, and a heavier north defense-gate frame
+  with gate towers and a closed armor face.
 
 ## Manual Test Checklist
 

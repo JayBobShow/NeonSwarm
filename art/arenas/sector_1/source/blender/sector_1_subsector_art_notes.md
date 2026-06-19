@@ -6,15 +6,28 @@ The existing `sector_1_neon_grid_arena.glb` remains the 1.0 Awakening Grid
 arena. The 1A-1D GLBs are full visual arena-layout variants loaded instead of
 the 1.0 base arena for their specific Sector 1 campaign subsectors.
 
+The primary visual guide for this rebuild is the user-provided multi-image
+reference sheet:
+
+- `art/reference/sector_1_neon_grid/sector_1_refference_sheet.png`
+
+Its five panels map left-to-right to 1.0 Awakening Grid, 1A Relay Yard, 1B Data
+Trench, 1C Capacitor Field, and 1D Rail Approach. The PNG is not used as a
+texture or decal; the sheet is translated into modeled hard-surface layouts.
+
 ## Variant Identity
 
-- 1A Relay Yard: raised relay-node hardware, modeled cable trays, embedded
-  signal windows, short antenna masts, and low perimeter relay banks.
-- 1B Data Trench: long recessed memory channels, bridge plates, and broken data
+- 1A Relay Yard: four large relay stations, a rectangular central
+  communications hub, modeled orthogonal cable trays, embedded signal windows,
+  short antenna masts, and low perimeter relay banks.
+- 1B Data Trench: a dominant central sunken trench, narrower side data
+  conduits, raised deck islands, bridge plates, side guards, and broken memory
   panel hardware.
-- 1C Capacitor Field: capacitor plates, charge wells, perimeter charge banks,
-  side power buses, and contained cell traces.
-- 1D Rail Approach: long rail lines, sleeper plates, cool warning strips, and a
+- 1C Capacitor Field: a central power spine, capacitor cell blocks, charge
+  wells, perimeter charge banks, side power buses, meters, terminals, and
+  contained cell traces.
+- 1D Rail Approach: strong transit-corridor composition, physical rail feet,
+  raised rail caps, sleeper plates, brackets, side armor ribs, and a heavier
   north defense-gate approach for Grix.
 
 Phase 48 hotfix notes:
@@ -30,6 +43,9 @@ Phase 48 hotfix notes:
 - The art-direction correction stops stacking 1A-1D over the same base room.
   Each subsector export includes its own floor foundation, boundary frame, and
   large layout landmarks.
+- The reference-first correction makes the layout silhouettes match the user
+  sheet more directly: rectangular relay hub, readable trench depth, structured
+  capacitor-bank field, and a directed rail corridor.
 
 ## Safety Rules
 

@@ -6,6 +6,22 @@ hard-surface Grid infrastructure.
 Phase 48 keeps the approved 1.0 Awakening Grid arena as the base and adds
 distinct visual-only full arena-layout variants for 1A through 1D.
 
+The primary reference is the user-provided multi-image sheet:
+`art/reference/sector_1_neon_grid/sector_1_refference_sheet.png`.
+
+Reference panel mapping:
+
+- Panel 1: 1.0 Awakening Grid / base starting arena.
+- Panel 2: 1A Relay Yard / communications hub.
+- Panel 3: 1B Data Trench / memory zone.
+- Panel 4: 1C Capacitor Field / power storage.
+- Panel 5: 1D Rail Approach / transit corridor.
+
+The sheet is design intent, not a texture source. The implementation must copy
+the layout language through modeled 3D forms: raised/recessed floor structure,
+large landmarks, purpose-built machinery, embedded neon channels, and clear
+camera-readable silhouettes.
+
 ## Shared Rules
 
 - Stay in the Sector 1 blue/cyan Neon Grid family.
@@ -28,7 +44,7 @@ Visual language:
 
 - Raised relay-node hardware arranged around the arena.
 - Four large relay station foundations near the edges/corners.
-- A central signal hub / receiver that anchors the layout.
+- A rectangular central signal hub / receiver that anchors the layout.
 - Modeled cable trays and tray lips, not free-floating line art.
 - Embedded signal windows attached to trays, pads, cabinets, and wall banks.
 - Perimeter relay wall banks, short antenna masts, and signal projector blocks.
@@ -42,8 +58,7 @@ Story purpose: the player pushes through corrupted Grid memory channels.
 
 Visual language:
 
-- Long dark data-channel grooves.
-- Two or three immediately readable recessed trench lanes.
+- One dominant central sunken trench plus narrower side data conduit trenches.
 - Raised deck islands separated by the trench lanes.
 - Raised lips and bridge plates across the channels.
 - Broken memory panel hardware and contained cyan conduits inside trenches.
@@ -60,6 +75,7 @@ Visual language:
 
 - Capacitor plates and storage cells.
 - A readable capacitor cell grid or energy-bank cluster layout.
+- A central power spine with charge nodes.
 - Dark charge wells with restrained cyan bars.
 - Perimeter charge banks.
 - Side power buses, meter faces, terminals, and contained capacitor traces.
@@ -75,7 +91,7 @@ Visual language:
 
 - Physical rail feet, raised rail caps, sleeper plates, and rail brackets.
 - Central rail-corridor runway composition.
-- Heavy north defense-gate approach.
+- Heavy north defense-gate approach with tower/gate framing.
 - Embedded wall warning panels, lane power cores, and stronger military-grid
   structure.
 - Heavier border/gate identity without starting the boss fight early.
