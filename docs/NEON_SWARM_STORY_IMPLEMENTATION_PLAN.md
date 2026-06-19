@@ -175,22 +175,25 @@ Implemented memory reveals:
 
 ## Phase 44 Boss Identity Pass
 
-Phase 44 implements lightweight boss identity presentation for the current
-four-sector runtime and data-locks the future Sector 5 / final boss identity
-records.
+Phase 44 implements lightweight boss identity presentation for the four current
+runtime bosses only and separately data-locks the future Sector 5 / final boss
+identity records.
 
 Runtime behavior:
 
-- Boss warning time queues a boss-specific Lyra warning line.
+- Boss warning time queues a boss-specific Lyra warning line for active runtime
+  bosses only.
 - Boss spawn shows a top-center `BOSS ARRIVAL` card with name, identity title,
   and intro quote.
 - Boss defeat shows a top-center `BOSS DEFEATED` card with name, identity title,
   and defeat quote.
 - Boss identity flags reset per run/title/restart path.
 - A short procedural `boss_identity` sting plays on boss arrival.
+- Crown Shard and Null King story records are future/data-ready only and are not
+  used by current runtime boss-card lookup.
 - No save schema, gameplay balance, enemy behavior, boss behavior, boss models,
-  Sector 2 art, Memory Shard system, final-boss flow, ending sequence, or Phase
-  45 work is added.
+  Sector 2 art, Sector 5 gameplay, Memory Shard system, Null King stage,
+  final-boss flow, ending sequence, or Phase 45 work is added.
 
 Runtime-active boss lines:
 
@@ -201,12 +204,16 @@ Runtime-active boss lines:
 | 3 | Lord Cobalt Hex | "You are not a hero. You are outdated hardware." | "Factory command... lost..." |
 | 4 | The Hollow Warden | "The lock must remain. The girl must remain. The king must wake." | "Forgive me, Mira Sol..." |
 
-Data-ready future boss lines:
+Future story-locked boss lines:
 
 | Story Slot | Boss | Intro Line | Defeat Line |
 | --- | --- | --- | --- |
 | Sector 5 Mid-Boss | The Crown Shard | "Bow, little light. Your shape ends here." | "The crown... still sees..." |
 | Final Boss | The Null King, Crown of the Empty Grid | "You mistake motion for life. You mistake color for meaning. I will correct you." | "I am... the final shape..." |
+
+These future story-locked boss lines must remain out of current runtime
+presentation until a later approved phase adds a real Sector 5 / final boss
+system.
 
 ## Future Ending Implementation Outline
 

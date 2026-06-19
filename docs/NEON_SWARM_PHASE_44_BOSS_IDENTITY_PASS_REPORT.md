@@ -2,8 +2,9 @@
 
 ## Scope
 
-Phase 44 adds lightweight boss identity presentation so the current bosses feel
-like named RPG villains instead of generic large enemies.
+Phase 44 adds lightweight boss identity presentation for the four current
+runtime bosses so they feel like named RPG villains instead of generic large
+enemies.
 
 This phase does not start Phase 45, does not build a Memory Shard system, does
 not build an ending sequence, does not add Sector 5 gameplay, and does not
@@ -12,9 +13,13 @@ balance.
 
 ## Runtime Location
 
-- Boss identity data, card state, UI creation, fade logic, Lyra warning hooks,
-  intro triggers, and defeat triggers are in
+- Active boss identity data, card state, UI creation, fade logic, Lyra warning
+  hooks, intro triggers, and defeat triggers are in
   `scripts/NeonSwarm3DGameplayPrototype.gd`.
+- Runtime boss cards use `BOSS_IDENTITY_ACTIVE_DATA`, which contains only the
+  four current runtime bosses.
+- Future boss names remain in `BOSS_IDENTITY_FUTURE_STORY_LOCK_DATA` for story
+  lock reference only. Runtime lookup does not use this future table.
 - The boss card node is `BossIdentityTitleCardPanel`.
 - The labels are `BossIdentityEyebrowLabel`, `BossIdentityNameLabel`,
   `BossIdentityTitleLabel`, and `BossIdentityQuoteLabel`.
@@ -42,17 +47,18 @@ in runtime:
 | 3 | Lord Cobalt Hex | `null_octagon` | "You are not a hero. You are outdated hardware." | "Factory command... lost..." |
 | 4 | The Hollow Warden | `final_null_octagon` | "The lock must remain. The girl must remain. The king must wake." | "Forgive me, Mira Sol..." |
 
-## Data-Ready Future Bosses
+## Future Story-Locked Bosses
 
-These identities are locked in the centralized data table but are not runtime
-boss fights yet:
+These identities are locked for future story direction but are not current
+runtime boss fights. They do not appear in the current boss rotation and do not
+trigger boss cards, Lyra warnings, or defeat cards.
 
 | Story Slot | Boss | Intro Line | Defeat Line |
 | --- | --- | --- | --- |
 | Sector 5 Mid-Boss | The Crown Shard | "Bow, little light. Your shape ends here." | "The crown... still sees..." |
 | Final Boss | The Null King, Crown of the Empty Grid | "You mistake motion for life. You mistake color for meaning. I will correct you." | "I am... the final shape..." |
 
-## Lyra Boss Warnings
+## Active Runtime Lyra Boss Warnings
 
 1. Grix:
    `Nova, that defense unit is running execution code. Do not let it touch you.`
@@ -66,22 +72,28 @@ boss fights yet:
 4. The Hollow Warden:
    `Nova... that signal is old. It was built to guard something. Or someone.`
 
-5. The Crown Shard:
-   `That is not a normal commander. It is a piece of the Null King's crown.`
+## Future Story-Locked Lyra Warning Text
 
-6. The Null King:
-   `Nova, all Grid channels are failing. Whatever happens now... do not let the light go out.`
+These lines are story-lock reference only until a future approved Sector 5 /
+final boss implementation exists:
+
+- The Crown Shard:
+  `That is not a normal commander. It is a piece of the Null King's crown.`
+- The Null King:
+  `Nova, all Grid channels are failing. Whatever happens now... do not let the light go out.`
 
 ## Triggers Implemented
 
-- Boss warning time queues the boss-specific Lyra warning once per boss
-  appearance.
+- Boss warning time queues the boss-specific Lyra warning once per active
+  runtime boss appearance.
 - Boss spawn shows a `BOSS ARRIVAL` title card with the locked boss name, boss
   identity title, and intro quote.
 - Boss defeat shows a `BOSS DEFEATED` title card with the locked boss name, boss
   identity title, and defeat quote.
 - The existing boss HUD / combat notice path continues to show locked boss names.
 - Boss identity seen flags reset per run/title/restart path.
+- Crown Shard and Null King lookup intentionally returns no runtime card data in
+  the current build.
 
 No requested safe triggers were deferred for the four runtime-active bosses.
 

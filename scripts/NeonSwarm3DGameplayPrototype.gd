@@ -120,7 +120,7 @@ const SECTOR_STORY_DATA := [
 const BOSS_IDENTITY_CARD_DURATION := 5.0
 const BOSS_DEFEAT_CARD_DURATION := 4.2
 const BOSS_IDENTITY_CARD_FADE_DURATION := 0.34
-const BOSS_IDENTITY_DATA := [
+const BOSS_IDENTITY_ACTIVE_DATA := [
 	{
 		"id": "grix_rail_butcher",
 		"sector_index": 0,
@@ -160,11 +160,13 @@ const BOSS_IDENTITY_DATA := [
 		"intro_quote": "The lock must remain. The girl must remain. The king must wake.",
 		"defeat_quote": "Forgive me, Mira Sol...",
 		"lyra_warning": "Nova... that signal is old. It was built to guard something. Or someone."
-	},
+	}
+]
+const BOSS_IDENTITY_FUTURE_STORY_LOCK_DATA := [
 	{
 		"id": "crown_shard",
 		"sector_index": 4,
-		"runtime_boss_type": "crown_shard",
+		"future_boss_type": "crown_shard",
 		"name": "The Crown Shard",
 		"title": "Fragment of the Null King's Crown",
 		"intro_quote": "Bow, little light. Your shape ends here.",
@@ -174,7 +176,7 @@ const BOSS_IDENTITY_DATA := [
 	{
 		"id": "null_king",
 		"sector_index": 5,
-		"runtime_boss_type": "null_king",
+		"future_boss_type": "null_king",
 		"name": "The Null King, Crown of the Empty Grid",
 		"title": "The Shape That Eats Stars",
 		"intro_quote": "You mistake motion for life. You mistake color for meaning. I will correct you.",
@@ -2311,11 +2313,15 @@ func _sector_story_skip_event(event: InputEvent) -> bool:
 
 
 func _boss_identity_data_for_sector(index: int) -> Dictionary:
-	for boss in BOSS_IDENTITY_DATA:
+	for boss in BOSS_IDENTITY_ACTIVE_DATA:
 		var data := Dictionary(boss)
 		if int(data.get("sector_index", -999)) == index:
 			return data.duplicate(true)
 	return {}
+
+
+func _boss_identity_future_story_lock_data() -> Array:
+	return BOSS_IDENTITY_FUTURE_STORY_LOCK_DATA.duplicate(true)
 
 
 func _boss_identity_data_for_type(enemy_type: String) -> Dictionary:
@@ -2324,7 +2330,7 @@ func _boss_identity_data_for_type(enemy_type: String) -> Dictionary:
 		var sector_data := _boss_identity_data_for_sector(_sector_index)
 		if not sector_data.is_empty():
 			return sector_data
-	for boss in BOSS_IDENTITY_DATA:
+	for boss in BOSS_IDENTITY_ACTIVE_DATA:
 		var data := Dictionary(boss)
 		if str(data.get("runtime_boss_type", "")) == enemy_type:
 			return data.duplicate(true)

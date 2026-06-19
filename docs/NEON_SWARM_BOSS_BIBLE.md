@@ -11,9 +11,10 @@ Phase 40 may rename safe runtime labels, but it does not add new boss behavior,
 new boss models, a final boss fight, or cutscene systems.
 
 Phase 44 adds lightweight runtime boss identity presentation for the current
-four-sector build. It adds boss title cards, intro quotes, defeat quotes, and
-boss-specific Lyra warnings without changing boss behavior, stats, attacks,
-models, rewards, Sector 5, the Memory Shard system, or the ending.
+four-sector build only. It adds boss title cards, intro quotes, defeat quotes,
+and boss-specific Lyra warnings for Grix, Veyraxis, Lord Cobalt Hex, and The
+Hollow Warden without changing boss behavior, stats, attacks, models, rewards,
+Sector 5, the Memory Shard system, or the ending.
 
 ## Boss Lineup
 
@@ -46,8 +47,9 @@ Phase 44 runtime presentation:
 - Boss defeat shows a short `BOSS DEFEATED` title card with boss name, identity
   title, and defeat quote.
 - The title card auto-fades and does not pause gameplay.
-- The Crown Shard and Null King remain data-ready only until later approved
-  Sector 5 / final boss work.
+- The Crown Shard and Null King remain future story-locked / data-ready only
+  until later approved Sector 5 / final boss work. They are not in the current
+  runtime boss lookup and must not be presented as current gameplay content.
 
 ## Grix the Rail Butcher
 
