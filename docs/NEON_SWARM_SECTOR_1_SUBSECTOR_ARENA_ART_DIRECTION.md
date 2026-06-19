@@ -24,10 +24,10 @@ Story purpose: Lyra begins tracing the broken Grid signal.
 
 Visual language:
 
-- Relay-node floor markings.
-- Low relay pads arranged around the arena.
-- Cyan signal lines between relay nodes.
-- Perimeter relay wall banks and antenna-like low machinery.
+- Raised relay-node hardware arranged around the arena.
+- Modeled cable trays and tray lips, not free-floating line art.
+- Embedded signal windows attached to trays, pads, cabinets, and wall banks.
+- Perimeter relay wall banks, short antenna masts, and signal projector blocks.
 
 Readability target: open and clean, with a clear signal-node identity and no
 interior obstacle read.
@@ -40,7 +40,7 @@ Visual language:
 
 - Long dark data-channel grooves.
 - Raised lips and bridge plates across the channels.
-- Broken memory strips and cyan/blue data lanes.
+- Broken memory panel hardware and contained cyan conduits inside trenches.
 - Stronger depth read than 1A without hiding pickups or projectiles.
 
 Readability target: the arena should feel like data channels under the player,
@@ -55,7 +55,7 @@ Visual language:
 - Capacitor plates and storage cells.
 - Dark charge wells with restrained cyan bars.
 - Perimeter charge banks.
-- Low blue/cyan energy conduits.
+- Side power buses, meter faces, terminals, and contained capacitor traces.
 
 Readability target: energized but not overbright; the center fighting area stays
 clear.
@@ -66,9 +66,10 @@ Story purpose: final approach to Grix's defense gate.
 
 Visual language:
 
-- Long rail lines and sleeper plates.
+- Physical rail feet, raised rail caps, sleeper plates, and rail brackets.
 - Heavy north defense-gate approach.
-- Cool warning strips, cyan rail cores, and stronger military-grid structure.
+- Embedded wall warning panels, lane power cores, and stronger military-grid
+  structure.
 - Heavier border/gate identity without starting the boss fight early.
 
 Readability target: it should feel like the route into Grix's gate while leaving

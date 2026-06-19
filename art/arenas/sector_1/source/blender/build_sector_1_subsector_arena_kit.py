@@ -213,40 +213,57 @@ def add_low_perimeter_machine_bank(collection, root, prefix: str, mats: dict, y:
         add_box(collection, root, f"{prefix}RelayTopBrace{index}", (x, y - sign * 0.09, SURFACE_Z + 0.86), (3.85, 0.19, 0.09), mats["edge_metal"], 0.025, 1)
 
 
+def add_cable_tray_segment(collection, root, name: str, center, length: float, rotation_z: float, mats: dict) -> None:
+    x, y = center
+    z = SURFACE_Z
+    normal_x = -math.sin(rotation_z)
+    normal_y = math.cos(rotation_z)
+    add_box(collection, root, f"{name}DarkCableTrayBed", (x, y, z + 0.040), (length, 0.58, 0.072), mats["deep_metal"], 0.028, 1, rotation_z)
+    add_box(collection, root, f"{name}NorthTrayLip", (x + normal_x * 0.235, y + normal_y * 0.235, z + 0.094), (length * 0.96, 0.105, 0.092), mats["edge_metal"], 0.018, 1, rotation_z)
+    add_box(collection, root, f"{name}SouthTrayLip", (x - normal_x * 0.235, y - normal_y * 0.235, z + 0.094), (length * 0.96, 0.105, 0.092), mats["edge_metal"], 0.018, 1, rotation_z)
+    for tick_index, offset in enumerate([-0.34, 0.0, 0.34]):
+        add_box(collection, root, f"{name}EmbeddedSignalWindow{tick_index}", (x + math.cos(rotation_z) * length * offset, y + math.sin(rotation_z) * length * offset, z + 0.150), (min(length * 0.16, 1.15), 0.090, 0.026), mats["cyan_channel"], 0.010, 1, rotation_z)
+
+
+def add_relay_hardware_cluster(collection, root, name: str, x: float, y: float, mats: dict, rotation_z: float = 0.0) -> None:
+    z = SURFACE_Z
+    add_box(collection, root, f"{name}RaisedRelayPadBase", (x, y, z + 0.050), (4.10, 3.05, 0.125), mats["raised_gunmetal"], 0.120, 2, rotation_z)
+    add_box(collection, root, f"{name}InsetRelayServicePlate", (x, y, z + 0.142), (2.85, 1.78, 0.052), mats["black_trim"], 0.052, 1, rotation_z)
+    add_box(collection, root, f"{name}CyanEmitterWindow", (x, y, z + 0.190), (1.22, 0.34, 0.042), mats["cyan_core"], 0.016, 1, rotation_z)
+    add_box(collection, root, f"{name}SignalProjectorBlock", (x + math.cos(rotation_z) * 1.33, y + math.sin(rotation_z) * 1.33, z + 0.300), (0.68, 0.58, 0.310), mats["edge_metal"], 0.035, 1, rotation_z)
+    add_cylinder_between(
+        collection,
+        root,
+        f"{name}ShortRelayAntennaMast",
+        (x - math.sin(rotation_z) * 1.35, y + math.cos(rotation_z) * 1.35, z + 0.170),
+        (x - math.sin(rotation_z) * 1.35, y + math.cos(rotation_z) * 1.35, z + 0.780),
+        0.075,
+        mats["sheen"],
+        12,
+    )
+
+
 def build_relay_yard(mats: dict) -> None:
     collection, root = create_variant_root("relay_yard")
     z = SURFACE_Z
-    relay_points = [
-        (-16.0, -14.0),
-        (0.0, -17.5),
-        (16.0, -14.0),
-        (-18.0, 0.0),
-        (18.0, 0.0),
-        (-16.0, 14.0),
-        (0.0, 17.5),
-        (16.0, 14.0),
-    ]
+    relay_points = [(-17.0, -14.0), (17.0, -14.0), (-19.0, 0.0), (19.0, 0.0), (-17.0, 14.0), (17.0, 14.0)]
     for index, (x, y) in enumerate(relay_points):
-        add_box(collection, root, f"RelayYardRaisedNodePad{index}", (x, y, z + 0.030), (3.25, 2.25, 0.090), mats["raised_gunmetal"], 0.105, 2, math.radians((index % 3 - 1) * 6.0))
-        add_box(collection, root, f"RelayYardInsetCyanCore{index}", (x, y, z + 0.100), (1.84, 0.28, 0.032), mats["cyan_core"], 0.020, 1, math.radians(index * 18.0))
-        add_box(collection, root, f"RelayYardBlackServiceClamp{index}", (x, y + 0.72, z + 0.126), (2.22, 0.18, 0.034), mats["black_trim"], 0.016, 1, math.radians(index * -9.0))
-    for index, (start, end) in enumerate([
-        (relay_points[0], relay_points[1]),
-        (relay_points[1], relay_points[2]),
-        (relay_points[3], relay_points[1]),
-        (relay_points[4], relay_points[1]),
-        (relay_points[5], relay_points[6]),
-        (relay_points[6], relay_points[7]),
-        (relay_points[3], relay_points[6]),
-        (relay_points[4], relay_points[6]),
-    ]):
-        sx, sy = start
-        ex, ey = end
-        cx = (sx + ex) * 0.5
-        cy = (sy + ey) * 0.5
-        length = math.hypot(ex - sx, ey - sy)
-        angle = math.atan2(ey - sy, ex - sx)
-        add_box(collection, root, f"RelayYardReadableSignalLine{index}", (cx, cy, z + 0.062), (length, 0.105, 0.034), mats["cyan_channel"], 0.012, 1, angle)
+        add_relay_hardware_cluster(collection, root, f"RelayYardNode{index}", x, y, mats, math.radians((index % 4) * 10.0 - 15.0))
+    tray_specs = [
+        ("RelayYardNorthWestCableRun", (-17.0, -22.0), 12.6, math.radians(90.0)),
+        ("RelayYardNorthEastCableRun", (17.0, -22.0), 12.6, math.radians(90.0)),
+        ("RelayYardWestServiceCableRun", (-23.1, 0.0), 10.7, 0.0),
+        ("RelayYardEastServiceCableRun", (23.1, 0.0), 10.7, 0.0),
+        ("RelayYardSouthWestCableRun", (-17.0, 22.0), 12.6, math.radians(90.0)),
+        ("RelayYardSouthEastCableRun", (17.0, 22.0), 12.6, math.radians(90.0)),
+    ]
+    for name, center, length, rotation_z in tray_specs:
+        add_cable_tray_segment(collection, root, name, center, length, rotation_z, mats)
+    for index, x in enumerate([-21.5, -7.25, 7.25, 21.5]):
+        add_box(collection, root, f"RelayYardPerimeterSignalEmitter{index}", (x, -26.20, z + 0.410), (2.9, 0.78, 0.68), mats["dark_aluminum"], 0.060, 2)
+        add_box(collection, root, f"RelayYardPerimeterEmitterCyanSlot{index}", (x, -26.60, z + 0.730), (1.8, 0.075, 0.070), mats["cyan_core"], 0.010, 1)
+        add_box(collection, root, f"RelayYardSouthReceiverCabinet{index}", (x, 26.20, z + 0.360), (2.55, 0.72, 0.56), mats["raised_gunmetal"], 0.052, 1)
+        add_box(collection, root, f"RelayYardSouthReceiverCyanSlot{index}", (x, 26.58, z + 0.610), (1.55, 0.075, 0.060), mats["cyan_channel"], 0.010, 1)
     add_low_perimeter_machine_bank(collection, root, "North", mats, -ARENA_HALF_SIZE + 1.10, -1)
     add_low_perimeter_machine_bank(collection, root, "South", mats, ARENA_HALF_SIZE - 1.10, 1)
 
@@ -254,63 +271,80 @@ def build_relay_yard(mats: dict) -> None:
 def build_data_trench(mats: dict) -> None:
     collection, root = create_variant_root("data_trench")
     z = SURFACE_Z
-    for index, x in enumerate([-14.0, -6.5, 6.5, 14.0]):
-        add_box(collection, root, f"DataTrenchDarkChannel{index}", (x, 0.0, z - 0.010), (1.06, 43.0, 0.115), mats["deep_metal"], 0.030, 1)
-        add_box(collection, root, f"DataTrenchWestLip{index}", (x - 0.70, 0.0, z + 0.046), (0.22, 42.0, 0.070), mats["edge_metal"], 0.025, 1)
-        add_box(collection, root, f"DataTrenchEastLip{index}", (x + 0.70, 0.0, z + 0.046), (0.22, 42.0, 0.070), mats["edge_metal"], 0.025, 1)
-        for bridge_index, y in enumerate([-18.0, -7.0, 7.0, 18.0]):
-            add_box(collection, root, f"DataTrenchBridgePlate{index}_{bridge_index}", (x, y, z + 0.116), (2.35, 0.56, 0.058), mats["raised_gunmetal"], 0.044, 1)
-    for index, y in enumerate([-20.0, -11.0, 0.0, 11.0, 20.0]):
-        add_box(collection, root, f"DataTrenchBrokenMemoryStrip{index}", (0.0, y, z + 0.080), (23.0 - index * 1.3, 0.075, 0.034), mats["cyan_channel"], 0.010, 1, math.radians(2.5 if index % 2 == 0 else -2.5))
-        add_box(collection, root, f"DataTrenchOffsetDataPlate{index}", (-20.0 + index * 10.0, y + 1.25, z + 0.075), (3.8, 0.42, 0.052), mats["black_trim"], 0.025, 1, math.radians(-5.0 + index * 2.0))
-    for index, y in enumerate([-22.5, 22.5]):
-        add_box(collection, root, f"DataTrenchEndMemoryBus{index}", (0.0, y, z + 0.135), (35.0, 0.44, 0.120), mats["dark_aluminum"], 0.048, 1)
-        add_box(collection, root, f"DataTrenchEndCyanBus{index}", (0.0, y, z + 0.225), (31.0, 0.075, 0.036), mats["cyan_core"], 0.010, 1)
+    for index, x in enumerate([-13.2, 0.0, 13.2]):
+        add_box(collection, root, f"DataTrenchRecessedFloorLane{index}", (x, 0.0, z - 0.026), (2.45, 44.5, 0.145), mats["deep_metal"], 0.040, 1)
+        add_box(collection, root, f"DataTrenchLeftRaisedRim{index}", (x - 1.43, 0.0, z + 0.065), (0.34, 43.6, 0.122), mats["edge_metal"], 0.032, 1)
+        add_box(collection, root, f"DataTrenchRightRaisedRim{index}", (x + 1.43, 0.0, z + 0.065), (0.34, 43.6, 0.122), mats["edge_metal"], 0.032, 1)
+        for conduit_index, y in enumerate([-17.5, -6.5, 6.5, 17.5]):
+            add_box(collection, root, f"DataTrenchContainedCyanConduit{index}_{conduit_index}", (x, y, z + 0.060), (1.38, 0.145, 0.034), mats["cyan_channel"], 0.010, 1)
+        for bridge_index, y in enumerate([-20.5, -11.5, 0.0, 11.5, 20.5]):
+            add_box(collection, root, f"DataTrenchHeavyBridgePlate{index}_{bridge_index}", (x, y, z + 0.140), (3.85, 0.78, 0.086), mats["raised_gunmetal"], 0.052, 1)
+            add_box(collection, root, f"DataTrenchBridgeBoltedClamp{index}_{bridge_index}", (x, y, z + 0.206), (2.70, 0.190, 0.040), mats["black_trim"], 0.016, 1)
+    add_box(collection, root, "DataTrenchCrossCutServiceChannel", (0.0, 0.0, z - 0.020), (38.0, 1.82, 0.132), mats["deep_metal"], 0.034, 1)
+    add_box(collection, root, "DataTrenchCrossCutNorthLip", (0.0, -1.12, z + 0.056), (36.0, 0.265, 0.098), mats["edge_metal"], 0.026, 1)
+    add_box(collection, root, "DataTrenchCrossCutSouthLip", (0.0, 1.12, z + 0.056), (36.0, 0.265, 0.098), mats["edge_metal"], 0.026, 1)
+    for index, (x, y) in enumerate([(-21.0, -16.5), (21.0, -12.0), (-21.0, 5.5), (21.0, 15.5)]):
+        add_box(collection, root, f"DataTrenchBrokenMemoryPanel{index}", (x, y, z + 0.082), (4.65, 2.10, 0.082), mats["dark_aluminum"], 0.056, 1, math.radians(3.0 if index % 2 == 0 else -3.0))
+        add_box(collection, root, f"DataTrenchPanelDataSocket{index}", (x, y, z + 0.148), (1.30, 0.45, 0.036), mats["black_trim"], 0.018, 1)
+    for index, y in enumerate([-23.2, 23.2]):
+        add_box(collection, root, f"DataTrenchEndMemoryBus{index}", (0.0, y, z + 0.170), (36.0, 0.70, 0.180), mats["dark_aluminum"], 0.055, 1)
+        add_box(collection, root, f"DataTrenchEndEmbeddedCyanPort{index}", (0.0, y, z + 0.310), (21.0, 0.095, 0.050), mats["cyan_core"], 0.010, 1)
 
 
 def build_capacitor_field(mats: dict) -> None:
     collection, root = create_variant_root("capacitor_field")
     z = SURFACE_Z
-    for row, y in enumerate([-16.0, -8.0, 8.0, 16.0]):
-        for column, x in enumerate([-18.0, -9.0, 9.0, 18.0]):
+    for row, y in enumerate([-15.5, -5.5, 5.5, 15.5]):
+        for column, x in enumerate([-17.0, -5.5, 5.5, 17.0]):
             index = row * 4 + column
-            add_box(collection, root, f"CapacitorFieldStorageCell{index}", (x, y, z + 0.045), (4.25, 3.65, 0.100), mats["raised_gunmetal"], 0.088, 2)
-            add_box(collection, root, f"CapacitorFieldDarkWell{index}", (x, y, z + 0.118), (2.85, 2.10, 0.042), mats["black_trim"], 0.044, 1)
-            add_box(collection, root, f"CapacitorFieldCyanChargeBar{index}", (x, y, z + 0.160), (2.34, 0.155, 0.032), mats["cyan_core"], 0.014, 1, math.radians(90.0 if index % 2 else 0.0))
+            add_box(collection, root, f"CapacitorFieldStorageCellBase{index}", (x, y, z + 0.058), (5.45, 4.55, 0.140), mats["raised_gunmetal"], 0.105, 2)
+            add_box(collection, root, f"CapacitorFieldRecessedChargeWell{index}", (x, y, z + 0.165), (3.62, 2.70, 0.070), mats["black_trim"], 0.052, 1)
+            add_box(collection, root, f"CapacitorFieldGlassChargePlate{index}", (x, y, z + 0.220), (2.15, 1.12, 0.040), mats["cyan_core"], 0.020, 1)
+            add_box(collection, root, f"CapacitorFieldPositiveTerminal{index}", (x - 2.52, y, z + 0.210), (0.42, 1.82, 0.150), mats["edge_metal"], 0.028, 1)
+            add_box(collection, root, f"CapacitorFieldNegativeTerminal{index}", (x + 2.52, y, z + 0.210), (0.42, 1.82, 0.150), mats["edge_metal"], 0.028, 1)
+            if (row + column) % 2 == 0:
+                add_box(collection, root, f"CapacitorFieldContainedVerticalTrace{index}", (x, y, z + 0.260), (0.135, 1.76, 0.030), mats["cyan_channel"], 0.010, 1)
+            else:
+                add_box(collection, root, f"CapacitorFieldContainedHorizontalTrace{index}", (x, y, z + 0.260), (1.76, 0.135, 0.030), mats["cyan_channel"], 0.010, 1)
     for index, x in enumerate([-22.5, -7.5, 7.5, 22.5]):
-        add_box(collection, root, f"CapacitorFieldNorthChargeBank{index}", (x, -25.0, z + 0.300), (5.6, 0.74, 0.56), mats["dark_aluminum"], 0.065, 2)
-        add_box(collection, root, f"CapacitorFieldSouthChargeBank{index}", (x, 25.0, z + 0.300), (5.6, 0.74, 0.56), mats["dark_aluminum"], 0.065, 2)
-        add_box(collection, root, f"CapacitorFieldNorthCyanMeter{index}", (x, -25.28, z + 0.605), (3.8, 0.075, 0.065), mats["cyan_channel"], 0.010, 1)
-        add_box(collection, root, f"CapacitorFieldSouthCyanMeter{index}", (x, 25.28, z + 0.605), (3.8, 0.075, 0.065), mats["cyan_channel"], 0.010, 1)
-    for index, angle in enumerate([0.0, math.pi * 0.5, math.pi, math.pi * 1.5]):
-        add_cylinder_between(
-            collection,
-            root,
-            f"CapacitorFieldLowEnergyConduit{index}",
-            (math.cos(angle) * 6.2, math.sin(angle) * 6.2, z + 0.118),
-            (math.cos(angle) * 22.0, math.sin(angle) * 22.0, z + 0.118),
-            0.045,
-            mats["cyan_channel"],
-            12,
-        )
+        add_box(collection, root, f"CapacitorFieldNorthChargeBankBody{index}", (x, -25.0, z + 0.360), (6.2, 1.05, 0.700), mats["dark_aluminum"], 0.075, 2)
+        add_box(collection, root, f"CapacitorFieldSouthChargeBankBody{index}", (x, 25.0, z + 0.360), (6.2, 1.05, 0.700), mats["dark_aluminum"], 0.075, 2)
+        add_box(collection, root, f"CapacitorFieldNorthMeterFace{index}", (x, -25.58, z + 0.710), (4.0, 0.105, 0.105), mats["cyan_channel"], 0.012, 1)
+        add_box(collection, root, f"CapacitorFieldSouthMeterFace{index}", (x, 25.58, z + 0.710), (4.0, 0.105, 0.105), mats["cyan_channel"], 0.012, 1)
+        add_box(collection, root, f"CapacitorFieldNorthBankTopPlate{index}", (x, -24.75, z + 0.850), (5.35, 0.32, 0.110), mats["edge_metal"], 0.026, 1)
+        add_box(collection, root, f"CapacitorFieldSouthBankTopPlate{index}", (x, 24.75, z + 0.850), (5.35, 0.32, 0.110), mats["edge_metal"], 0.026, 1)
+    for index, x in enumerate([-24.8, 24.8]):
+        add_box(collection, root, f"CapacitorFieldSidePowerBus{index}", (x, 0.0, z + 0.230), (0.78, 36.0, 0.320), mats["dark_aluminum"], 0.052, 1)
+        for socket_index, y in enumerate([-15.5, -5.5, 5.5, 15.5]):
+            add_box(collection, root, f"CapacitorFieldSideSocket{index}_{socket_index}", (x, y, z + 0.455), (0.105, 1.72, 0.070), mats["cyan_channel"], 0.010, 1)
 
 
 def build_rail_approach(mats: dict) -> None:
     collection, root = create_variant_root("rail_approach")
     z = SURFACE_Z
-    for index, x in enumerate([-10.5, -6.8, 6.8, 10.5]):
-        add_box(collection, root, f"RailApproachLongRail{index}", (x, 0.0, z + 0.110), (0.42, 47.0, 0.170), mats["edge_metal"], 0.040, 1)
-        add_box(collection, root, f"RailApproachCyanRailCore{index}", (x, 0.0, z + 0.220), (0.115, 42.5, 0.048), mats["cyan_core"], 0.012, 1)
+    for lane_index, lane_center in enumerate([-7.8, 7.8]):
+        add_box(collection, root, f"RailApproachLaneBasePlate{lane_index}", (lane_center, 0.0, z + 0.050), (4.9, 47.5, 0.105), mats["deep_metal"], 0.040, 1)
+        for side_index, rail_offset in enumerate([-1.52, 1.52]):
+            rail_x = lane_center + rail_offset
+            add_box(collection, root, f"RailApproachPhysicalRailFoot{lane_index}_{side_index}", (rail_x, 0.0, z + 0.150), (0.78, 47.0, 0.150), mats["edge_metal"], 0.042, 1)
+            add_box(collection, root, f"RailApproachRaisedRailCap{lane_index}_{side_index}", (rail_x, 0.0, z + 0.275), (0.42, 45.2, 0.090), mats["sheen"], 0.028, 1)
+        add_box(collection, root, f"RailApproachEmbeddedLanePowerCore{lane_index}", (lane_center, 0.0, z + 0.220), (0.160, 39.0, 0.046), mats["cyan_core"], 0.012, 1)
     for index, y in enumerate([-20.0, -14.0, -8.0, -2.0, 4.0, 10.0, 16.0, 22.0]):
-        add_box(collection, root, f"RailApproachSleeperPlate{index}", (0.0, y, z + 0.055), (27.0, 0.48, 0.090), mats["black_trim"], 0.030, 1)
-        add_box(collection, root, f"RailApproachCoolWarningStrip{index}", (-15.8, y, z + 0.122), (3.4, 0.075, 0.038), mats["cyan_channel"], 0.010, 1, math.radians(-11.0))
-        add_box(collection, root, f"RailApproachCoolWarningStripMirror{index}", (15.8, y, z + 0.122), (3.4, 0.075, 0.038), mats["cyan_channel"], 0.010, 1, math.radians(11.0))
-    add_box(collection, root, "RailApproachNorthDefenseGateBase", (0.0, -26.15, z + 0.365), (31.0, 1.25, 0.72), mats["dark_aluminum"], 0.072, 2)
-    add_box(collection, root, "RailApproachNorthDefenseGateTopBrace", (0.0, -26.46, z + 0.915), (25.5, 0.34, 0.180), mats["edge_metal"], 0.040, 1)
+        add_box(collection, root, f"RailApproachHeavySleeperPlate{index}", (0.0, y, z + 0.095), (24.0, 0.74, 0.130), mats["black_trim"], 0.038, 1)
+        for bracket_index, x in enumerate([-9.32, -6.28, 6.28, 9.32]):
+            add_box(collection, root, f"RailApproachRailBracket{index}_{bracket_index}", (x, y, z + 0.250), (0.82, 0.34, 0.115), mats["raised_gunmetal"], 0.024, 1)
+    for side_index, x in enumerate([-19.5, 19.5]):
+        add_box(collection, root, f"RailApproachDefenseCorridorWall{side_index}", (x, -1.5, z + 0.360), (0.92, 43.0, 0.640), mats["dark_aluminum"], 0.060, 1)
+        for y in [-18.0, -6.0, 6.0, 18.0]:
+            add_box(collection, root, f"RailApproachWallWarningPanel{side_index}_{int(y)}", (x, y, z + 0.720), (0.105, 3.2, 0.130), mats["cyan_channel"], 0.012, 1)
+    add_box(collection, root, "RailApproachNorthDefenseGateBase", (0.0, -26.15, z + 0.450), (33.0, 1.55, 0.900), mats["dark_aluminum"], 0.082, 2)
+    add_box(collection, root, "RailApproachNorthDefenseGateTopBrace", (0.0, -26.52, z + 1.110), (27.5, 0.44, 0.240), mats["edge_metal"], 0.044, 1)
+    add_box(collection, root, "RailApproachNorthGateCrossBeam", (0.0, -25.45, z + 0.810), (21.5, 0.38, 0.200), mats["raised_gunmetal"], 0.034, 1)
     for index, x in enumerate([-12.0, -4.0, 4.0, 12.0]):
-        add_box(collection, root, f"RailApproachGateCyanLock{index}", (x, -26.82, z + 0.740), (2.7, 0.080, 0.092), mats["cyan_core"], 0.012, 1)
-        add_box(collection, root, f"RailApproachGateVerticalArmor{index}", (x, -25.64, z + 0.410), (0.45, 1.02, 0.500), mats["raised_gunmetal"], 0.036, 1)
-    add_box(collection, root, "RailApproachSouthRunupPlate", (0.0, 24.2, z + 0.080), (26.0, 1.2, 0.105), mats["raised_gunmetal"], 0.055, 1)
+        add_box(collection, root, f"RailApproachGateEmbeddedLockWindow{index}", (x, -26.86, z + 0.875), (2.7, 0.090, 0.115), mats["cyan_core"], 0.012, 1)
+        add_box(collection, root, f"RailApproachGateVerticalArmor{index}", (x, -25.60, z + 0.495), (0.62, 1.20, 0.650), mats["raised_gunmetal"], 0.042, 1)
+    add_box(collection, root, "RailApproachSouthRunupPlate", (0.0, 24.2, z + 0.110), (26.0, 1.45, 0.150), mats["raised_gunmetal"], 0.065, 1)
+    add_box(collection, root, "RailApproachSouthRunupEmbeddedWarningPanel", (0.0, 24.86, z + 0.230), (14.5, 0.110, 0.050), mats["cyan_channel"], 0.010, 1)
 
 
 def variant_objects(root) -> list:

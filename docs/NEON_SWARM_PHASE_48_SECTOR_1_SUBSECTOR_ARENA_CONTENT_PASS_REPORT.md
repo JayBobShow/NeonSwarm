@@ -116,16 +116,40 @@ Runtime integration is in `scripts/NeonSwarm3DGameplayPrototype.gd`.
 No player collision, hurtbox, arena bounds, enemy behavior, boss timing, reward
 logic, Memory Shard logic, weapon balance, or official scene path was changed.
 
+## Hotfix Art Quality Pass
+
+The first Phase 48 pass technically made 1A-1D distinct, but too much of the
+difference came from thin decorative cyan line overlays. The hotfix rebuilds the
+Blender generator and exported GLBs so the variants read through intentional
+modeled hard-surface structures.
+
+Removed / reduced first-pass line clutter:
+
+- `RelayYardReadableSignalLine`
+- `DataTrenchBrokenMemoryStrip`
+- `CapacitorFieldLowEnergyConduit`
+- `RailApproachCoolWarningStrip`
+
+Those were replaced with modeled tray beds, raised lips, relay hardware,
+recessed trench lanes, bridge plates, capacitor housings, terminals, side power
+buses, physical rail feet, rail caps, brackets, corridor walls, and stronger
+Grix gate hardware. Cyan now appears as embedded windows, ports, sockets,
+meters, lock faces, and contained power cores attached to the modeled forms.
+
 ## Visual Identity
 
-- 1A Relay Yard: low relay pads, cyan signal paths, service clamps, and perimeter
-  relay wall banks.
-- 1B Data Trench: long dark data-channel grooves, raised lips, bridge plates,
-  broken memory strips, and end memory buses.
-- 1C Capacitor Field: capacitor storage cells, dark charge wells, cyan charge
-  bars, perimeter charge banks, and low energy conduits.
-- 1D Rail Approach: long rail lines, sleeper plates, cool warning strips, north
-  defense gate hardware, and a stronger military-grid approach to Grix.
+- 1A Relay Yard: raised relay-node pads, inset relay service plates, short
+  antenna masts, signal projector blocks, modeled cable trays, embedded signal
+  windows, emitter cabinets, and perimeter relay wall banks.
+- 1B Data Trench: wide recessed floor lanes, raised metal rims, heavy bridge
+  plates, bolted clamps, a cross-cut service channel, broken memory panel
+  hardware, contained cyan conduits, and end memory buses.
+- 1C Capacitor Field: larger capacitor cell bases, recessed charge wells,
+  glowing charge plates, positive/negative terminals, side power buses,
+  perimeter charge-bank bodies, meter faces, and contained cell traces.
+- 1D Rail Approach: two physical rail lanes with rail feet, raised rail caps,
+  heavy sleeper plates, rail brackets, side defense corridor walls, warning
+  panels embedded in those walls, and a stronger north defense-gate frame.
 
 ## Manual Test Checklist
 
@@ -140,6 +164,8 @@ logic, Memory Shard logic, weapon balance, or official scene path was changed.
 - Confirm Prism Shard I still unlocks after Grix.
 - Confirm player core, blue ripple, XP, enemies, bullets, HUD, Lyra, story
   cards, Memory Shard reveal, and reward/comparison panels remain readable.
+- Confirm the hotfix variants read as modeled hard-surface arena structures
+  rather than random neon floor-line overlays.
 - Confirm Sector 2 is unchanged.
 - Confirm no Sector 5 runtime content or ending sequence exists.
 

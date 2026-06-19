@@ -8,13 +8,25 @@ Sector 1 campaign subsectors.
 
 ## Variant Identity
 
-- 1A Relay Yard: relay pads, cyan signal paths, and low perimeter relay banks.
+- 1A Relay Yard: raised relay-node hardware, modeled cable trays, embedded
+  signal windows, short antenna masts, and low perimeter relay banks.
 - 1B Data Trench: long recessed memory channels, bridge plates, and broken data
-  strips.
+  panel hardware.
 - 1C Capacitor Field: capacitor plates, charge wells, perimeter charge banks,
-  and restrained energy conduits.
+  side power buses, and contained cell traces.
 - 1D Rail Approach: long rail lines, sleeper plates, cool warning strips, and a
   north defense-gate approach for Grix.
+
+Phase 48 hotfix notes:
+
+- Removed the first-pass random decorative neon line families:
+  `RelayYardReadableSignalLine`, `DataTrenchBrokenMemoryStrip`,
+  `CapacitorFieldLowEnergyConduit`, and `RailApproachCoolWarningStrip`.
+- Replaced them with modeled hard-surface arena identity: tray beds and lips,
+  recessed trench lanes with bridge plates, capacitor housings and terminals,
+  physical rail feet, rail caps, brackets, corridor walls, and gate hardware.
+- Neon now appears as embedded windows, sockets, meters, lock faces, and power
+  cores attached to the modeled structures.
 
 ## Safety Rules
 
