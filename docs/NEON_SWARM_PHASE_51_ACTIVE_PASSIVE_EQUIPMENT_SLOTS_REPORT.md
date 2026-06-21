@@ -123,6 +123,39 @@ The gameplay loadout HUD and Armory now distinguish:
 
 Reward and Armory comparison previews use a prospective binding helper so the player can see which button or passive label a weapon would get before equipping.
 
+## HUD Polish / Button Glyph Pass
+
+The equipment UI now uses large framed glyph badges instead of relying on dense row text.
+
+Glyph labels supported:
+
+- Active keyboard/mouse: `LMB`, `RMB`, `Q`, `E`, `R`
+- Active controller: `RT`, `LT`, `RB`, `LB`, `L3`
+- Combined gameplay labels: `LMB / RT`, `RMB / LT`, `Q / RB`, `E / LB`, `R / L3`
+- State labels: `PASSIVE`, `EMPTY`, `LV 4`, `LV 10`, `LV 20`, `LV 35`, `LV 50`, `LV 70`
+
+Gameplay HUD card layout:
+
+- Large glyph badge first.
+- Weapon name next to the glyph.
+- State line below the name: `ACTIVE`, `FIRING`, `AUTO WEAPON`, `AUTO FIRING`, `SLOT OPEN`, or locked unlock text.
+- Existing fire-source pulse remains on the slot card and badge, with no node creation per shot.
+
+Armory card layout:
+
+- Equipment rows render as compact cards with a small slot number, large glyph badge, weapon/state name, and clear state line.
+- Active equipped weapons show their exact glyph, such as `LMB / RT`, plus `ACTIVE WEAPON`.
+- Passive equipped weapons show `PASSIVE` plus `NO BUTTON REQUIRED`.
+- Empty slots show `EMPTY`, `OPEN SLOT`, and `READY TO EQUIP`.
+- Locked slots show the unlock-level glyph, such as `LV 20`, plus `LOCKED` and the required level.
+
+Stash / inventory display behavior:
+
+- Stored active weapons show an `ACTIVE` glyph and `USES EQUIPPED SLOT`.
+- Stored passive weapons show a `PASSIVE` glyph and `NO BUTTON REQUIRED`.
+- The detail panel now states `ACTIVE WEAPON` with the projected target slot button, or `PASSIVE WEAPON` with no fire button required.
+- The Armory overlay scrim is darker while Armory is open to improve card contrast without removing the existing visual style.
+
 ## Reward / Run Weapon Behavior
 
 Generated weapon rewards use unlocked compatible equipment slots for `Equip Now`; replacement blocks locked slots and blocks adding a sixth active weapon unless replacing an existing active slot or equipping a passive.
@@ -164,5 +197,14 @@ Headless boot validation:
 
 - `godot --headless --path . --quit-after 3`: passed.
 - `godot --headless --path . scenes/Main.tscn --quit-after 3`: passed.
+
+HUD polish validation:
+
+- Focused badge/unlock validation: `PHASE51_BADGE_UNLOCK_VALIDATION_PASS`.
+- Focused idle-performance regression validation: `PHASE51_IDLE_PERF_VALIDATION_PASS`.
+- Confirmed large gameplay glyph badges for active, passive, empty, and locked slots.
+- Confirmed Armory equipped cards and stash cards expose glyph/state labels.
+- Confirmed reward/detail text reports active target buttons and passive no-button behavior.
+- Confirmed slot-fire pulse still uses existing HUD nodes and the idle HUD rebuild throttle remains intact.
 
 Required final validation commands were run after implementation and documentation.

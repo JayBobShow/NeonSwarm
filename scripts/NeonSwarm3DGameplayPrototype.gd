@@ -431,6 +431,8 @@ const WEAPON_FIRE_SLOT_ACTIONS := [
 ]
 const WEAPON_FIRE_SLOT_KEYBOARD_LABELS := ["LMB", "RMB", "Q", "E", "R"]
 const WEAPON_FIRE_SLOT_CONTROLLER_LABELS := ["RT", "LT", "RB", "LB", "L3"]
+const GAMEPLAY_EQUIPMENT_BADGE_SIZE := Vector2(96, 32)
+const ARMORY_EQUIPMENT_BADGE_SIZE := Vector2(96, 30)
 const ORBIT_COOLDOWN := 0.16
 const ORBIT_DAMAGE := 16.0
 const ORBIT_RADIUS := 2.35
@@ -925,6 +927,15 @@ var _armory_equipped_buttons: Array[Button] = []
 var _armory_stash_buttons: Array[Button] = []
 var _armory_equipped_icons: Array[Control] = []
 var _armory_stash_icons: Array[Control] = []
+var _armory_equipped_badge_panels: Array[PanelContainer] = []
+var _armory_equipped_badge_labels: Array[Label] = []
+var _armory_equipped_slot_labels: Array[Label] = []
+var _armory_equipped_name_labels: Array[Label] = []
+var _armory_equipped_state_labels: Array[Label] = []
+var _armory_stash_badge_panels: Array[PanelContainer] = []
+var _armory_stash_badge_labels: Array[Label] = []
+var _armory_stash_name_labels: Array[Label] = []
+var _armory_stash_state_labels: Array[Label] = []
 var _armory_selection_cursor: Control
 var _armory_detail_label: Label
 var _armory_compare_label: Label
@@ -6500,7 +6511,7 @@ func _create_armory_menu() -> void:
 	header.add_theme_color_override("font_color", Color(1.0, 0.94, 0.18))
 	layout.add_child(header)
 
-	var prompt := _make_hud_label("LEFT STICK / D-PAD: SELECT  |  RIGHT STICK: SCROLL ACTIVE PANEL  |  A / ENTER: CONFIRM  |  CLEAR: EQUIPPED SLOT ACTION  |  B / ESC: BACK")
+	var prompt := _make_hud_label("D-PAD / LEFT STICK: SELECT    A / ENTER: CONFIRM    B / ESC: BACK")
 	prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	prompt.add_theme_font_size_override("font_size", 10)
 	prompt.add_theme_color_override("font_color", Color(0.76, 0.98, 1.0, 0.88))
@@ -6512,7 +6523,7 @@ func _create_armory_menu() -> void:
 	_armory_dust_label.add_theme_color_override("font_color", Color(1.0, 0.94, 0.18))
 	layout.add_child(_armory_dust_label)
 
-	_armory_help_label = _make_hud_label("EQUIPMENT = ACTIVE BUTTON WEAPONS + PASSIVES  |  LOCKED SLOTS OPEN BY LEVEL  |  STASH = STORED WEAPONS  |  CLEAR EQUIPPED SLOTS FROM SLOT ACTIONS")
+	_armory_help_label = _make_hud_label("Equipment cards show the fire glyph first. Details and compare notes stay on the right.")
 	_armory_help_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_armory_help_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_armory_help_label.custom_minimum_size = Vector2(1000, 30)
@@ -6533,7 +6544,7 @@ func _create_armory_menu() -> void:
 	layout.add_child(columns)
 
 	var equipped_column := VBoxContainer.new()
-	equipped_column.custom_minimum_size = Vector2(286, 610)
+	equipped_column.custom_minimum_size = Vector2(316, 610)
 	equipped_column.add_theme_constant_override("separation", 6)
 	columns.add_child(equipped_column)
 
@@ -6546,17 +6557,32 @@ func _create_armory_menu() -> void:
 	var equipped_rows := VBoxContainer.new()
 	equipped_rows.name = "EquippedLoadoutFixedRows"
 	equipped_rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	equipped_rows.custom_minimum_size = Vector2(286, 520)
+	equipped_rows.custom_minimum_size = Vector2(316, 540)
 	equipped_rows.add_theme_constant_override("separation", 6)
 	equipped_column.add_child(equipped_rows)
 
 	_armory_equipped_buttons.clear()
 	_armory_equipped_icons.clear()
+	_armory_equipped_badge_panels.clear()
+	_armory_equipped_badge_labels.clear()
+	_armory_equipped_slot_labels.clear()
+	_armory_equipped_name_labels.clear()
+	_armory_equipped_state_labels.clear()
 	for i in range(EQUIPPED_WEAPON_SLOT_CAP):
-		var button := _make_armory_row_button(Vector2(270, 58), 11)
-		var icon := _make_weapon_icon_control(Vector2(48, 48))
-		icon.position = Vector2(12, 5)
+		var button := _make_armory_row_button(Vector2(300, 62), 11)
+		var icon := _make_weapon_icon_control(Vector2(42, 42))
+		icon.position = Vector2(12, 10)
 		button.add_child(icon)
+		var badge_parts := _make_armory_card_badge("ArmoryEquipped%02d" % [i + 1], Vector2(66, 27))
+		var badge_panel: PanelContainer = badge_parts[0]
+		var badge_label: Label = badge_parts[1]
+		button.add_child(badge_panel)
+		var slot_label := _make_armory_card_label("ArmoryEquippedSlot%02dLabel" % [i + 1], Vector2(66, 8), Vector2(92, 16), 9, Color(0.58, 0.74, 0.82, 0.82))
+		var name_label := _make_armory_card_label("ArmoryEquippedSlot%02dName" % [i + 1], Vector2(170, 9), Vector2(118, 22), 12, Color(0.90, 1.0, 1.0, 0.98))
+		var state_label := _make_armory_card_label("ArmoryEquippedSlot%02dState" % [i + 1], Vector2(170, 33), Vector2(118, 20), 9, Color(1.0, 0.94, 0.18, 0.88))
+		button.add_child(slot_label)
+		button.add_child(name_label)
+		button.add_child(state_label)
 		button.set_meta("armory_section", "equipped")
 		button.set_meta("armory_index", i)
 		button.focus_entered.connect(func() -> void:
@@ -6571,6 +6597,11 @@ func _create_armory_menu() -> void:
 		equipped_rows.add_child(button)
 		_armory_equipped_buttons.append(button)
 		_armory_equipped_icons.append(icon)
+		_armory_equipped_badge_panels.append(badge_panel)
+		_armory_equipped_badge_labels.append(badge_label)
+		_armory_equipped_slot_labels.append(slot_label)
+		_armory_equipped_name_labels.append(name_label)
+		_armory_equipped_state_labels.append(state_label)
 
 	var stash_column := VBoxContainer.new()
 	stash_column.custom_minimum_size = Vector2(352, 610)
@@ -6593,11 +6624,23 @@ func _create_armory_menu() -> void:
 
 	_armory_stash_buttons.clear()
 	_armory_stash_icons.clear()
+	_armory_stash_badge_panels.clear()
+	_armory_stash_badge_labels.clear()
+	_armory_stash_name_labels.clear()
+	_armory_stash_state_labels.clear()
 	for i in range(STASH_WEAPON_CAP):
 		var button := _make_armory_row_button(Vector2(336, 64), 12)
-		var icon := _make_weapon_icon_control(Vector2(52, 52))
-		icon.position = Vector2(12, 6)
+		var icon := _make_weapon_icon_control(Vector2(46, 46))
+		icon.position = Vector2(12, 9)
 		button.add_child(icon)
+		var badge_parts := _make_armory_card_badge("ArmoryStash%02d" % [i + 1], Vector2(70, 17))
+		var badge_panel: PanelContainer = badge_parts[0]
+		var badge_label: Label = badge_parts[1]
+		button.add_child(badge_panel)
+		var name_label := _make_armory_card_label("ArmoryStash%02dName" % [i + 1], Vector2(176, 10), Vector2(148, 24), 12, Color(0.92, 1.0, 1.0, 0.98))
+		var state_label := _make_armory_card_label("ArmoryStash%02dState" % [i + 1], Vector2(176, 35), Vector2(148, 20), 9, Color(0.76, 0.98, 1.0, 0.82))
+		button.add_child(name_label)
+		button.add_child(state_label)
 		button.set_meta("armory_section", "stash")
 		button.set_meta("armory_index", i)
 		button.focus_entered.connect(func() -> void:
@@ -6612,9 +6655,13 @@ func _create_armory_menu() -> void:
 		stash_rows.add_child(button)
 		_armory_stash_buttons.append(button)
 		_armory_stash_icons.append(icon)
+		_armory_stash_badge_panels.append(badge_panel)
+		_armory_stash_badge_labels.append(badge_label)
+		_armory_stash_name_labels.append(name_label)
+		_armory_stash_state_labels.append(state_label)
 
 	var detail_column := VBoxContainer.new()
-	detail_column.custom_minimum_size = Vector2(500, 610)
+	detail_column.custom_minimum_size = Vector2(480, 610)
 	detail_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	detail_column.add_theme_constant_override("separation", 6)
 	columns.add_child(detail_column)
@@ -6626,16 +6673,16 @@ func _create_armory_menu() -> void:
 	detail_column.add_child(detail_title)
 
 	var preview_center := CenterContainer.new()
-	preview_center.custom_minimum_size = Vector2(480, 104)
+	preview_center.custom_minimum_size = Vector2(460, 104)
 	detail_column.add_child(preview_center)
 	_armory_preview_icon = _make_weapon_icon_control(Vector2(96, 96))
 	preview_center.add_child(_armory_preview_icon)
 
 	_armory_detail_label = _make_hud_label("")
 	_armory_detail_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_armory_detail_label.custom_minimum_size = Vector2(470, 260)
+	_armory_detail_label.custom_minimum_size = Vector2(450, 260)
 	_armory_detail_label.add_theme_font_size_override("font_size", 12)
-	_armory_detail_scroll = _make_ui_scroll_area(Vector2(480, 178))
+	_armory_detail_scroll = _make_ui_scroll_area(Vector2(460, 178))
 	_armory_detail_scroll.add_child(_armory_detail_label)
 	detail_column.add_child(_armory_detail_scroll)
 
@@ -6647,7 +6694,7 @@ func _create_armory_menu() -> void:
 
 	var compare_icon_row := HBoxContainer.new()
 	compare_icon_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	compare_icon_row.custom_minimum_size = Vector2(480, 78)
+	compare_icon_row.custom_minimum_size = Vector2(460, 78)
 	compare_icon_row.add_theme_constant_override("separation", 18)
 	detail_column.add_child(compare_icon_row)
 	_armory_compare_current_icon = _make_weapon_icon_control(Vector2(72, 72))
@@ -6657,9 +6704,9 @@ func _create_armory_menu() -> void:
 
 	_armory_compare_label = _make_hud_label("")
 	_armory_compare_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_armory_compare_label.custom_minimum_size = Vector2(470, 230)
+	_armory_compare_label.custom_minimum_size = Vector2(450, 230)
 	_armory_compare_label.add_theme_font_size_override("font_size", 12)
-	_armory_compare_scroll = _make_ui_scroll_area(Vector2(480, 150))
+	_armory_compare_scroll = _make_ui_scroll_area(Vector2(460, 150))
 	_armory_compare_scroll.add_child(_armory_compare_label)
 	detail_column.add_child(_armory_compare_scroll)
 
@@ -7314,7 +7361,7 @@ func _update_title_modal_scrim() -> void:
 		return
 	var active := _title_menu_active and (_title_options_visible or _armory_visible or _core_upgrades_visible)
 	_title_modal_scrim.visible = active
-	_title_modal_scrim.color = Color(0.0, 0.0, 0.020, 0.52)
+	_title_modal_scrim.color = Color(0.0, 0.0, 0.020, 0.68 if _armory_visible else 0.52)
 
 
 func _make_armory_row_button(minimum_size := Vector2(292, 48), font_size := 12) -> Button:
@@ -7572,10 +7619,10 @@ func _gameplay_loadout_badge_style(fill_color: Color, border_color: Color, borde
 	style.border_width_top = border_width
 	style.border_width_right = border_width
 	style.border_width_bottom = border_width
-	style.corner_radius_top_left = 4
-	style.corner_radius_top_right = 4
-	style.corner_radius_bottom_left = 4
-	style.corner_radius_bottom_right = 4
+	style.corner_radius_top_left = 8
+	style.corner_radius_top_right = 8
+	style.corner_radius_bottom_left = 8
+	style.corner_radius_bottom_right = 8
 	style.content_margin_left = 4
 	style.content_margin_top = 2
 	style.content_margin_right = 4
@@ -7585,10 +7632,80 @@ func _gameplay_loadout_badge_style(fill_color: Color, border_color: Color, borde
 	return style
 
 
+func _equipment_badge_colors(glyph_text: String, flash_amount := 0.0) -> Dictionary:
+	var normalized := glyph_text.strip_edges().to_upper()
+	var fill := Color(0.0, 0.050, 0.076, 0.96)
+	var border := Color(0.0, 0.96, 1.0, 0.98)
+	var text := Color(0.90, 1.0, 1.0, 1.0)
+	if normalized == "PASSIVE":
+		fill = Color(0.12, 0.078, 0.0, 0.96)
+		border = Color(1.0, 0.90, 0.08, 0.96)
+		text = Color(1.0, 0.96, 0.58, 1.0)
+	elif normalized == "EMPTY":
+		fill = Color(0.0, 0.035, 0.052, 0.88)
+		border = Color(0.24, 0.72, 0.86, 0.76)
+		text = Color(0.66, 0.90, 0.98, 0.92)
+	elif normalized.begins_with("LV"):
+		fill = Color(0.030, 0.040, 0.052, 0.90)
+		border = Color(0.44, 0.50, 0.58, 0.74)
+		text = Color(0.68, 0.74, 0.80, 0.95)
+	if flash_amount > 0.0:
+		fill = fill.lerp(Color(0.20, 0.15, 0.0, 0.98), flash_amount)
+		border = Color(1.0, 0.96, 0.20, 1.0)
+		text = Color(1.0, 1.0, 0.70, 1.0)
+	return {"fill": fill, "border": border, "text": text}
+
+
+func _apply_equipment_glyph_badge(panel: PanelContainer, label: Label, glyph_text: String, flash_amount := 0.0) -> void:
+	if not is_instance_valid(panel) or not is_instance_valid(label):
+		return
+	var colors := _equipment_badge_colors(glyph_text, flash_amount)
+	panel.add_theme_stylebox_override("panel", _gameplay_loadout_badge_style(colors["fill"], colors["border"], 2 if flash_amount > 0.0 else 1))
+	label.text = glyph_text
+	label.add_theme_color_override("font_color", colors["text"])
+
+
+func _make_armory_card_label(label_name: String, position: Vector2, size: Vector2, font_size: int, color: Color, alignment := HORIZONTAL_ALIGNMENT_LEFT) -> Label:
+	var label := _make_hud_label("")
+	label.name = label_name
+	label.position = position
+	label.custom_minimum_size = size
+	label.size = size
+	label.horizontal_alignment = alignment
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", font_size)
+	label.add_theme_color_override("font_color", color)
+	label.clip_text = true
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return label
+
+
+func _make_armory_card_badge(card_name: String, position: Vector2) -> Array:
+	var badge_panel := PanelContainer.new()
+	badge_panel.name = "%sBadge" % card_name
+	badge_panel.position = position
+	badge_panel.custom_minimum_size = ARMORY_EQUIPMENT_BADGE_SIZE
+	badge_panel.size = ARMORY_EQUIPMENT_BADGE_SIZE
+	badge_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	badge_panel.add_theme_stylebox_override("panel", _gameplay_loadout_badge_style(Color(0.0, 0.030, 0.050, 0.92), Color(0.0, 0.92, 1.0, 0.82), 1))
+	var badge_label := _make_hud_label("")
+	badge_label.name = "%sBadgeLabel" % card_name
+	badge_label.custom_minimum_size = Vector2(ARMORY_EQUIPMENT_BADGE_SIZE.x - 8.0, ARMORY_EQUIPMENT_BADGE_SIZE.y - 4.0)
+	badge_label.size = badge_label.custom_minimum_size
+	badge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	badge_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	badge_label.add_theme_font_size_override("font_size", 11)
+	badge_label.add_theme_color_override("font_color", Color(0.90, 1.0, 1.0, 1.0))
+	badge_label.clip_text = true
+	badge_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	badge_panel.add_child(badge_label)
+	return [badge_panel, badge_label]
+
+
 func _add_gameplay_weapon_slot(parent: Control, slot_index: int) -> void:
 	var slot_panel := PanelContainer.new()
 	slot_panel.name = "GameplayLoadoutSlot%02d" % [slot_index + 1]
-	slot_panel.custom_minimum_size = Vector2(272, 50)
+	slot_panel.custom_minimum_size = Vector2(272, 54)
 	slot_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	slot_panel.add_theme_stylebox_override("panel", _gameplay_loadout_slot_style(Color(0.0, 0.010, 0.032, 0.78), Color(0.0, 0.82, 1.0, 0.58), 1))
 	parent.add_child(slot_panel)
@@ -7599,7 +7716,7 @@ func _add_gameplay_weapon_slot(parent: Control, slot_index: int) -> void:
 	row.add_theme_constant_override("separation", 4)
 	slot_panel.add_child(row)
 
-	var icon := _make_weapon_icon_control(Vector2(30, 30), true)
+	var icon := _make_weapon_icon_control(Vector2(28, 28), true)
 	icon.name = "GameplayLoadoutSlot%02dIcon" % [slot_index + 1]
 	if icon is NeonWeaponIcon:
 		icon.animate_preview = false
@@ -7607,7 +7724,7 @@ func _add_gameplay_weapon_slot(parent: Control, slot_index: int) -> void:
 
 	var badge_panel := PanelContainer.new()
 	badge_panel.name = "GameplayLoadoutSlot%02dButtonBadge" % [slot_index + 1]
-	badge_panel.custom_minimum_size = Vector2(82, 34)
+	badge_panel.custom_minimum_size = GAMEPLAY_EQUIPMENT_BADGE_SIZE
 	badge_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	badge_panel.add_theme_stylebox_override("panel", _gameplay_loadout_badge_style(Color(0.0, 0.030, 0.050, 0.92), Color(0.0, 0.92, 1.0, 0.82), 1))
 	row.add_child(badge_panel)
@@ -7616,17 +7733,17 @@ func _add_gameplay_weapon_slot(parent: Control, slot_index: int) -> void:
 	badge_label.name = "GameplayLoadoutSlot%02dButtonBadgeLabel" % [slot_index + 1]
 	badge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	badge_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	badge_label.custom_minimum_size = Vector2(74, 28)
-	badge_label.add_theme_font_size_override("font_size", 10)
+	badge_label.custom_minimum_size = Vector2(GAMEPLAY_EQUIPMENT_BADGE_SIZE.x - 8.0, GAMEPLAY_EQUIPMENT_BADGE_SIZE.y - 4.0)
+	badge_label.add_theme_font_size_override("font_size", 12)
 	badge_label.add_theme_color_override("font_color", Color(0.88, 1.0, 1.0, 0.98))
 	badge_label.clip_text = true
 	badge_panel.add_child(badge_label)
 
 	var label := _make_hud_label("SLOT %02d\nEMPTY\n--" % [slot_index + 1])
 	label.name = "GameplayLoadoutSlot%02dLabel" % [slot_index + 1]
-	label.custom_minimum_size = Vector2(140, 44)
+	label.custom_minimum_size = Vector2(132, 46)
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 9)
+	label.add_theme_font_size_override("font_size", 10)
 	label.add_theme_color_override("font_color", Color(0.72, 0.92, 1.0, 0.72))
 	label.clip_text = true
 	row.add_child(label)
@@ -9224,6 +9341,54 @@ func _update_armory_ui() -> void:
 	_update_armory_cursor_position(true)
 
 
+func _set_armory_card_label(labels: Array[Label], index: int, text: String, color: Color) -> void:
+	if index < 0 or index >= labels.size():
+		return
+	var label := labels[index]
+	if not is_instance_valid(label):
+		return
+	label.text = text
+	label.visible = true
+	label.add_theme_color_override("font_color", color)
+
+
+func _set_armory_card_glyph(panels: Array[PanelContainer], labels: Array[Label], index: int, glyph_text: String) -> void:
+	if index < 0 or index >= panels.size() or index >= labels.size():
+		return
+	var panel := panels[index]
+	var label := labels[index]
+	if not is_instance_valid(panel) or not is_instance_valid(label):
+		return
+	panel.visible = true
+	label.visible = true
+	_apply_equipment_glyph_badge(panel, label, glyph_text)
+
+
+func _set_armory_equipped_card(index: int, glyph_text: String, name_text: String, state_text: String, state_color: Color) -> void:
+	if index >= 0 and index < _armory_equipped_buttons.size() and is_instance_valid(_armory_equipped_buttons[index]):
+		_armory_equipped_buttons[index].text = ""
+	_set_armory_card_label(_armory_equipped_slot_labels, index, "SLOT %02d" % [index + 1], Color(0.58, 0.74, 0.82, 0.82))
+	_set_armory_card_glyph(_armory_equipped_badge_panels, _armory_equipped_badge_labels, index, glyph_text)
+	_set_armory_card_label(_armory_equipped_name_labels, index, name_text, Color(0.92, 1.0, 1.0, 0.98))
+	_set_armory_card_label(_armory_equipped_state_labels, index, state_text, state_color)
+
+
+func _set_armory_stash_card(index: int, glyph_text: String, name_text: String, state_text: String, state_color: Color) -> void:
+	if index >= 0 and index < _armory_stash_buttons.size() and is_instance_valid(_armory_stash_buttons[index]):
+		_armory_stash_buttons[index].text = ""
+	_set_armory_card_glyph(_armory_stash_badge_panels, _armory_stash_badge_labels, index, glyph_text)
+	_set_armory_card_label(_armory_stash_name_labels, index, name_text, Color(0.92, 1.0, 1.0, 0.98))
+	_set_armory_card_label(_armory_stash_state_labels, index, state_text, state_color)
+
+
+func _hide_armory_stash_card(index: int) -> void:
+	for labels in [_armory_stash_badge_labels, _armory_stash_name_labels, _armory_stash_state_labels]:
+		if index >= 0 and index < labels.size() and is_instance_valid(labels[index]):
+			labels[index].visible = false
+	if index >= 0 and index < _armory_stash_badge_panels.size() and is_instance_valid(_armory_stash_badge_panels[index]):
+		_armory_stash_badge_panels[index].visible = false
+
+
 func _update_armory_equipped_rows() -> void:
 	for i in range(_armory_equipped_buttons.size()):
 		var button := _armory_equipped_buttons[i]
@@ -9233,7 +9398,7 @@ func _update_armory_equipped_rows() -> void:
 		button.visible = true
 		if not _is_equipment_slot_unlocked(i):
 			button.disabled = true
-			button.text = "E%02d  [ LV %d ] LOCKED\nUNLOCKS LEVEL %d\nNO EQUIP" % [i + 1, _equipment_slot_unlock_level(i), _equipment_slot_unlock_level(i)]
+			_set_armory_equipped_card(i, "LV %d" % _equipment_slot_unlock_level(i), "LOCKED", "UNLOCKS AT LEVEL %d" % _equipment_slot_unlock_level(i), Color(0.62, 0.70, 0.76, 0.86))
 			if i < _armory_equipped_icons.size():
 				_set_weapon_icon(_armory_equipped_icons[i], "unknown_weapon", false)
 			_apply_armory_button_accent(button, {}, _armory_selected_section == "equipped" and i == _armory_equipped_selected_index)
@@ -9241,12 +9406,15 @@ func _update_armory_equipped_rows() -> void:
 		var instance := _equipment_slot_instance(i)
 		button.disabled = false
 		if not instance.is_empty():
-			button.text = _armory_weapon_row_text(instance, i, true)
+			var glyph_text := _equipment_slot_binding_label(i)
+			var state_text := "NO BUTTON REQUIRED" if glyph_text == "PASSIVE" else "ACTIVE WEAPON"
+			var state_color := Color(1.0, 0.94, 0.18, 0.92) if glyph_text == "PASSIVE" else Color(0.0, 0.96, 1.0, 0.94)
+			_set_armory_equipped_card(i, glyph_text, _compact_weapon_name(instance, 16).to_upper(), state_text, state_color)
 			if i < _armory_equipped_icons.size():
 				_set_weapon_icon(_armory_equipped_icons[i], instance, true)
 			_apply_armory_button_accent(button, instance, _armory_selected_section == "equipped" and i == _armory_equipped_selected_index)
 		else:
-			button.text = "E%02d  [ EMPTY ]\nUNLOCKED SLOT\nSELECT STASH TO EQUIP" % [i + 1]
+			_set_armory_equipped_card(i, "EMPTY", "OPEN SLOT", "READY TO EQUIP", Color(0.66, 0.90, 0.98, 0.84))
 			if i < _armory_equipped_icons.size():
 				_set_weapon_icon(_armory_equipped_icons[i], "unknown_weapon", false)
 			_apply_armory_button_accent(button, {}, _armory_selected_section == "equipped" and i == _armory_equipped_selected_index)
@@ -9262,7 +9430,7 @@ func _update_armory_stash_rows() -> void:
 		if _stash_weapon_instances.is_empty() and i == 0:
 			button.visible = true
 			button.disabled = true
-			button.text = "NO STORED WEAPONS"
+			_set_armory_stash_card(i, "EMPTY", "NO STORED", "CLEAR SECTORS FOR LOOT", Color(0.66, 0.90, 0.98, 0.84))
 			if i < _armory_stash_icons.size():
 				_set_weapon_icon(_armory_stash_icons[i], "unknown_weapon", false)
 			_apply_armory_button_accent(button, {}, false)
@@ -9270,13 +9438,17 @@ func _update_armory_stash_rows() -> void:
 			var instance: Dictionary = _stash_weapon_instances[stash_index]
 			button.visible = true
 			button.disabled = false
-			button.text = _armory_weapon_row_text(instance, stash_index, false)
+			var glyph_text := "PASSIVE" if _is_passive_weapon_instance(instance) else "ACTIVE"
+			var state_text := "NO BUTTON REQUIRED" if glyph_text == "PASSIVE" else "USES EQUIPPED SLOT"
+			var state_color := Color(1.0, 0.94, 0.18, 0.92) if glyph_text == "PASSIVE" else Color(0.0, 0.96, 1.0, 0.94)
+			_set_armory_stash_card(i, glyph_text, _compact_weapon_name(instance, 18).to_upper(), state_text, state_color)
 			if i < _armory_stash_icons.size():
 				_set_weapon_icon(_armory_stash_icons[i], instance, true)
 			_apply_armory_button_accent(button, instance, _armory_selected_section == "stash" and stash_index == _armory_stash_selected_index)
 		else:
 			button.visible = false
 			button.disabled = true
+			_hide_armory_stash_card(i)
 			if i < _armory_stash_icons.size():
 				_set_weapon_icon(_armory_stash_icons[i], "unknown_weapon", false)
 
@@ -9879,9 +10051,20 @@ func _armory_weapon_detail_text(instance: Dictionary) -> String:
 	lines.append("%s // %s" % [str(instance.get("rarity", "Common")).to_upper(), str(instance.get("family", instance.get("name", "Weapon"))).to_upper()])
 	if _armory_selected_section == "equipped":
 		var equipped_slot := clampi(_armory_equipped_selected_index, 0, EQUIPPED_WEAPON_SLOT_CAP - 1)
-		lines.append("SLOT ROUTE: E%02d [ %s ] %s" % [equipped_slot + 1, _equipment_slot_binding_label(equipped_slot), _equipment_slot_state_label(equipped_slot)])
+		lines.append("EQUIPMENT SLOT: %02d" % [equipped_slot + 1])
+		lines.append("GLYPH: %s" % _equipment_slot_binding_label(equipped_slot))
+		lines.append("%s" % ("PASSIVE WEAPON // NO BUTTON REQUIRED" if _is_passive_weapon_instance(instance) else "ACTIVE WEAPON // HOLD BUTTON TO FIRE"))
 	else:
-		lines.append("EQUIP TYPE: %s" % ("PASSIVE // NO BUTTON" if _is_passive_weapon_instance(instance) else "ACTIVE // ASSIGN BY EQUIPMENT SLOT"))
+		if _is_passive_weapon_instance(instance):
+			lines.append("PASSIVE WEAPON")
+			lines.append("NO FIRE BUTTON REQUIRED")
+		else:
+			var target_slot := clampi(_armory_equipped_selected_index, 0, EQUIPPED_WEAPON_SLOT_CAP - 1)
+			lines.append("ACTIVE WEAPON")
+			if _is_equipment_slot_unlocked(target_slot):
+				lines.append("WILL USE: %s IF EQUIPPED TO SLOT %02d" % [_prospective_equipment_slot_binding_label(target_slot, instance), target_slot + 1])
+			else:
+				lines.append("TARGET SLOT LOCKED UNTIL LEVEL %d" % _equipment_slot_unlock_level(target_slot))
 	lines.append("TYPE: %s" % str(instance.get("archetype", definition.get("archetype", "Weapon"))).to_upper())
 	lines.append("SHAPE: %s" % str(definition.get("shape", "Weapon geometry")).to_upper())
 	lines.append("POWER: %.2f" % float(instance.get("power_score", WeaponCatalog.estimate_power(instance))))
@@ -10641,7 +10824,13 @@ func _weapon_reward_detail_text(instance: Dictionary) -> String:
 	var lines: Array[String] = []
 	lines.append("%s %s" % [str(instance.get("rarity", "Common")).to_upper(), str(instance.get("name", "WEAPON")).to_upper()])
 	lines.append("FAMILY: %s" % str(instance.get("family", instance.get("definition_id", "weapon"))).to_upper())
-	lines.append("EQUIP TYPE: %s" % ("PASSIVE // NO BUTTON" if _is_passive_weapon_instance(instance) else "ACTIVE // USES TARGET SLOT BUTTON"))
+	if _is_passive_weapon_instance(instance):
+		lines.append("PASSIVE WEAPON")
+		lines.append("NO FIRE BUTTON REQUIRED")
+	else:
+		var target_slot := clampi(_weapon_reward_slot_selected_index, 0, EQUIPPED_WEAPON_SLOT_CAP - 1)
+		lines.append("ACTIVE WEAPON")
+		lines.append("WILL USE: %s IF EQUIPPED TO SLOT %02d" % [_prospective_equipment_slot_binding_label(target_slot, instance), target_slot + 1])
 	lines.append("ARCHETYPE: %s" % str(instance.get("archetype", "weapon")).to_upper())
 	lines.append("SHAPE: %s" % str(instance.get("shape", WeaponCatalog.weapon_definition(str(instance.get("definition_id", ""))).get("shape", "Weapon geometry"))).to_upper())
 	lines.append("POWER: %.2f" % float(instance.get("power_score", WeaponCatalog.estimate_power(instance))))
@@ -16482,12 +16671,10 @@ func _update_gameplay_loadout_slots() -> void:
 			continue
 		if not _is_equipment_slot_unlocked(i):
 			panel.add_theme_stylebox_override("panel", _gameplay_loadout_slot_style(Color(0.0, 0.010, 0.032, 0.46), Color(0.22, 0.30, 0.36, 0.58), 1))
-			badge_panel.add_theme_stylebox_override("panel", _gameplay_loadout_badge_style(Color(0.030, 0.040, 0.052, 0.88), Color(0.44, 0.50, 0.58, 0.72), 1))
-			badge_label.text = "LV %d" % _equipment_slot_unlock_level(i)
-			badge_label.add_theme_color_override("font_color", Color(0.62, 0.70, 0.76, 0.92))
+			_apply_equipment_glyph_badge(badge_panel, badge_label, "LV %d" % _equipment_slot_unlock_level(i))
 			_set_weapon_icon(icon, "unknown_weapon", true)
 			icon.modulate = Color(0.36, 0.42, 0.48, 0.28)
-			label.text = "SLOT %02d\nLOCKED SLOT" % [i + 1]
+			label.text = "LOCKED\nUNLOCKS LV %d" % _equipment_slot_unlock_level(i)
 			label.tooltip_text = "Slot %02d: Locked\nUnlocks at level %d" % [i + 1, _equipment_slot_unlock_level(i)]
 			label.add_theme_color_override("font_color", Color(0.48, 0.58, 0.64, 0.62))
 			continue
@@ -16499,9 +16686,9 @@ func _update_gameplay_loadout_slots() -> void:
 			var flash_amount := clampf(float(_gameplay_weapon_slot_flash_timers.get(i, 0.0)) / GAMEPLAY_WEAPON_HUD_FLASH_DURATION, 0.0, 1.0)
 			var preview_active := _upgrade_preview_weapon_definitions.has(definition_id)
 			var binding_label := _equipment_slot_binding_label(i)
-			var source_label := "PASSIVE" if binding_label == "PASSIVE" else "FIRE %s" % binding_label
+			var state_label := "AUTO WEAPON" if binding_label == "PASSIVE" else "ACTIVE"
 			if flash_amount > 0.0:
-				source_label = "PASSIVE FIRING" if binding_label == "PASSIVE" else "FIRING %s" % binding_label
+				state_label = "AUTO FIRING" if binding_label == "PASSIVE" else "FIRING"
 			var fill_color := Color(0.0, 0.010, 0.032, 0.82)
 			var border_color := Color(accent.r, accent.g, accent.b, 0.92)
 			var border_width := 2
@@ -16514,25 +16701,12 @@ func _update_gameplay_loadout_slots() -> void:
 				border_color = Color(1.0, 0.94, 0.18, 0.96)
 				border_width = 3
 			panel.add_theme_stylebox_override("panel", _gameplay_loadout_slot_style(fill_color, border_color, border_width))
-			var badge_fill := Color(0.0, 0.052, 0.074, 0.96)
-			var badge_border := Color(0.0, 0.96, 1.0, 0.98)
-			var badge_text := Color(0.90, 1.0, 1.0, 1.0)
-			if binding_label == "PASSIVE":
-				badge_fill = Color(0.12, 0.078, 0.0, 0.96)
-				badge_border = Color(1.0, 0.90, 0.08, 0.96)
-				badge_text = Color(1.0, 0.96, 0.58, 1.0)
-			if flash_amount > 0.0:
-				badge_fill = badge_fill.lerp(Color(0.20, 0.15, 0.0, 0.98), flash_amount)
-				badge_border = Color(1.0, 0.96, 0.20, 1.0)
-				badge_text = Color(1.0, 1.0, 0.70, 1.0)
-			badge_panel.add_theme_stylebox_override("panel", _gameplay_loadout_badge_style(badge_fill, badge_border, 2 if flash_amount > 0.0 else 1))
-			badge_label.text = binding_label
-			badge_label.add_theme_color_override("font_color", badge_text)
+			_apply_equipment_glyph_badge(badge_panel, badge_label, binding_label, flash_amount)
 			_set_weapon_icon(icon, instance, true)
 			icon.modulate = Color(1.0, 1.0, 1.0, 1.0 if flash_amount > 0.0 else 0.96)
 			label.text = "%s\n%s" % [
-				_compact_weapon_name(instance, 18).to_upper(),
-				source_label
+				_compact_weapon_name(instance, 16).to_upper(),
+				state_label
 			]
 			label.tooltip_text = _weapon_hud_tooltip(instance, i + 1)
 			var label_color := Color(0.88, 1.0, 1.0, 0.96)
@@ -16543,12 +16717,10 @@ func _update_gameplay_loadout_slots() -> void:
 			label.add_theme_color_override("font_color", label_color)
 		else:
 			panel.add_theme_stylebox_override("panel", _gameplay_loadout_slot_style(Color(0.0, 0.010, 0.032, 0.52), Color(0.18, 0.42, 0.52, 0.50), 1))
-			badge_panel.add_theme_stylebox_override("panel", _gameplay_loadout_badge_style(Color(0.0, 0.035, 0.052, 0.84), Color(0.24, 0.72, 0.86, 0.70), 1))
-			badge_label.text = "EMPTY"
-			badge_label.add_theme_color_override("font_color", Color(0.66, 0.90, 0.98, 0.86))
+			_apply_equipment_glyph_badge(badge_panel, badge_label, "EMPTY")
 			_set_weapon_icon(icon, "unknown_weapon", true)
 			icon.modulate = Color(0.46, 0.64, 0.72, 0.34)
-			label.text = "SLOT %02d\nEMPTY SLOT" % [i + 1]
+			label.text = "SLOT OPEN\nREADY"
 			label.tooltip_text = "Slot %02d: Empty\nUnlocked equipment slot" % [i + 1]
 			label.add_theme_color_override("font_color", Color(0.58, 0.78, 0.86, 0.54))
 
