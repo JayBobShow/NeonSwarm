@@ -47,6 +47,35 @@ static func ensure_actions() -> void:
 		_joy_motion(JOY_AXIS_RIGHT_Y, 1.0)
 	])
 
+	_configure_action("fire_weapon_slot_1", 0.2, [
+		_mouse_button(MOUSE_BUTTON_LEFT),
+		_joy_motion(JOY_AXIS_TRIGGER_RIGHT, 1.0)
+	])
+	_configure_action("fire_weapon_slot_2", 0.2, [
+		_mouse_button(MOUSE_BUTTON_RIGHT),
+		_joy_motion(JOY_AXIS_TRIGGER_LEFT, 1.0)
+	])
+	_configure_action("fire_weapon_slot_3", 0.2, [
+		_key(KEY_Q),
+		_joy_button(JOY_BUTTON_RIGHT_SHOULDER)
+	])
+	_configure_action("fire_weapon_slot_4", 0.2, [
+		_key(KEY_E),
+		_joy_button(JOY_BUTTON_LEFT_SHOULDER)
+	])
+	_configure_action("fire_weapon_slot_5", 0.2, [
+		_key(KEY_R)
+	])
+	_configure_action("fire_weapon_slot_6", 0.2, [
+		_key(KEY_F)
+	])
+	_configure_action("fire_weapon_slot_7", 0.2, [
+		_key(KEY_Z)
+	])
+	_configure_action("fire_weapon_slot_8", 0.2, [
+		_key(KEY_X)
+	])
+
 	_configure_action("confirm", 0.2, [
 		_key(KEY_ENTER),
 		_key(KEY_KP_ENTER),
@@ -88,6 +117,12 @@ static func _key(keycode: Key) -> InputEventKey:
 static func _joy_button(button: JoyButton) -> InputEventJoypadButton:
 	var event := InputEventJoypadButton.new()
 	event.button_index = button
+	return event
+
+
+static func _mouse_button(button_index: MouseButton) -> InputEventMouseButton:
+	var event := InputEventMouseButton.new()
+	event.button_index = button_index
 	return event
 
 

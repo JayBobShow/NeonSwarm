@@ -41,6 +41,7 @@ const PLAYER_CORE_VISUAL_PITCH_DEGREES := 25.0
 const PLAYER_CORE_AIM_FACING_EXPERIMENT_ENABLED := true
 const PLAYER_CORE_AIM_FACING_YAW_RESPONSE := 14.0
 const PLAYER_VISUAL_ENEMY_AUTO_FACE_ENABLED := false
+const MANUAL_WEAPON_FIRE_EXPERIMENT_ENABLED := true
 const PLAYER_APPROVED_FALLBACK_CORE_PATH := "res://art/player/exported/3d/player_core.glb"
 const PLAYER_SHOOTING_ANIMATED_CORE_EXPERIMENT_ENABLED := true
 const PLAYER_SHOOTING_ANIMATED_CORE_PATH := "res://art/player/exported/3d/player_core_user_replacement_pre_orientation_hotfix_shooting_animated.glb"
@@ -419,6 +420,18 @@ const PULSE_DAMAGE := 27.0
 const PULSE_SPEED := 23.0
 const PULSE_LIFE := 1.25
 const AUTO_TARGET_RANGE := 26.0
+const WEAPON_FIRE_SLOT_ACTIONS := [
+	"fire_weapon_slot_1",
+	"fire_weapon_slot_2",
+	"fire_weapon_slot_3",
+	"fire_weapon_slot_4",
+	"fire_weapon_slot_5",
+	"fire_weapon_slot_6",
+	"fire_weapon_slot_7",
+	"fire_weapon_slot_8"
+]
+const WEAPON_FIRE_SLOT_KEYBOARD_LABELS := ["LMB", "RMB", "Q", "E", "R", "F", "Z", "X"]
+const WEAPON_FIRE_SLOT_CONTROLLER_LABELS := ["RT", "LT", "RB", "LB", "--", "--", "--", "--"]
 const ORBIT_COOLDOWN := 0.16
 const ORBIT_DAMAGE := 16.0
 const ORBIT_RADIUS := 2.35
@@ -937,6 +950,7 @@ var _gameplay_weapon_slot_icons: Array[Control] = []
 var _gameplay_weapon_slot_labels: Array[Label] = []
 var _gameplay_weapon_slot_flash_timers: Dictionary = {}
 var _run_bonus_weapon_definitions: Dictionary = {}
+var _run_bonus_weapon_fire_order: Array[String] = []
 var _run_bonus_weapons_panel: Control
 var _run_bonus_weapons_label: Label
 var _presentation_flash: ColorRect
@@ -1739,7 +1753,7 @@ func _rebuild_weapon_stat_bonuses() -> void:
 	_refresh_run_weapon_activation()
 	_update_orbit_visual_visibility()
 	if is_instance_valid(_ring_saw_root):
-		_ring_saw_root.visible = _is_runtime_weapon_active("ring_saw")
+		_ring_saw_root.visible = _is_runtime_weapon_active("ring_saw") and _is_weapon_definition_fire_pressed("ring_saw")
 
 
 func _has_run_bonus_weapon(definition_id: String) -> bool:
@@ -1774,6 +1788,8 @@ func _activate_run_bonus_weapon(definition_id: String, prime_autofire := false) 
 		return
 	var was_new_run_weapon := not _has_run_bonus_weapon(definition_id)
 	_run_bonus_weapon_definitions[definition_id] = true
+	if not _run_bonus_weapon_fire_order.has(definition_id):
+		_run_bonus_weapon_fire_order.append(definition_id)
 	_refresh_run_weapon_activation()
 	if prime_autofire:
 		_prime_runtime_weapon_autofire(definition_id)
@@ -1784,8 +1800,10 @@ func _activate_run_bonus_weapon(definition_id: String, prime_autofire := false) 
 
 func _clear_run_bonus_weapons() -> void:
 	if _run_bonus_weapon_definitions.is_empty():
+		_run_bonus_weapon_fire_order.clear()
 		return
 	_run_bonus_weapon_definitions.clear()
+	_run_bonus_weapon_fire_order.clear()
 	_refresh_run_weapon_activation()
 	_update_run_bonus_weapon_hud()
 
@@ -3120,7 +3138,7 @@ func _tutorial_prompt_data(key: String) -> Dictionary:
 		"xp":
 			return {"title": "XP SHARDS", "body": "Collect XP shards to level up. XP is not weapon loot."}
 		"weapons":
-			return {"title": "AUTO WEAPONS", "body": "Equipped weapons fire automatically. Aim if you want to steer projectile shots."}
+			return {"title": "SLOT FIRE", "body": "Hold a weapon slot fire button to trigger that equipped weapon. Manual aim controls projectile shots."}
 		"sectors":
 			return {"title": "SECTOR FLOW", "body": "Clear sectors to earn rewards. Sector weapon rewards can be equipped, stashed, or scrapped."}
 		"weapon_loot":
@@ -5674,7 +5692,7 @@ func _create_orbit_visuals() -> void:
 func _create_ring_saw_visual() -> void:
 	_ring_saw_root = Node3D.new()
 	_ring_saw_root.name = "RingSawNeonTubeWeaponVisual"
-	_ring_saw_root.visible = _is_weapon_family_equipped("ring_saw")
+	_ring_saw_root.visible = _is_weapon_family_equipped("ring_saw") and _is_weapon_definition_fire_pressed("ring_saw")
 	_gameplay_root.add_child(_ring_saw_root)
 	var outer := Kit.add_mesh(_ring_saw_root, "RingSawCyanOuterTube", Kit.torus_mesh(RING_SAW_RADIUS, 0.050, 64, 6), _materials["ring_saw"])
 	var core := Kit.add_mesh(_ring_saw_root, "RingSawWhiteHotInnerTube", Kit.torus_mesh(RING_SAW_RADIUS, 0.018, 64, 5), _materials["white"])
@@ -6849,11 +6867,11 @@ func _help_page_data() -> Array[Dictionary]:
 	return [
 		{
 			"title": "BASIC CONTROLS",
-			"body": "MOVE\nKeyboard: WASD / arrows. Controller: left stick / D-pad.\n\nAIM\nUse right stick or aim keys if mapped. If you do not aim, projectile weapons auto-target the nearest enemy.\n\nMENUS\nA / Enter confirms. B / Esc backs out. D-pad / arrows move selection.\n\nPAUSE\nPress Start, P, or Esc during a run."
+			"body": "MOVE\nKeyboard: WASD / arrows. Controller: left stick / D-pad.\n\nAIM\nMouse or right stick turns the player core. If no aim input is active, the last manual aim direction is preserved.\n\nFIRE\nHold weapon slot buttons to fire equipped weapons: LMB, RMB, Q, E, R, F, Z, X. Controller defaults cover the first four slots: RT, LT, RB, LB.\n\nMENUS\nA / Enter confirms. B / Esc backs out. D-pad / arrows move selection.\n\nPAUSE\nPress Start, P, or Esc during a run."
 		},
 		{
 			"title": "CORE LOOP",
-			"body": "SURVIVE WAVES\nEnemies pressure the arena while your equipped weapons fire automatically.\n\nKILL ENEMIES\nDestroy enemies to create XP shards and clear pressure.\n\nCOLLECT XP\nXP fills the level bar. Level-ups improve the current run.\n\nCLEAR SECTORS\nDefeat sector events, choose rewards, push to the final boss, then reach RUN COMPLETE."
+			"body": "SURVIVE WAVES\nEnemies pressure the arena while your equipped weapons fire from their assigned slot buttons.\n\nKILL ENEMIES\nDestroy enemies to create XP shards and clear pressure.\n\nCOLLECT XP\nXP fills the level bar. Level-ups improve the current run.\n\nCLEAR SECTORS\nDefeat sector events, choose rewards, push to the final boss, then reach RUN COMPLETE."
 		},
 		{
 			"title": "XP AND LEVEL-UPS",
@@ -6861,15 +6879,15 @@ func _help_page_data() -> Array[Dictionary]:
 		},
 		{
 			"title": "WEAPON SYSTEMS",
-			"body": "WEAPONS ARE AUTOMATIC\nEquipped weapon systems fire or trigger by themselves. You do not press a separate fire button.\n\nEQUIPPED LOADOUT\nStart Game uses up to 8 weapons chosen from Armory. They persist with your loadout and appear in the right-side HUD.\n\nWEAPON ICONS\nIcons show the weapon family behavior: pulse, orbit, spear, chain, saw, well, bloom, and other geometry roles.\n\nRANDOM WEAPONS\nGenerated weapons can have rarity, random stats, and modifiers.\n\nARMORY\nUse Armory from the title screen to inspect, compare, and swap stored weapons."
+			"body": "WEAPONS USE SLOT FIRE\nEquipped weapon systems fire or trigger only while their slot fire input is held. Cooldowns and fire rates still apply.\n\nEQUIPPED LOADOUT\nStart Game uses up to 8 weapons chosen from Armory. They persist with your loadout and appear in the right-side HUD.\n\nWEAPON ICONS\nIcons show the weapon family behavior: pulse, orbit, spear, chain, saw, well, bloom, and other geometry roles.\n\nRANDOM WEAPONS\nGenerated weapons can have rarity, random stats, and modifiers.\n\nARMORY\nUse Armory from the title screen to inspect, compare, and swap stored weapons."
 		},
 		{
 			"title": "EQUIPPED VS RUN WEAPONS",
-			"body": "EQUIPPED LOADOUT WEAPONS\nYour 8 equipped weapons are your starting loadout. They are chosen from Armory, shown in the right-side HUD, and persist as loadout weapons.\n\nRUN WEAPONS\nDuring a run, boss, mini-boss, or Warden rewards may add temporary run weapons. A NEW RUN WEAPON starts firing immediately when selected.\n\nLOADOUT UNCHANGED\nRun weapons do not need Armory equip and do not replace one of your 8 equipped weapons.\n\nRUN ONLY\nRun weapons help only during the current run unless a separate loot or save reward stores that weapon elsewhere."
+			"body": "EQUIPPED LOADOUT WEAPONS\nYour 8 equipped weapons are your starting loadout. They are chosen from Armory, shown in the right-side HUD, and persist as loadout weapons.\n\nRUN WEAPONS\nDuring a run, boss, mini-boss, or Warden rewards may add temporary run weapons. A NEW RUN WEAPON uses the next available slot fire binding when one is available.\n\nLOADOUT UNCHANGED\nRun weapons do not need Armory equip and do not replace one of your 8 equipped weapons.\n\nRUN ONLY\nRun weapons help only during the current run unless a separate loot or save reward stores that weapon elsewhere."
 		},
 		{
 			"title": "SECTOR REWARDS",
-			"body": "SECTOR-CLEAR REWARDS\nAfter a sector boss or major event, choose a reward before moving on. Clearing sectors also banks a small Neon Dust bonus.\n\nNEW RUN WEAPON\nSome boss rewards add a temporary run weapon. It starts firing now, is run-only, and does not replace your equipped loadout.\n\nGENERATED WEAPON SYSTEMS\nWeapon rewards are random weapons with rarity and stat rolls.\n\nLOOT ROUTES\nEquip Now adds to an open slot. Replace Slot swaps with an equipped weapon. Send To Stash stores it. Scrap / Skip converts the weapon into Neon Dust.\n\nENEMIES CURRENTLY DROP XP, NOT WEAPONS."
+			"body": "SECTOR-CLEAR REWARDS\nAfter a sector boss or major event, choose a reward before moving on. Clearing sectors also banks a small Neon Dust bonus.\n\nNEW RUN WEAPON\nSome boss rewards add a temporary run weapon. It is run-only, uses an available fire slot when possible, and does not replace your equipped loadout.\n\nGENERATED WEAPON SYSTEMS\nWeapon rewards are random weapons with rarity and stat rolls.\n\nLOOT ROUTES\nEquip Now adds to an open slot. Replace Slot swaps with an equipped weapon. Send To Stash stores it. Scrap / Skip converts the weapon into Neon Dust.\n\nENEMIES CURRENTLY DROP XP, NOT WEAPONS."
 		},
 		{
 			"title": "ARMORY / STASH",
@@ -12355,6 +12373,104 @@ func _boss_name_for_type(enemy_type: String) -> String:
 			return str(_current_sector().get("boss_name", "BOSS"))
 
 
+func _manual_weapon_fire_enabled() -> bool:
+	return MANUAL_WEAPON_FIRE_EXPERIMENT_ENABLED
+
+
+func _get_fire_action_for_weapon_slot(slot_index: int) -> String:
+	if slot_index < 0 or slot_index >= WEAPON_FIRE_SLOT_ACTIONS.size():
+		return ""
+	return str(WEAPON_FIRE_SLOT_ACTIONS[slot_index])
+
+
+func _fire_binding_label_for_weapon_slot(slot_index: int) -> String:
+	if not _manual_weapon_fire_enabled():
+		return "AUTO"
+	if slot_index < 0 or slot_index >= WEAPON_FIRE_SLOT_KEYBOARD_LABELS.size():
+		return "NO BIND"
+	var keyboard_label := str(WEAPON_FIRE_SLOT_KEYBOARD_LABELS[slot_index])
+	var controller_label := str(WEAPON_FIRE_SLOT_CONTROLLER_LABELS[slot_index])
+	if controller_label == "--":
+		return keyboard_label
+	return "%s/%s" % [keyboard_label, controller_label]
+
+
+func _run_bonus_weapon_manual_definition_ids() -> Array[String]:
+	var ids: Array[String] = []
+	for definition_id in _run_bonus_weapon_fire_order:
+		var ordered_id := str(definition_id)
+		if ordered_id == "" or ids.has(ordered_id) or not _has_run_bonus_weapon(ordered_id) or _is_weapon_family_equipped(ordered_id):
+			continue
+		ids.append(ordered_id)
+	for definition_id in _run_bonus_weapon_definitions.keys():
+		var id := str(definition_id)
+		if id == "" or ids.has(id) or not _has_run_bonus_weapon(id) or _is_weapon_family_equipped(id):
+			continue
+		ids.append(id)
+	return ids
+
+
+func _run_bonus_weapon_fire_slot_index(definition_id: String) -> int:
+	var ids := _run_bonus_weapon_manual_definition_ids()
+	var run_bonus_index := ids.find(definition_id)
+	if run_bonus_index < 0:
+		return -1
+	var slot_index := _equipped_weapon_instances.size() + run_bonus_index
+	if slot_index < 0 or slot_index >= EQUIPPED_WEAPON_SLOT_CAP:
+		return -1
+	return slot_index
+
+
+func _fire_slot_indices_for_weapon_definition(definition_id: String) -> Array[int]:
+	var slots: Array[int] = []
+	if definition_id == "":
+		return slots
+	for i in range(_equipped_weapon_instances.size()):
+		if i >= EQUIPPED_WEAPON_SLOT_CAP:
+			break
+		if str(_equipped_weapon_instances[i].get("definition_id", "")) == definition_id:
+			slots.append(i)
+	var run_bonus_slot := _run_bonus_weapon_fire_slot_index(definition_id)
+	if run_bonus_slot >= 0 and not slots.has(run_bonus_slot):
+		slots.append(run_bonus_slot)
+	return slots
+
+
+func _is_weapon_slot_fire_pressed(slot_index: int) -> bool:
+	if not _manual_weapon_fire_enabled():
+		return true
+	var action := _get_fire_action_for_weapon_slot(slot_index)
+	return action != "" and Input.is_action_pressed(action)
+
+
+func _should_weapon_slot_fire(slot_index: int, weapon_data: Dictionary) -> bool:
+	if weapon_data.is_empty():
+		return false
+	if slot_index < 0 or slot_index >= EQUIPPED_WEAPON_SLOT_CAP:
+		return false
+	return _is_weapon_slot_fire_pressed(slot_index)
+
+
+func _is_weapon_definition_fire_pressed(definition_id: String) -> bool:
+	if not _manual_weapon_fire_enabled():
+		return true
+	for slot_index in _fire_slot_indices_for_weapon_definition(definition_id):
+		if _should_weapon_slot_fire(slot_index, {"definition_id": definition_id}):
+			return true
+	return false
+
+
+func _fire_binding_label_for_weapon_definition(definition_id: String) -> String:
+	if not _manual_weapon_fire_enabled():
+		return "AUTO"
+	var pieces: Array[String] = []
+	for slot_index in _fire_slot_indices_for_weapon_definition(definition_id):
+		pieces.append(_fire_binding_label_for_weapon_slot(slot_index))
+	if pieces.is_empty():
+		return "NO BIND"
+	return "+".join(pieces)
+
+
 func _update_weapons(delta: float) -> void:
 	_update_pulse_blaster(delta)
 	_update_hex_shatter(delta)
@@ -12382,6 +12498,9 @@ func _update_pulse_blaster(delta: float) -> void:
 	if not bool(state.get("enabled", false)):
 		return
 	state["timer"] = float(state["timer"]) - delta
+	if not _is_weapon_definition_fire_pressed("pulse_blaster"):
+		_weapon_state["pulse_blaster"] = state
+		return
 	if float(state["timer"]) > 0.0:
 		_weapon_state["pulse_blaster"] = state
 		return
@@ -12410,6 +12529,9 @@ func _update_hex_shatter(delta: float) -> void:
 	if not bool(state.get("enabled", false)):
 		return
 	state["timer"] = float(state["timer"]) - delta
+	if not _is_weapon_definition_fire_pressed("hex_shatter"):
+		_weapon_state["hex_shatter"] = state
+		return
 	if float(state["timer"]) > 0.0:
 		_weapon_state["hex_shatter"] = state
 		return
@@ -12430,6 +12552,9 @@ func _update_fractal_shard(delta: float) -> void:
 	if not _fractal_shard_enabled and not bool(state.get("enabled", false)):
 		return
 	state["timer"] = float(state["timer"]) - delta
+	if not _is_weapon_definition_fire_pressed("fractal_shard"):
+		_weapon_state["fractal_shard"] = state
+		return
 	if float(state["timer"]) > 0.0:
 		_weapon_state["fractal_shard"] = state
 		return
@@ -12452,7 +12577,14 @@ func _update_orbit_spark(delta: float) -> void:
 			if is_instance_valid(node):
 				node.visible = false
 		return
+	var fire_pressed := _is_weapon_definition_fire_pressed("orbit_spark")
 	state["timer"] = float(state["timer"]) - delta
+	if not fire_pressed:
+		for node in _orbit_nodes:
+			if is_instance_valid(node):
+				node.visible = false
+		_weapon_state["orbit_spark"] = state
+		return
 	state["angle"] = float(state["angle"]) + delta * 2.85
 	var count := clampi(_orbit_count + _weapon_int_stat_bonus("orbit_spark", "orbit_count_bonus", 1), 1, ORBIT_VISUAL_CAP)
 	var orbit_radius := ORBIT_RADIUS * _weapon_range_multiplier("orbit_spark")
@@ -12486,6 +12618,9 @@ func _update_nova_burst(delta: float) -> void:
 	if not bool(state.get("enabled", false)):
 		return
 	state["timer"] = float(state["timer"]) - delta
+	if not _is_weapon_definition_fire_pressed("nova_burst"):
+		_weapon_state["nova_burst"] = state
+		return
 	if float(state["timer"]) > 0.0:
 		_weapon_state["nova_burst"] = state
 		return
@@ -12507,6 +12642,9 @@ func _update_arc_beam(delta: float) -> void:
 	if not bool(state.get("enabled", false)):
 		return
 	state["timer"] = float(state["timer"]) - delta
+	if not _is_weapon_definition_fire_pressed("arc_beam"):
+		_weapon_state["arc_beam"] = state
+		return
 	if float(state["timer"]) > 0.0:
 		_weapon_state["arc_beam"] = state
 		return
@@ -12533,6 +12671,9 @@ func _update_gravity_mine(delta: float) -> void:
 	if not bool(state.get("enabled", false)):
 		return
 	state["timer"] = float(state["timer"]) - delta
+	if not _is_weapon_definition_fire_pressed("gravity_mine"):
+		_weapon_state["gravity_mine"] = state
+		return
 	if float(state["timer"]) <= 0.0 and _mines.size() < MINE_CAP:
 		_spawn_gravity_mine(_player_area.position)
 		_trigger_player_shooting_core_animation()
@@ -12545,6 +12686,9 @@ func _update_prism_lance(delta: float) -> void:
 	if not bool(state.get("enabled", false)):
 		return
 	state["timer"] = float(state["timer"]) - delta
+	if not _is_weapon_definition_fire_pressed("prism_lance"):
+		_weapon_state["prism_lance"] = state
+		return
 	if float(state["timer"]) > 0.0:
 		_weapon_state["prism_lance"] = state
 		return
@@ -12566,9 +12710,13 @@ func _update_ring_saw(delta: float) -> void:
 		if is_instance_valid(_ring_saw_root):
 			_ring_saw_root.visible = false
 		return
+	var fire_pressed := _is_weapon_definition_fire_pressed("ring_saw")
 	if is_instance_valid(_ring_saw_root):
-		_ring_saw_root.visible = true
+		_ring_saw_root.visible = fire_pressed
 	state["timer"] = float(state["timer"]) - delta
+	if not fire_pressed:
+		_weapon_state["ring_saw"] = state
+		return
 	state["angle"] = float(state["angle"]) + delta * (RING_SAW_SPIN_SPEED * (1.0 + _ring_saw_spin_bonus))
 	var radius := (RING_SAW_RADIUS + _ring_saw_radius_bonus) * _weapon_range_multiplier("ring_saw")
 	if is_instance_valid(_ring_saw_root):
@@ -12598,6 +12746,9 @@ func _update_tri_burst_cannon(delta: float) -> void:
 	if not bool(state.get("enabled", false)):
 		return
 	state["timer"] = float(state["timer"]) - delta
+	if not _is_weapon_definition_fire_pressed("tri_burst_cannon"):
+		_weapon_state["tri_burst_cannon"] = state
+		return
 	if float(state["timer"]) > 0.0 or _player_projectiles.size() >= PLAYER_PROJECTILE_CAP:
 		_weapon_state["tri_burst_cannon"] = state
 		return
@@ -12619,6 +12770,9 @@ func _update_hex_mortar(delta: float) -> void:
 	if not bool(state.get("enabled", false)):
 		return
 	state["timer"] = float(state["timer"]) - delta
+	if not _is_weapon_definition_fire_pressed("hex_mortar"):
+		_weapon_state["hex_mortar"] = state
+		return
 	if float(state["timer"]) > 0.0 or _player_projectiles.size() >= PLAYER_PROJECTILE_CAP:
 		_weapon_state["hex_mortar"] = state
 		return
@@ -12636,6 +12790,9 @@ func _update_vector_spear(delta: float) -> void:
 	if not bool(state.get("enabled", false)):
 		return
 	state["timer"] = float(state["timer"]) - delta
+	if not _is_weapon_definition_fire_pressed("vector_spear"):
+		_weapon_state["vector_spear"] = state
+		return
 	if float(state["timer"]) > 0.0 or _player_projectiles.size() >= PLAYER_PROJECTILE_CAP:
 		_weapon_state["vector_spear"] = state
 		return
@@ -12654,6 +12811,9 @@ func _update_orbital_saw_array(delta: float) -> void:
 		return
 	state["timer"] = float(state["timer"]) - delta
 	state["angle"] = float(state.get("angle", 0.0)) + delta * 5.4
+	if not _is_weapon_definition_fire_pressed("orbital_saw_array"):
+		_weapon_state["orbital_saw_array"] = state
+		return
 	if float(state["timer"]) > 0.0:
 		_weapon_state["orbital_saw_array"] = state
 		return
@@ -12680,6 +12840,9 @@ func _update_prism_chain(delta: float) -> void:
 	if not bool(state.get("enabled", false)):
 		return
 	state["timer"] = float(state["timer"]) - delta
+	if not _is_weapon_definition_fire_pressed("prism_chain"):
+		_weapon_state["prism_chain"] = state
+		return
 	if float(state["timer"]) > 0.0:
 		_weapon_state["prism_chain"] = state
 		return
@@ -12706,6 +12869,9 @@ func _update_gravity_well(delta: float) -> void:
 	if not bool(state.get("enabled", false)):
 		return
 	state["timer"] = float(state["timer"]) - delta
+	if not _is_weapon_definition_fire_pressed("gravity_well"):
+		_weapon_state["gravity_well"] = state
+		return
 	if float(state["timer"]) <= 0.0 and _mines.size() < MINE_CAP:
 		_spawn_weapon_gravity_well(_player_area.position)
 		_trigger_player_shooting_core_animation()
@@ -12718,6 +12884,9 @@ func _update_nova_needle(delta: float) -> void:
 	if not bool(state.get("enabled", false)):
 		return
 	state["timer"] = float(state["timer"]) - delta
+	if not _is_weapon_definition_fire_pressed("nova_needle"):
+		_weapon_state["nova_needle"] = state
+		return
 	if float(state["timer"]) > 0.0 or _player_projectiles.size() >= PLAYER_PROJECTILE_CAP:
 		_weapon_state["nova_needle"] = state
 		return
@@ -12739,6 +12908,9 @@ func _update_fractal_bloom(delta: float) -> void:
 	if not bool(state.get("enabled", false)):
 		return
 	state["timer"] = float(state["timer"]) - delta
+	if not _is_weapon_definition_fire_pressed("fractal_bloom"):
+		_weapon_state["fractal_bloom"] = state
+		return
 	if float(state["timer"]) > 0.0 or _player_projectiles.size() >= PLAYER_PROJECTILE_CAP:
 		_weapon_state["fractal_bloom"] = state
 		return
@@ -12756,6 +12928,9 @@ func _update_shield_breaker(delta: float) -> void:
 	if not bool(state.get("enabled", false)):
 		return
 	state["timer"] = float(state["timer"]) - delta
+	if not _is_weapon_definition_fire_pressed("shield_breaker"):
+		_weapon_state["shield_breaker"] = state
+		return
 	if float(state["timer"]) > 0.0 or _player_projectiles.size() >= PLAYER_PROJECTILE_CAP:
 		_weapon_state["shield_breaker"] = state
 		return
@@ -12773,6 +12948,9 @@ func _update_star_pulse(delta: float) -> void:
 	if not bool(state.get("enabled", false)):
 		return
 	state["timer"] = float(state["timer"]) - delta
+	if not _is_weapon_definition_fire_pressed("star_pulse"):
+		_weapon_state["star_pulse"] = state
+		return
 	if float(state["timer"]) > 0.0:
 		_weapon_state["star_pulse"] = state
 		return
@@ -12795,6 +12973,10 @@ func _get_primary_fire_direction() -> Vector3:
 	if direction.length_squared() >= 0.01:
 		_set_player_core_aim_facing_direction(direction)
 		return direction
+	if _manual_weapon_fire_enabled():
+		if _player_core_has_aim_facing_direction and _player_core_aim_facing_direction.length_squared() >= 0.01:
+			return _player_core_aim_facing_direction.normalized()
+		return Vector3.ZERO
 	var target := _nearest_enemy()
 	if target.is_empty():
 		return Vector3.ZERO
@@ -15190,7 +15372,7 @@ func _upgrade_result_notice_text(upgrade: Dictionary, was_new_run_weapon := fals
 
 
 func _update_orbit_visual_visibility() -> void:
-	if not _is_runtime_weapon_active("orbit_spark"):
+	if not _is_runtime_weapon_active("orbit_spark") or not _is_weapon_definition_fire_pressed("orbit_spark"):
 		for node in _orbit_nodes:
 			if is_instance_valid(node):
 				node.visible = false
@@ -15731,10 +15913,11 @@ func _weapon_hud_tooltip(instance: Dictionary, slot_number: int) -> String:
 	var definition_id := str(instance.get("definition_id", ""))
 	var pieces := _weapon_hud_feedback_pieces(instance, 12)
 	var feedback := " / ".join(pieces) if not pieces.is_empty() else "Baseline power %.2f" % float(instance.get("power_score", 1.0))
-	return "Slot %02d: %s (%s)\nStatus: %s\nStats: %s" % [
+	return "Slot %02d: %s (%s)\nFire: %s\nStatus: %s\nStats: %s" % [
 		slot_number,
 		str(instance.get("name", "WEAPON")),
 		rarity,
+		_fire_binding_label_for_weapon_slot(slot_number - 1),
 		_weapon_hud_status_text(definition_id),
 		feedback
 	]
@@ -15773,9 +15956,9 @@ func _update_gameplay_loadout_slots() -> void:
 			label.text = "SLOT %02d  %s  %s\n%s\n%s" % [
 				i + 1,
 				_rarity_display_code(rarity),
-				_weapon_hud_status_text(definition_id),
+				_fire_binding_label_for_weapon_slot(i),
 				_compact_weapon_name(instance, 18),
-				_weapon_hud_feedback_text(instance)
+				"%s  %s" % [_weapon_hud_status_text(definition_id), _weapon_hud_feedback_text(instance)]
 			]
 			label.tooltip_text = _weapon_hud_tooltip(instance, i + 1)
 			var label_color := Color(0.88, 1.0, 1.0, 0.96)
@@ -15788,19 +15971,18 @@ func _update_gameplay_loadout_slots() -> void:
 			panel.add_theme_stylebox_override("panel", _gameplay_loadout_slot_style(Color(0.0, 0.010, 0.032, 0.52), Color(0.18, 0.42, 0.52, 0.50), 1))
 			_set_weapon_icon(icon, "unknown_weapon", true)
 			icon.modulate = Color(0.46, 0.64, 0.72, 0.34)
-			label.text = "SLOT %02d\nEMPTY\n--" % [i + 1]
-			label.tooltip_text = "Slot %02d: Empty" % [i + 1]
+			label.text = "SLOT %02d  %s\nEMPTY\n--" % [i + 1, _fire_binding_label_for_weapon_slot(i)]
+			label.tooltip_text = "Slot %02d: Empty\nFire: %s" % [i + 1, _fire_binding_label_for_weapon_slot(i)]
 			label.add_theme_color_override("font_color", Color(0.58, 0.78, 0.86, 0.54))
 
 
 func _run_bonus_weapon_display_names() -> Array[String]:
 	var names: Array[String] = []
-	for definition_id in _run_bonus_weapon_definitions.keys():
+	for definition_id in _run_bonus_weapon_manual_definition_ids():
 		var id := str(definition_id)
 		if not _has_run_bonus_weapon(id) or _is_weapon_family_equipped(id):
 			continue
-		names.append(_weapon_display_name_for_definition(id).to_upper())
-	names.sort()
+		names.append("%s [%s]" % [_weapon_display_name_for_definition(id).to_upper(), _fire_binding_label_for_weapon_definition(id)])
 	return names
 
 
