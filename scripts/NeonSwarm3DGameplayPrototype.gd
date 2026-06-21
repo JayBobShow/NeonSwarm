@@ -953,6 +953,7 @@ var _run_bonus_weapon_definitions: Dictionary = {}
 var _run_bonus_weapon_fire_order: Array[String] = []
 var _run_bonus_weapons_panel: Control
 var _run_bonus_weapons_label: Label
+var _run_bonus_weapon_fire_flash_timer := 0.0
 var _presentation_flash: ColorRect
 var _presentation_flash_color := Color(0.0, 0.94, 1.0, 0.0)
 var _presentation_flash_alpha := 0.0
@@ -1480,11 +1481,16 @@ func _initialize_upgrade_pool() -> void:
 
 
 func _initialize_weapon_inventory() -> void:
+	var migrated_locked_slots := false
 	if not _load_weapon_inventory():
 		_neon_dust = 0
 		_core_upgrade_ranks = _default_core_upgrade_ranks()
 		_create_default_weapon_loadout()
 		_save_weapon_inventory()
+	else:
+		migrated_locked_slots = _migrate_locked_equipped_slots_to_stash()
+		if migrated_locked_slots:
+			_save_weapon_inventory()
 	_normalize_core_upgrade_ranks()
 	_rebuild_weapon_stat_bonuses()
 	_apply_core_upgrade_bonuses()
@@ -1589,7 +1595,8 @@ func _normalize_equipped_weapon_slots() -> void:
 			_equipped_weapon_instances[i] = {}
 			continue
 		if item is Dictionary and WeaponCatalog.has_definition(str(Dictionary(item).get("definition_id", ""))):
-			_equipped_weapon_instances[i] = _normalize_weapon_instance(Dictionary(item).duplicate(true), true)
+			var unlocked := i < EQUIPPED_WEAPON_SLOT_CAP and _is_equipment_slot_unlocked(i)
+			_equipped_weapon_instances[i] = _normalize_weapon_instance(Dictionary(item).duplicate(true), unlocked)
 			continue
 		_equipped_weapon_instances[i] = {}
 	while _equipped_weapon_instances.size() > EQUIPPED_WEAPON_SLOT_CAP:
@@ -1599,6 +1606,25 @@ func _normalize_equipped_weapon_slots() -> void:
 			_stash_weapon_instances.append(extra)
 	while _equipped_weapon_instances.size() < EQUIPPED_WEAPON_SLOT_CAP:
 		_equipped_weapon_instances.append({})
+
+
+func _migrate_locked_equipped_slots_to_stash() -> bool:
+	_normalize_equipped_weapon_slots()
+	var migrated := false
+	for i in range(EQUIPPED_WEAPON_SLOT_CAP):
+		if _is_equipment_slot_unlocked(i):
+			continue
+		var instance := Dictionary(_equipped_weapon_instances[i]).duplicate(true)
+		if instance.is_empty():
+			continue
+		instance["equipped"] = false
+		if _stash_weapon_instances.size() < STASH_WEAPON_CAP:
+			_stash_weapon_instances.append(instance)
+			_equipped_weapon_instances[i] = {}
+		else:
+			_equipped_weapon_instances[i] = instance
+		migrated = true
+	return migrated
 
 
 func _equipped_weapon_count(include_locked := true) -> int:
@@ -1855,7 +1881,7 @@ func _active_fire_binding_label(active_index: int) -> String:
 	var controller_label := str(WEAPON_FIRE_SLOT_CONTROLLER_LABELS[active_index])
 	if controller_label == "--":
 		return keyboard_label
-	return "%s/%s" % [keyboard_label, controller_label]
+	return "%s / %s" % [keyboard_label, controller_label]
 
 
 func _equipment_slot_binding_label(slot_index: int) -> String:
@@ -9290,10 +9316,13 @@ func _armory_weapon_row_text(instance: Dictionary, index: int, equipped: bool) -
 	var power := float(instance.get("power_score", WeaponCatalog.estimate_power(instance)))
 	var prefix := "E" if equipped else "S"
 	var mode := _equipment_slot_binding_label(index) if equipped else _equipment_mode_label_for_instance(instance)
+	var mode_label := "%s WEAPON" % mode
+	if equipped:
+		mode_label = "PASSIVE" if mode == "PASSIVE" else "ACTIVE %s" % mode
 	var forge_rank := clampi(int(instance.get("forge_power_rank", 0)), 0, FORGE_POWER_MAX_RANK)
 	var forge_label := " F%d" % forge_rank if forge_rank > 0 else ""
 	var evolution_label := " EV%d" % _evolution_rank(instance) if _evolution_rank(instance) > 0 else ""
-	return "%s%02d  %s  %s\n%s%s%s  PWR %.2f" % [prefix, index + 1, mode, _compact_weapon_name(instance, 12 if equipped else 14), rarity_code, forge_label, evolution_label, power]
+	return "%s%02d  %s\n%s  %s%s%s  PWR %.2f" % [prefix, index + 1, mode_label, _compact_weapon_name(instance, 16 if equipped else 18), rarity_code, forge_label, evolution_label, power]
 
 
 func _armory_stash_window_start() -> int:
@@ -10583,11 +10612,12 @@ func _weapon_reward_slot_button_text(slot_index: int, candidate: Dictionary) -> 
 		return "E%02d  LOCKED\nUNLOCKS AT LEVEL %d\n--" % [slot_index + 1, _equipment_slot_unlock_level(slot_index)]
 	var current := _equipment_slot_instance(slot_index)
 	if current.is_empty():
-		return "E%02d  EMPTY  %s\n%s\n%s" % [
+		var candidate_label := _prospective_equipment_slot_binding_label(slot_index, candidate)
+		var route_label := "PASSIVE // NO BUTTON" if candidate_label == "PASSIVE" else "ACTIVE FIRE %s" % candidate_label
+		return "E%02d  EMPTY\n%s\n%s" % [
 			slot_index + 1,
-			_prospective_equipment_slot_binding_label(slot_index, candidate),
+			route_label,
 			"CAN EQUIP" if _equipment_slot_accepts_weapon(slot_index, candidate) else "BLOCKED",
-			_equipment_mode_label_for_instance(candidate)
 		]
 	var comparison: Dictionary = WeaponCatalog.comparison_data(candidate, current)
 	var power_delta := float(comparison.get("power_delta", 0.0))
@@ -10602,10 +10632,12 @@ func _weapon_reward_slot_button_text(slot_index: int, candidate: Dictionary) -> 
 			break
 	if stat_bits.is_empty():
 		stat_bits.append("DIFFERENT BUILD")
+	var current_label := _equipment_slot_binding_label(slot_index)
+	var candidate_label := _prospective_equipment_slot_binding_label(slot_index, candidate)
 	return "E%02d  %s -> %s\nPWR %.2f -> %.2f  %s %+.2f\n%s" % [
 		slot_index + 1,
-		_equipment_slot_binding_label(slot_index),
-		_prospective_equipment_slot_binding_label(slot_index, candidate),
+		"PASSIVE" if current_label == "PASSIVE" else "ACTIVE %s" % current_label,
+		"PASSIVE" if candidate_label == "PASSIVE" else "ACTIVE %s" % candidate_label,
 		float(current.get("power_score", WeaponCatalog.estimate_power(current))),
 		float(candidate.get("power_score", WeaponCatalog.estimate_power(candidate))),
 		_armory_arrow(power_delta),
@@ -12807,8 +12839,8 @@ func _fire_binding_label_for_weapon_definition(definition_id: String) -> String:
 	for slot_index in _fire_slot_indices_for_weapon_definition(definition_id):
 		pieces.append(_equipment_slot_binding_label(slot_index))
 	if pieces.is_empty():
-		return "RUN/PASSIVE" if _has_run_bonus_weapon(definition_id) else "NO BIND"
-	return "+".join(pieces)
+		return "RUN PASSIVE" if _has_run_bonus_weapon(definition_id) else "NO BIND"
+	return " + ".join(pieces)
 
 
 func _update_weapons(delta: float) -> void:
@@ -12860,6 +12892,7 @@ func _update_pulse_blaster(delta: float) -> void:
 			spread = deg_to_rad(-8.0 + 16.0 * float(i) / float(maxi(1, shot_count - 1)))
 		var shot_direction := direction.rotated(Vector3.UP, spread).normalized()
 		_spawn_player_projectile(_player_area.position + shot_direction * 1.15, shot_direction)
+	_flash_fire_source_for_weapon_definition("pulse_blaster")
 	state["timer"] = float(state["cooldown"]) * _weapon_cooldown_multiplier("pulse_blaster") / (_fire_rate_multiplier * _weapon_rate_multiplier("pulse_blaster"))
 	_weapon_state["pulse_blaster"] = state
 
@@ -12883,6 +12916,7 @@ func _update_hex_shatter(delta: float) -> void:
 		_weapon_state["hex_shatter"] = state
 		return
 	_spawn_hex_shatter_projectile(_player_area.position + direction * 1.18, direction)
+	_flash_fire_source_for_weapon_definition("hex_shatter")
 	state["timer"] = float(state["cooldown"]) * _hex_shatter_cooldown_multiplier * _weapon_cooldown_multiplier("hex_shatter") / _weapon_rate_multiplier("hex_shatter")
 	_weapon_state["hex_shatter"] = state
 
@@ -12906,6 +12940,7 @@ func _update_fractal_shard(delta: float) -> void:
 		_weapon_state["fractal_shard"] = state
 		return
 	_spawn_fractal_shard_projectile(_player_area.position + direction * 1.34, direction)
+	_flash_fire_source_for_weapon_definition("fractal_shard")
 	state["timer"] = float(state["cooldown"]) * _fractal_shard_cooldown_multiplier * _weapon_cooldown_multiplier("fractal_shard") / (_fire_rate_multiplier * _weapon_rate_multiplier("fractal_shard"))
 	_weapon_state["fractal_shard"] = state
 
@@ -12948,6 +12983,7 @@ func _update_orbit_spark(delta: float) -> void:
 				_damage_enemy_at(enemy_index, _scaled_damage(ORBIT_DAMAGE) * _weapon_damage_multiplier("orbit_spark"), "burst_cyan")
 				orbit_hit = true
 		if orbit_hit:
+			_flash_fire_source_for_weapon_definition("orbit_spark")
 			_trigger_player_shooting_core_animation()
 		state["timer"] = float(state["cooldown"]) * _weapon_cooldown_multiplier("orbit_spark") / _weapon_rate_multiplier("orbit_spark")
 	_weapon_state["orbit_spark"] = state
@@ -12972,6 +13008,7 @@ func _update_nova_burst(delta: float) -> void:
 		if _xz_distance(_player_area.position, enemy_node.position) <= NOVA_RADIUS * _weapon_range_multiplier("nova_burst") + float(enemy["radius"]):
 			_damage_enemy_at(enemy_index, _scaled_damage(NOVA_DAMAGE) * _weapon_damage_multiplier("nova_burst"), _burst_key_for_enemy(enemy["type"]))
 	_spawn_nova_effect(_player_area.position)
+	_flash_fire_source_for_weapon_definition("nova_burst")
 	_trigger_player_shooting_core_animation()
 	state["timer"] = float(state["cooldown"]) * _nova_cooldown_multiplier * _weapon_cooldown_multiplier("nova_burst")
 	_weapon_state["nova_burst"] = state
@@ -13001,6 +13038,7 @@ func _update_arc_beam(delta: float) -> void:
 		_damage_enemy_at(enemy_index, _scaled_damage(ARC_BEAM_DAMAGE) * _weapon_damage_multiplier("arc_beam"), _burst_key_for_enemy(enemy["type"]))
 		previous_position = enemy_node.position
 	if not target_indices.is_empty():
+		_flash_fire_source_for_weapon_definition("arc_beam")
 		_trigger_player_shooting_core_animation()
 	state["timer"] = float(state["cooldown"]) * _weapon_cooldown_multiplier("arc_beam") / (_fire_rate_multiplier * _weapon_rate_multiplier("arc_beam"))
 	_weapon_state["arc_beam"] = state
@@ -13016,6 +13054,7 @@ func _update_gravity_mine(delta: float) -> void:
 		return
 	if float(state["timer"]) <= 0.0 and _mines.size() < MINE_CAP:
 		_spawn_gravity_mine(_player_area.position)
+		_flash_fire_source_for_weapon_definition("gravity_mine")
 		_trigger_player_shooting_core_animation()
 		state["timer"] = float(state["cooldown"]) * _weapon_cooldown_multiplier("gravity_mine")
 	_weapon_state["gravity_mine"] = state
@@ -13040,6 +13079,7 @@ func _update_prism_lance(delta: float) -> void:
 		_weapon_state["prism_lance"] = state
 		return
 	_spawn_prism_lance_projectile(_player_area.position + direction * 1.28, direction)
+	_flash_fire_source_for_weapon_definition("prism_lance")
 	state["timer"] = float(state["cooldown"]) * _weapon_cooldown_multiplier("prism_lance") / (_fire_rate_multiplier * _weapon_rate_multiplier("prism_lance"))
 	_weapon_state["prism_lance"] = state
 
@@ -13076,6 +13116,7 @@ func _update_ring_saw(delta: float) -> void:
 				_damage_enemy_at(enemy_index, _scaled_damage(RING_SAW_DAMAGE) * _weapon_damage_multiplier("ring_saw"), "burst_cyan")
 				saw_hit = true
 		if saw_hit:
+			_flash_fire_source_for_weapon_definition("ring_saw")
 			_trigger_player_shooting_core_animation()
 		state["timer"] = float(state["cooldown"]) * _weapon_cooldown_multiplier("ring_saw") / ((1.0 + _ring_saw_spin_bonus) * _weapon_rate_multiplier("ring_saw"))
 	_weapon_state["ring_saw"] = state
@@ -13101,6 +13142,7 @@ func _update_tri_burst_cannon(delta: float) -> void:
 		var spread := deg_to_rad(-13.0 + 26.0 * float(i) / float(maxi(1, shot_count - 1)))
 		var shot_direction := direction.rotated(Vector3.UP, spread).normalized()
 		_spawn_weapon_projectile("tri_burst_cannon", _player_area.position + shot_direction * 1.18, shot_direction, "tri_burst", "triangle", TRI_BURST_DAMAGE, TRI_BURST_SPEED, TRI_BURST_LIFE, 1, 0.30, "tri_burst", {"burst_key": "triad_splitter"})
+	_flash_fire_source_for_weapon_definition("tri_burst_cannon")
 	state["timer"] = float(state["cooldown"]) * _weapon_cooldown_multiplier("tri_burst_cannon") / (_fire_rate_multiplier * _weapon_rate_multiplier("tri_burst_cannon"))
 	_weapon_state["tri_burst_cannon"] = state
 
@@ -13121,6 +13163,7 @@ func _update_hex_mortar(delta: float) -> void:
 		_weapon_state["hex_mortar"] = state
 		return
 	_spawn_weapon_projectile("hex_mortar", _player_area.position + direction * 1.12, direction, "hex_mortar", "hex", HEX_MORTAR_DAMAGE, HEX_MORTAR_SPEED, HEX_MORTAR_LIFE, 1, 0.46, "hex_mortar", {"burst_key": "burst_hex", "arc_height": 1.05, "split_count": 6 + _weapon_int_stat_bonus("hex_mortar", "split_count_bonus", 2)})
+	_flash_fire_source_for_weapon_definition("hex_mortar")
 	state["timer"] = float(state["cooldown"]) * _weapon_cooldown_multiplier("hex_mortar") / _weapon_rate_multiplier("hex_mortar")
 	_weapon_state["hex_mortar"] = state
 
@@ -13141,6 +13184,7 @@ func _update_vector_spear(delta: float) -> void:
 		_weapon_state["vector_spear"] = state
 		return
 	_spawn_weapon_projectile("vector_spear", _player_area.position + direction * 1.36, direction, "vector_spear", "spear", VECTOR_SPEAR_DAMAGE, VECTOR_SPEAR_SPEED, VECTOR_SPEAR_LIFE, 3 + _weapon_int_stat_bonus("vector_spear", "pierce_bonus", 2), 0.34, "vector_spear", {"burst_key": "burst_cyan", "bounce": _weapon_int_stat_bonus("vector_spear", "ricochet_bonus", 1)})
+	_flash_fire_source_for_weapon_definition("vector_spear")
 	state["timer"] = float(state["cooldown"]) * _weapon_cooldown_multiplier("vector_spear") / (_fire_rate_multiplier * _weapon_rate_multiplier("vector_spear"))
 	_weapon_state["vector_spear"] = state
 
@@ -13163,6 +13207,7 @@ func _update_orbital_saw_array(delta: float) -> void:
 		var angle := float(state["angle"]) + TAU * float(i) / float(count)
 		var saw_position := _player_area.position + Vector3(cos(angle) * radius, 0.0, sin(angle) * radius)
 		_spawn_burst(saw_position, 0.38, "orbital_saw_array")
+	_flash_fire_source_for_weapon_definition("orbital_saw_array")
 	_trigger_player_shooting_core_animation()
 	for enemy_index in range(_enemies.size() - 1, -1, -1):
 		var enemy := _enemies[enemy_index]
@@ -13199,6 +13244,7 @@ func _update_prism_chain(delta: float) -> void:
 		_damage_enemy_at(enemy_index, _scaled_damage(PRISM_CHAIN_DAMAGE) * _weapon_damage_multiplier("prism_chain"), "prism_chain")
 		previous_position = enemy_node.position
 	if not target_indices.is_empty():
+		_flash_fire_source_for_weapon_definition("prism_chain")
 		_trigger_player_shooting_core_animation()
 	state["timer"] = float(state["cooldown"]) * _weapon_cooldown_multiplier("prism_chain") / (_fire_rate_multiplier * _weapon_rate_multiplier("prism_chain"))
 	_weapon_state["prism_chain"] = state
@@ -13214,6 +13260,7 @@ func _update_gravity_well(delta: float) -> void:
 		return
 	if float(state["timer"]) <= 0.0 and _mines.size() < MINE_CAP:
 		_spawn_weapon_gravity_well(_player_area.position)
+		_flash_fire_source_for_weapon_definition("gravity_well")
 		_trigger_player_shooting_core_animation()
 		state["timer"] = float(state["cooldown"]) * _weapon_cooldown_multiplier("gravity_well")
 	_weapon_state["gravity_well"] = state
@@ -13239,6 +13286,7 @@ func _update_nova_needle(delta: float) -> void:
 		var spread := 0.0 if count == 1 else deg_to_rad(-4.0 + 8.0 * float(i) / float(maxi(1, count - 1)))
 		var shot_direction := direction.rotated(Vector3.UP, spread).normalized()
 		_spawn_weapon_projectile("nova_needle", _player_area.position + shot_direction * 1.10, shot_direction, "nova_needle", "needle", NOVA_NEEDLE_DAMAGE, NOVA_NEEDLE_SPEED, NOVA_NEEDLE_LIFE, 1, 0.20, "nova_needle", {"burst_key": "nova_needle", "bounce": _weapon_int_stat_bonus("nova_needle", "ricochet_bonus", 1)})
+	_flash_fire_source_for_weapon_definition("nova_needle")
 	state["timer"] = float(state["cooldown"]) * _weapon_cooldown_multiplier("nova_needle") / (_fire_rate_multiplier * _weapon_rate_multiplier("nova_needle"))
 	_weapon_state["nova_needle"] = state
 
@@ -13259,6 +13307,7 @@ func _update_fractal_bloom(delta: float) -> void:
 		_weapon_state["fractal_bloom"] = state
 		return
 	_spawn_weapon_projectile("fractal_bloom", _player_area.position + direction * 1.28, direction, "fractal_bloom", "bloom", FRACTAL_BLOOM_DAMAGE, FRACTAL_BLOOM_SPEED, FRACTAL_BLOOM_LIFE, 1, 0.42, "fractal_bloom", {"burst_key": "fractal_bloom", "split_count": 6 + _weapon_int_stat_bonus("fractal_bloom", "split_count_bonus", 2)})
+	_flash_fire_source_for_weapon_definition("fractal_bloom")
 	state["timer"] = float(state["cooldown"]) * _weapon_cooldown_multiplier("fractal_bloom") / _weapon_rate_multiplier("fractal_bloom")
 	_weapon_state["fractal_bloom"] = state
 
@@ -13279,6 +13328,7 @@ func _update_shield_breaker(delta: float) -> void:
 		_weapon_state["shield_breaker"] = state
 		return
 	_spawn_weapon_projectile("shield_breaker", _player_area.position + direction * 1.30, direction, "shield_breaker", "hammer", SHIELD_BREAKER_DAMAGE, SHIELD_BREAKER_SPEED, SHIELD_BREAKER_LIFE, 2 + _weapon_int_stat_bonus("shield_breaker", "pierce_bonus", 1), 0.48, "shield_breaker", {"burst_key": "shield_breaker"})
+	_flash_fire_source_for_weapon_definition("shield_breaker")
 	state["timer"] = float(state["cooldown"]) * _weapon_cooldown_multiplier("shield_breaker") / _weapon_rate_multiplier("shield_breaker")
 	_weapon_state["shield_breaker"] = state
 
@@ -13303,6 +13353,7 @@ func _update_star_pulse(delta: float) -> void:
 		if _xz_distance(_player_area.position, enemy_node.position) <= radius + float(enemy["radius"]):
 			_damage_enemy_at(enemy_index, _scaled_damage(STAR_PULSE_DAMAGE) * _weapon_damage_multiplier("star_pulse"), "star_pulse")
 	_spawn_star_pulse_effect(_player_area.position, radius)
+	_flash_fire_source_for_weapon_definition("star_pulse")
 	_trigger_player_shooting_core_animation()
 	state["timer"] = float(state["cooldown"]) * _weapon_cooldown_multiplier("star_pulse") / _weapon_rate_multiplier("star_pulse")
 	_weapon_state["star_pulse"] = state
@@ -16042,22 +16093,43 @@ func _update_loadout_chips() -> void:
 
 
 func _update_gameplay_weapon_hud_flash_timers(delta: float) -> void:
-	if _gameplay_weapon_slot_flash_timers.is_empty():
-		return
-	for definition_id in _gameplay_weapon_slot_flash_timers.keys():
-		var remaining := maxf(0.0, float(_gameplay_weapon_slot_flash_timers[definition_id]) - delta)
+	var run_bonus_was_active := _run_bonus_weapon_fire_flash_timer > 0.0
+	if _run_bonus_weapon_fire_flash_timer > 0.0:
+		_run_bonus_weapon_fire_flash_timer = maxf(0.0, _run_bonus_weapon_fire_flash_timer - delta)
+		if run_bonus_was_active and _run_bonus_weapon_fire_flash_timer <= 0.0:
+			_update_run_bonus_weapon_hud()
+	for slot_index in _gameplay_weapon_slot_flash_timers.keys():
+		var remaining := maxf(0.0, float(_gameplay_weapon_slot_flash_timers[slot_index]) - delta)
 		if remaining <= 0.0:
-			_gameplay_weapon_slot_flash_timers.erase(definition_id)
+			_gameplay_weapon_slot_flash_timers.erase(slot_index)
 		else:
-			_gameplay_weapon_slot_flash_timers[definition_id] = remaining
+			_gameplay_weapon_slot_flash_timers[slot_index] = remaining
 
 
-func _flash_gameplay_weapon_hud_for_definition(definition_id: String) -> void:
+func _flash_gameplay_weapon_hud_for_equipment_slot(slot_index: int) -> void:
+	if slot_index < 0 or slot_index >= EQUIPPED_WEAPON_SLOT_CAP:
+		return
+	if not _is_equipment_slot_unlocked(slot_index) or _equipment_slot_is_empty(slot_index):
+		return
+	_gameplay_weapon_slot_flash_timers[slot_index] = GAMEPLAY_WEAPON_HUD_FLASH_DURATION
+
+
+func _flash_gameplay_weapon_hud_for_definition(definition_id: String) -> bool:
 	if definition_id == "":
+		return false
+	var flashed := false
+	for slot_index in _fire_slot_indices_for_weapon_definition(definition_id):
+		_flash_gameplay_weapon_hud_for_equipment_slot(slot_index)
+		flashed = true
+	return flashed
+
+
+func _flash_fire_source_for_weapon_definition(definition_id: String) -> void:
+	if _flash_gameplay_weapon_hud_for_definition(definition_id):
 		return
-	if _equipped_weapon_index_for_definition(definition_id) < 0:
-		return
-	_gameplay_weapon_slot_flash_timers[definition_id] = GAMEPLAY_WEAPON_HUD_FLASH_DURATION
+	if _has_run_bonus_weapon(definition_id) and not _is_weapon_family_equipped(definition_id):
+		_run_bonus_weapon_fire_flash_timer = GAMEPLAY_WEAPON_HUD_FLASH_DURATION
+		_update_run_bonus_weapon_hud()
 
 
 func _flash_gameplay_weapon_hud_for_upgrade(upgrade: Dictionary) -> void:
@@ -16261,13 +16333,15 @@ func _weapon_hud_status_text(definition_id: String) -> String:
 func _weapon_hud_tooltip(instance: Dictionary, slot_number: int) -> String:
 	var rarity := str(instance.get("rarity", "Common"))
 	var definition_id := str(instance.get("definition_id", ""))
+	var binding_label := _equipment_slot_binding_label(slot_number - 1)
+	var source_label := "Passive, no button required" if binding_label == "PASSIVE" else "Active fire %s" % binding_label
 	var pieces := _weapon_hud_feedback_pieces(instance, 12)
 	var feedback := " / ".join(pieces) if not pieces.is_empty() else "Baseline power %.2f" % float(instance.get("power_score", 1.0))
-	return "Slot %02d: %s (%s)\nFire: %s\nStatus: %s\nStats: %s" % [
+	return "Slot %02d: %s (%s)\nSource: %s\nStatus: %s\nStats: %s" % [
 		slot_number,
 		str(instance.get("name", "WEAPON")),
 		rarity,
-		_equipment_slot_binding_label(slot_number - 1),
+		source_label,
 		_weapon_hud_status_text(definition_id),
 		feedback
 	]
@@ -16286,7 +16360,7 @@ func _update_gameplay_loadout_slots() -> void:
 			panel.add_theme_stylebox_override("panel", _gameplay_loadout_slot_style(Color(0.0, 0.010, 0.032, 0.46), Color(0.22, 0.30, 0.36, 0.58), 1))
 			_set_weapon_icon(icon, "unknown_weapon", true)
 			icon.modulate = Color(0.36, 0.42, 0.48, 0.28)
-			label.text = "SLOT %02d  LOCKED\nUNLOCKS LV %d\n--" % [i + 1, _equipment_slot_unlock_level(i)]
+			label.text = "SLOT %02d\nLOCKED LV %d\n--" % [i + 1, _equipment_slot_unlock_level(i)]
 			label.tooltip_text = "Slot %02d: Locked\nUnlocks at level %d" % [i + 1, _equipment_slot_unlock_level(i)]
 			label.add_theme_color_override("font_color", Color(0.48, 0.58, 0.64, 0.62))
 			continue
@@ -16295,8 +16369,13 @@ func _update_gameplay_loadout_slots() -> void:
 			var definition_id := str(instance.get("definition_id", ""))
 			var rarity := str(instance.get("rarity", "Common"))
 			var accent := Color.html("#%s" % WeaponCatalog.rarity_accent_hex(rarity)) if WeaponCatalog.rarity_tiers().has(rarity) else Color(0.0, 0.95, 1.0, 0.96)
-			var flash_amount := clampf(float(_gameplay_weapon_slot_flash_timers.get(definition_id, 0.0)) / GAMEPLAY_WEAPON_HUD_FLASH_DURATION, 0.0, 1.0)
+			var flash_amount := clampf(float(_gameplay_weapon_slot_flash_timers.get(i, 0.0)) / GAMEPLAY_WEAPON_HUD_FLASH_DURATION, 0.0, 1.0)
 			var preview_active := _upgrade_preview_weapon_definitions.has(definition_id)
+			var binding_label := _equipment_slot_binding_label(i)
+			var mode_label := "PASSIVE" if binding_label == "PASSIVE" else "ACTIVE"
+			var source_label := "PASSIVE" if binding_label == "PASSIVE" else "FIRE %s" % binding_label
+			if flash_amount > 0.0:
+				source_label = "PASSIVE FIRING" if binding_label == "PASSIVE" else "FIRING %s" % binding_label
 			var fill_color := Color(0.0, 0.010, 0.032, 0.82)
 			var border_color := Color(accent.r, accent.g, accent.b, 0.92)
 			var border_width := 2
@@ -16310,13 +16389,12 @@ func _update_gameplay_loadout_slots() -> void:
 				border_width = 3
 			panel.add_theme_stylebox_override("panel", _gameplay_loadout_slot_style(fill_color, border_color, border_width))
 			_set_weapon_icon(icon, instance, true)
-			icon.modulate = Color(1.0, 1.0, 1.0, 0.96)
-			label.text = "SLOT %02d  %s  %s\n%s\n%s" % [
+			icon.modulate = Color(1.0, 1.0, 1.0, 1.0 if flash_amount > 0.0 else 0.96)
+			label.text = "SLOT %02d  %s\n%s\n%s" % [
 				i + 1,
-				_rarity_display_code(rarity),
-				_equipment_slot_binding_label(i),
-				_compact_weapon_name(instance, 18),
-				"%s  %s" % [_weapon_hud_status_text(definition_id), _weapon_hud_feedback_text(instance)]
+				mode_label,
+				_compact_weapon_name(instance, 22).to_upper(),
+				source_label
 			]
 			label.tooltip_text = _weapon_hud_tooltip(instance, i + 1)
 			var label_color := Color(0.88, 1.0, 1.0, 0.96)
@@ -16329,7 +16407,7 @@ func _update_gameplay_loadout_slots() -> void:
 			panel.add_theme_stylebox_override("panel", _gameplay_loadout_slot_style(Color(0.0, 0.010, 0.032, 0.52), Color(0.18, 0.42, 0.52, 0.50), 1))
 			_set_weapon_icon(icon, "unknown_weapon", true)
 			icon.modulate = Color(0.46, 0.64, 0.72, 0.34)
-			label.text = "SLOT %02d  EMPTY\nUNLOCKED\n--" % [i + 1]
+			label.text = "SLOT %02d\nEMPTY\n--" % [i + 1]
 			label.tooltip_text = "Slot %02d: Empty\nUnlocked equipment slot" % [i + 1]
 			label.add_theme_color_override("font_color", Color(0.58, 0.78, 0.86, 0.54))
 
@@ -16352,7 +16430,10 @@ func _update_run_bonus_weapon_hud() -> void:
 	if names.is_empty():
 		_run_bonus_weapons_label.text = "RUN BONUS WEAPONS\n--"
 		return
-	_run_bonus_weapons_label.text = "RUN BONUS WEAPONS\n%s" % " / ".join(names)
+	var flash_amount := clampf(_run_bonus_weapon_fire_flash_timer / GAMEPLAY_WEAPON_HUD_FLASH_DURATION, 0.0, 1.0)
+	var title := "RUN BONUS FIRING" if flash_amount > 0.0 else "RUN BONUS PASSIVE"
+	_run_bonus_weapons_label.text = "%s\n%s" % [title, " / ".join(names)]
+	_run_bonus_weapons_label.add_theme_color_override("font_color", Color(1.0, 0.96, 0.62, 1.0) if flash_amount > 0.0 else Color(1.0, 0.94, 0.18, 0.95))
 
 
 func _set_loadout_chip(key: String, value: String) -> void:
