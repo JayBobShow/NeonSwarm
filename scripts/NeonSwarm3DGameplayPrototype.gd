@@ -672,6 +672,7 @@ var _equipped_weapon_instances: Array[Dictionary] = []
 var _stash_weapon_instances: Array[Dictionary] = []
 var _discovered_weapon_families: Array[String] = []
 var _weapon_family_stat_bonuses: Dictionary = {}
+var _passive_weapon_family_cache: Dictionary = {}
 var _weapon_instance_counter := 0
 var _neon_dust := 0
 var _core_upgrade_ranks: Dictionary = {}
@@ -949,6 +950,8 @@ var _gameplay_weapon_slot_panels: Array[PanelContainer] = []
 var _gameplay_weapon_slot_icons: Array[Control] = []
 var _gameplay_weapon_slot_labels: Array[Label] = []
 var _gameplay_weapon_slot_flash_timers: Dictionary = {}
+var _gameplay_weapon_slot_hud_signature := ""
+var _gameplay_weapon_slot_hud_dirty := true
 var _run_bonus_weapon_definitions: Dictionary = {}
 var _run_bonus_weapon_fire_order: Array[String] = []
 var _run_bonus_weapons_panel: Control
@@ -1606,6 +1609,11 @@ func _normalize_equipped_weapon_slots() -> void:
 			_stash_weapon_instances.append(extra)
 	while _equipped_weapon_instances.size() < EQUIPPED_WEAPON_SLOT_CAP:
 		_equipped_weapon_instances.append({})
+	_mark_gameplay_weapon_slot_hud_dirty()
+
+
+func _mark_gameplay_weapon_slot_hud_dirty() -> void:
+	_gameplay_weapon_slot_hud_dirty = true
 
 
 func _migrate_locked_equipped_slots_to_stash() -> bool:
@@ -1624,6 +1632,8 @@ func _migrate_locked_equipped_slots_to_stash() -> bool:
 		else:
 			_equipped_weapon_instances[i] = instance
 		migrated = true
+	if migrated:
+		_mark_gameplay_weapon_slot_hud_dirty()
 	return migrated
 
 
@@ -1815,8 +1825,12 @@ func _is_equipment_slot_unlocked(slot_index: int, level := -1) -> bool:
 
 
 func _equipment_slot_instance(slot_index: int) -> Dictionary:
-	_normalize_equipped_weapon_slots()
 	if slot_index < 0 or slot_index >= EQUIPPED_WEAPON_SLOT_CAP:
+		return {}
+	if slot_index >= _equipped_weapon_instances.size():
+		return {}
+	var item = _equipped_weapon_instances[slot_index]
+	if not (item is Dictionary):
 		return {}
 	return Dictionary(_equipped_weapon_instances[slot_index])
 
@@ -1826,6 +1840,8 @@ func _equipment_slot_is_empty(slot_index: int) -> bool:
 
 
 func _is_passive_weapon_family(definition_id: String) -> bool:
+	if _passive_weapon_family_cache.has(definition_id):
+		return bool(_passive_weapon_family_cache[definition_id])
 	var id := definition_id.to_lower()
 	var definition := WeaponCatalog.weapon_definition(definition_id)
 	var family := str(definition.get("family", definition_id)).to_lower()
@@ -1833,7 +1849,9 @@ func _is_passive_weapon_family(definition_id: String) -> bool:
 	var is_chain := id.find("chain") >= 0 or family.find("chain") >= 0 or archetype.find("chain") >= 0
 	var is_nova := id.find("nova") >= 0 or family.find("nova") >= 0 or archetype.find("nova") >= 0
 	var is_burst := id.find("burst") >= 0 or family.find("burst") >= 0 or archetype.find("burst") >= 0
-	return is_chain or is_nova or is_burst
+	var passive := is_chain or is_nova or is_burst
+	_passive_weapon_family_cache[definition_id] = passive
+	return passive
 
 
 func _is_passive_weapon_instance(instance: Dictionary) -> bool:
@@ -1841,7 +1859,6 @@ func _is_passive_weapon_instance(instance: Dictionary) -> bool:
 
 
 func _active_fire_index_for_equipment_slot(slot_index: int) -> int:
-	_normalize_equipped_weapon_slots()
 	if not _is_equipment_slot_unlocked(slot_index):
 		return -1
 	var instance := _equipment_slot_instance(slot_index)
@@ -1861,7 +1878,6 @@ func _active_fire_index_for_equipment_slot(slot_index: int) -> int:
 
 
 func _active_equipped_weapon_count() -> int:
-	_normalize_equipped_weapon_slots()
 	var count := 0
 	for i in range(EQUIPPED_WEAPON_SLOT_CAP):
 		if not _is_equipment_slot_unlocked(i):
@@ -12788,7 +12804,6 @@ func _fire_slot_indices_for_weapon_definition(definition_id: String) -> Array[in
 	var slots: Array[int] = []
 	if definition_id == "":
 		return slots
-	_normalize_equipped_weapon_slots()
 	for i in range(EQUIPPED_WEAPON_SLOT_CAP):
 		if not _is_equipment_slot_unlocked(i):
 			continue
@@ -12869,10 +12884,10 @@ func _update_pulse_blaster(delta: float) -> void:
 	var state: Dictionary = _weapon_state["pulse_blaster"]
 	if not bool(state.get("enabled", false)):
 		return
-	state["timer"] = float(state["timer"]) - delta
 	if not _is_weapon_definition_fire_pressed("pulse_blaster"):
 		_weapon_state["pulse_blaster"] = state
 		return
+	state["timer"] = float(state["timer"]) - delta
 	if float(state["timer"]) > 0.0:
 		_weapon_state["pulse_blaster"] = state
 		return
@@ -12901,10 +12916,10 @@ func _update_hex_shatter(delta: float) -> void:
 	var state: Dictionary = _weapon_state["hex_shatter"]
 	if not bool(state.get("enabled", false)):
 		return
-	state["timer"] = float(state["timer"]) - delta
 	if not _is_weapon_definition_fire_pressed("hex_shatter"):
 		_weapon_state["hex_shatter"] = state
 		return
+	state["timer"] = float(state["timer"]) - delta
 	if float(state["timer"]) > 0.0:
 		_weapon_state["hex_shatter"] = state
 		return
@@ -12925,10 +12940,10 @@ func _update_fractal_shard(delta: float) -> void:
 	var state: Dictionary = _weapon_state["fractal_shard"]
 	if not _fractal_shard_enabled and not bool(state.get("enabled", false)):
 		return
-	state["timer"] = float(state["timer"]) - delta
 	if not _is_weapon_definition_fire_pressed("fractal_shard"):
 		_weapon_state["fractal_shard"] = state
 		return
+	state["timer"] = float(state["timer"]) - delta
 	if float(state["timer"]) > 0.0:
 		_weapon_state["fractal_shard"] = state
 		return
@@ -12953,13 +12968,13 @@ func _update_orbit_spark(delta: float) -> void:
 				node.visible = false
 		return
 	var fire_pressed := _is_weapon_definition_fire_pressed("orbit_spark")
-	state["timer"] = float(state["timer"]) - delta
 	if not fire_pressed:
 		for node in _orbit_nodes:
 			if is_instance_valid(node):
 				node.visible = false
 		_weapon_state["orbit_spark"] = state
 		return
+	state["timer"] = float(state["timer"]) - delta
 	state["angle"] = float(state["angle"]) + delta * 2.85
 	var count := clampi(_orbit_count + _weapon_int_stat_bonus("orbit_spark", "orbit_count_bonus", 1), 1, ORBIT_VISUAL_CAP)
 	var orbit_radius := ORBIT_RADIUS * _weapon_range_multiplier("orbit_spark")
@@ -12993,10 +13008,10 @@ func _update_nova_burst(delta: float) -> void:
 	var state: Dictionary = _weapon_state["nova_burst"]
 	if not bool(state.get("enabled", false)):
 		return
-	state["timer"] = float(state["timer"]) - delta
 	if not _is_weapon_definition_fire_pressed("nova_burst"):
 		_weapon_state["nova_burst"] = state
 		return
+	state["timer"] = float(state["timer"]) - delta
 	if float(state["timer"]) > 0.0:
 		_weapon_state["nova_burst"] = state
 		return
@@ -13018,10 +13033,10 @@ func _update_arc_beam(delta: float) -> void:
 	var state: Dictionary = _weapon_state["arc_beam"]
 	if not bool(state.get("enabled", false)):
 		return
-	state["timer"] = float(state["timer"]) - delta
 	if not _is_weapon_definition_fire_pressed("arc_beam"):
 		_weapon_state["arc_beam"] = state
 		return
+	state["timer"] = float(state["timer"]) - delta
 	if float(state["timer"]) > 0.0:
 		_weapon_state["arc_beam"] = state
 		return
@@ -13048,10 +13063,10 @@ func _update_gravity_mine(delta: float) -> void:
 	var state: Dictionary = _weapon_state["gravity_mine"]
 	if not bool(state.get("enabled", false)):
 		return
-	state["timer"] = float(state["timer"]) - delta
 	if not _is_weapon_definition_fire_pressed("gravity_mine"):
 		_weapon_state["gravity_mine"] = state
 		return
+	state["timer"] = float(state["timer"]) - delta
 	if float(state["timer"]) <= 0.0 and _mines.size() < MINE_CAP:
 		_spawn_gravity_mine(_player_area.position)
 		_flash_fire_source_for_weapon_definition("gravity_mine")
@@ -13064,10 +13079,10 @@ func _update_prism_lance(delta: float) -> void:
 	var state: Dictionary = _weapon_state["prism_lance"]
 	if not bool(state.get("enabled", false)):
 		return
-	state["timer"] = float(state["timer"]) - delta
 	if not _is_weapon_definition_fire_pressed("prism_lance"):
 		_weapon_state["prism_lance"] = state
 		return
+	state["timer"] = float(state["timer"]) - delta
 	if float(state["timer"]) > 0.0:
 		_weapon_state["prism_lance"] = state
 		return
@@ -13093,10 +13108,10 @@ func _update_ring_saw(delta: float) -> void:
 	var fire_pressed := _is_weapon_definition_fire_pressed("ring_saw")
 	if is_instance_valid(_ring_saw_root):
 		_ring_saw_root.visible = fire_pressed
-	state["timer"] = float(state["timer"]) - delta
 	if not fire_pressed:
 		_weapon_state["ring_saw"] = state
 		return
+	state["timer"] = float(state["timer"]) - delta
 	state["angle"] = float(state["angle"]) + delta * (RING_SAW_SPIN_SPEED * (1.0 + _ring_saw_spin_bonus))
 	var radius := (RING_SAW_RADIUS + _ring_saw_radius_bonus) * _weapon_range_multiplier("ring_saw")
 	if is_instance_valid(_ring_saw_root):
@@ -13126,10 +13141,10 @@ func _update_tri_burst_cannon(delta: float) -> void:
 	var state: Dictionary = _weapon_state["tri_burst_cannon"]
 	if not bool(state.get("enabled", false)):
 		return
-	state["timer"] = float(state["timer"]) - delta
 	if not _is_weapon_definition_fire_pressed("tri_burst_cannon"):
 		_weapon_state["tri_burst_cannon"] = state
 		return
+	state["timer"] = float(state["timer"]) - delta
 	if float(state["timer"]) > 0.0 or _player_projectiles.size() >= PLAYER_PROJECTILE_CAP:
 		_weapon_state["tri_burst_cannon"] = state
 		return
@@ -13151,10 +13166,10 @@ func _update_hex_mortar(delta: float) -> void:
 	var state: Dictionary = _weapon_state["hex_mortar"]
 	if not bool(state.get("enabled", false)):
 		return
-	state["timer"] = float(state["timer"]) - delta
 	if not _is_weapon_definition_fire_pressed("hex_mortar"):
 		_weapon_state["hex_mortar"] = state
 		return
+	state["timer"] = float(state["timer"]) - delta
 	if float(state["timer"]) > 0.0 or _player_projectiles.size() >= PLAYER_PROJECTILE_CAP:
 		_weapon_state["hex_mortar"] = state
 		return
@@ -13172,10 +13187,10 @@ func _update_vector_spear(delta: float) -> void:
 	var state: Dictionary = _weapon_state["vector_spear"]
 	if not bool(state.get("enabled", false)):
 		return
-	state["timer"] = float(state["timer"]) - delta
 	if not _is_weapon_definition_fire_pressed("vector_spear"):
 		_weapon_state["vector_spear"] = state
 		return
+	state["timer"] = float(state["timer"]) - delta
 	if float(state["timer"]) > 0.0 or _player_projectiles.size() >= PLAYER_PROJECTILE_CAP:
 		_weapon_state["vector_spear"] = state
 		return
@@ -13193,11 +13208,11 @@ func _update_orbital_saw_array(delta: float) -> void:
 	var state: Dictionary = _weapon_state["orbital_saw_array"]
 	if not bool(state.get("enabled", false)):
 		return
-	state["timer"] = float(state["timer"]) - delta
-	state["angle"] = float(state.get("angle", 0.0)) + delta * 5.4
 	if not _is_weapon_definition_fire_pressed("orbital_saw_array"):
 		_weapon_state["orbital_saw_array"] = state
 		return
+	state["timer"] = float(state["timer"]) - delta
+	state["angle"] = float(state.get("angle", 0.0)) + delta * 5.4
 	if float(state["timer"]) > 0.0:
 		_weapon_state["orbital_saw_array"] = state
 		return
@@ -13224,10 +13239,10 @@ func _update_prism_chain(delta: float) -> void:
 	var state: Dictionary = _weapon_state["prism_chain"]
 	if not bool(state.get("enabled", false)):
 		return
-	state["timer"] = float(state["timer"]) - delta
 	if not _is_weapon_definition_fire_pressed("prism_chain"):
 		_weapon_state["prism_chain"] = state
 		return
+	state["timer"] = float(state["timer"]) - delta
 	if float(state["timer"]) > 0.0:
 		_weapon_state["prism_chain"] = state
 		return
@@ -13254,10 +13269,10 @@ func _update_gravity_well(delta: float) -> void:
 	var state: Dictionary = _weapon_state["gravity_well"]
 	if not bool(state.get("enabled", false)):
 		return
-	state["timer"] = float(state["timer"]) - delta
 	if not _is_weapon_definition_fire_pressed("gravity_well"):
 		_weapon_state["gravity_well"] = state
 		return
+	state["timer"] = float(state["timer"]) - delta
 	if float(state["timer"]) <= 0.0 and _mines.size() < MINE_CAP:
 		_spawn_weapon_gravity_well(_player_area.position)
 		_flash_fire_source_for_weapon_definition("gravity_well")
@@ -13270,10 +13285,10 @@ func _update_nova_needle(delta: float) -> void:
 	var state: Dictionary = _weapon_state["nova_needle"]
 	if not bool(state.get("enabled", false)):
 		return
-	state["timer"] = float(state["timer"]) - delta
 	if not _is_weapon_definition_fire_pressed("nova_needle"):
 		_weapon_state["nova_needle"] = state
 		return
+	state["timer"] = float(state["timer"]) - delta
 	if float(state["timer"]) > 0.0 or _player_projectiles.size() >= PLAYER_PROJECTILE_CAP:
 		_weapon_state["nova_needle"] = state
 		return
@@ -13295,10 +13310,10 @@ func _update_fractal_bloom(delta: float) -> void:
 	var state: Dictionary = _weapon_state["fractal_bloom"]
 	if not bool(state.get("enabled", false)):
 		return
-	state["timer"] = float(state["timer"]) - delta
 	if not _is_weapon_definition_fire_pressed("fractal_bloom"):
 		_weapon_state["fractal_bloom"] = state
 		return
+	state["timer"] = float(state["timer"]) - delta
 	if float(state["timer"]) > 0.0 or _player_projectiles.size() >= PLAYER_PROJECTILE_CAP:
 		_weapon_state["fractal_bloom"] = state
 		return
@@ -13316,10 +13331,10 @@ func _update_shield_breaker(delta: float) -> void:
 	var state: Dictionary = _weapon_state["shield_breaker"]
 	if not bool(state.get("enabled", false)):
 		return
-	state["timer"] = float(state["timer"]) - delta
 	if not _is_weapon_definition_fire_pressed("shield_breaker"):
 		_weapon_state["shield_breaker"] = state
 		return
+	state["timer"] = float(state["timer"]) - delta
 	if float(state["timer"]) > 0.0 or _player_projectiles.size() >= PLAYER_PROJECTILE_CAP:
 		_weapon_state["shield_breaker"] = state
 		return
@@ -13337,10 +13352,10 @@ func _update_star_pulse(delta: float) -> void:
 	var state: Dictionary = _weapon_state["star_pulse"]
 	if not bool(state.get("enabled", false)):
 		return
-	state["timer"] = float(state["timer"]) - delta
 	if not _is_weapon_definition_fire_pressed("star_pulse"):
 		_weapon_state["star_pulse"] = state
 		return
+	state["timer"] = float(state["timer"]) - delta
 	if float(state["timer"]) > 0.0:
 		_weapon_state["star_pulse"] = state
 		return
@@ -16102,6 +16117,7 @@ func _update_gameplay_weapon_hud_flash_timers(delta: float) -> void:
 		var remaining := maxf(0.0, float(_gameplay_weapon_slot_flash_timers[slot_index]) - delta)
 		if remaining <= 0.0:
 			_gameplay_weapon_slot_flash_timers.erase(slot_index)
+			_mark_gameplay_weapon_slot_hud_dirty()
 		else:
 			_gameplay_weapon_slot_flash_timers[slot_index] = remaining
 
@@ -16112,6 +16128,7 @@ func _flash_gameplay_weapon_hud_for_equipment_slot(slot_index: int) -> void:
 	if not _is_equipment_slot_unlocked(slot_index) or _equipment_slot_is_empty(slot_index):
 		return
 	_gameplay_weapon_slot_flash_timers[slot_index] = GAMEPLAY_WEAPON_HUD_FLASH_DURATION
+	_mark_gameplay_weapon_slot_hud_dirty()
 
 
 func _flash_gameplay_weapon_hud_for_definition(definition_id: String) -> bool:
@@ -16347,7 +16364,34 @@ func _weapon_hud_tooltip(instance: Dictionary, slot_number: int) -> String:
 	]
 
 
+func _gameplay_weapon_slot_hud_state_signature() -> String:
+	var parts: Array[String] = ["lv:%d" % _player_level]
+	for i in range(EQUIPPED_WEAPON_SLOT_CAP):
+		if not _is_equipment_slot_unlocked(i):
+			parts.append("%d:locked:%d" % [i, _equipment_slot_unlock_level(i)])
+			continue
+		var instance := _equipment_slot_instance(i)
+		if instance.is_empty():
+			parts.append("%d:empty" % i)
+			continue
+		parts.append("%d:%s:%s:%s:%s" % [
+			i,
+			str(instance.get("instance_id", "")),
+			str(instance.get("definition_id", "")),
+			str(instance.get("rarity", "")),
+			_equipment_slot_binding_label(i)
+		])
+	return "|".join(parts)
+
+
 func _update_gameplay_loadout_slots() -> void:
+	if _gameplay_weapon_slot_panels.size() < EQUIPPED_WEAPON_SLOT_CAP or _gameplay_weapon_slot_icons.size() < EQUIPPED_WEAPON_SLOT_CAP or _gameplay_weapon_slot_labels.size() < EQUIPPED_WEAPON_SLOT_CAP:
+		return
+	var signature := _gameplay_weapon_slot_hud_state_signature()
+	if not _gameplay_weapon_slot_hud_dirty and _gameplay_weapon_slot_flash_timers.is_empty() and signature == _gameplay_weapon_slot_hud_signature:
+		return
+	_gameplay_weapon_slot_hud_signature = signature
+	_gameplay_weapon_slot_hud_dirty = false
 	for i in range(EQUIPPED_WEAPON_SLOT_CAP):
 		if i >= _gameplay_weapon_slot_panels.size() or i >= _gameplay_weapon_slot_icons.size() or i >= _gameplay_weapon_slot_labels.size():
 			return
