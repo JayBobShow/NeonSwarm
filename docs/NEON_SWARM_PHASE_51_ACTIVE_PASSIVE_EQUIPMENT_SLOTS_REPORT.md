@@ -225,6 +225,32 @@ In-run Level 4 Slot 3 unlock flow:
 - Level 4 changes Slot 3 from `LV 4` / locked to `EMPTY` during that same run.
 - Weapon reward routing normalizes against the current in-run level before selecting an open slot, so a post-Level 4 in-run weapon reward can equip into Slot 3 without requiring death or main Armory.
 
+## Nova Floor-Plane Visual Hotfix
+
+Nova Burst now uses a floor-plane-only visual. The gameplay damage radius remains separate from visual scale.
+
+What changed:
+
+- `NOVA_BURST_VISUAL_FLOOR_PLANE_ONLY = true`
+- `NOVA_BURST_VISUAL_VERTICAL_SCALE = 1.0`
+- `NOVA_BURST_VISUAL_START_SCALE = 0.60`
+- `NOVA_BURST_VISUAL_FLOOR_Y = 0.12`
+- `NOVA_BURST_VISUAL_MAX_SCREEN_DIAMETER_PX = 1000.0`
+
+The cause of the screen-covering look was that Godot `TorusMesh` is already flat on X/Z, but the Nova visual rotated the torus children by `PI * 0.5` and then scaled the root uniformly on X/Y/Z. That made the effect read as an upright, camera-facing circle/volume. The Nova torus children now keep their native flat X/Z orientation, and `_update_beam_effects()` scales Nova as `Vector3(radius, NOVA_BURST_VISUAL_VERTICAL_SCALE, radius)` so it expands across the arena floor without growing vertically toward the camera.
+
+The dynamic weapon Blender model was removed from the expanding Nova shockwave because it was being scaled inside the already-expanding effect root and could read as a large blob instead of a floor ring.
+
+Validation proof:
+
+- Focused validation: `NOVA_FLOOR_PLANE_LOGIC_VALIDATION_PASS`.
+- Projected gameplay-camera diameter: `280.68 px`, below `NOVA_BURST_VISUAL_MAX_SCREEN_DIAMETER_PX = 1000.0`.
+- Nova visual root stays at `NOVA_BURST_VISUAL_FLOOR_Y = 0.12`.
+- Nova visual Y scale remains `1.0` while X/Z scale expands.
+- Nova torus child `rotation.x` remains `0.0`, so the torus is not rotated upright toward the camera.
+- Nova still damaged exactly `2 / 3` validation enemies: the two inside damage radius were hit and the outside enemy was not.
+- Native viewport screenshot capture was not available under this headless/dummy-renderer environment; the validation image generated from the gameplay-camera projection is `/tmp/neon_swarm_nova_floor_plane_hotfix_validation.png`.
+
 ## Reward / Run Weapon Behavior
 
 Generated weapon rewards use unlocked compatible equipment slots for `Equip Now`; replacement blocks locked slots and blocks adding a sixth active weapon unless replacing an existing active slot or equipping a passive.
@@ -298,5 +324,13 @@ Nova size / buff / slot-flow hotfix validation:
 - Confirmed equipped Fractal Shard remains active/manual and does not fire while idle.
 - Confirmed Level 4 changes Slot 3 from `LV 4` to `EMPTY` during the same run.
 - Confirmed a same-run weapon reward after the Level 4 unlock selects and equips into Slot 3.
+
+Nova floor-plane validation:
+
+- Focused validation: `NOVA_FLOOR_PLANE_LOGIC_VALIDATION_PASS`.
+- Confirmed the Nova shockwave lies on the arena X/Z floor plane.
+- Confirmed the visual does not scale on the vertical/camera axis.
+- Confirmed projected gameplay-camera diameter is `280.68 px`, below the `1000 px` cap.
+- Confirmed Nova still damages in-radius enemies.
 
 Required final validation commands were run after implementation and documentation.

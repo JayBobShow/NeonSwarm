@@ -454,6 +454,11 @@ const NOVA_BURST_MAX_RADIUS := 9.0
 const NOVA_BURST_VISUAL_RADIUS_MULTIPLIER := 0.70
 const NOVA_BURST_VISUAL_MAX_RADIUS := 5.4
 const NOVA_BURST_IMPACT_FLASH_SCALE := 1.05
+const NOVA_BURST_VISUAL_MAX_SCREEN_DIAMETER_PX := 1000.0
+const NOVA_BURST_VISUAL_FLOOR_PLANE_ONLY := true
+const NOVA_BURST_VISUAL_VERTICAL_SCALE := 1.0
+const NOVA_BURST_VISUAL_START_SCALE := 0.60
+const NOVA_BURST_VISUAL_FLOOR_Y := 0.12
 const NOVA_BURST_EFFECT_DURATION := 0.58
 const ARC_BEAM_COOLDOWN := 1.35
 const ARC_BEAM_DAMAGE := 32.0
@@ -13717,6 +13722,12 @@ func _star_pulse_radius() -> float:
 	return minf(STAR_PULSE_MAX_RADIUS, STAR_PULSE_RADIUS * _weapon_range_multiplier("star_pulse"))
 
 
+func _nova_burst_visual_scale_for_radius(radius: float) -> Vector3:
+	if NOVA_BURST_VISUAL_FLOOR_PLANE_ONLY:
+		return Vector3(radius, NOVA_BURST_VISUAL_VERTICAL_SCALE, radius)
+	return Vector3.ONE * radius
+
+
 func _spawn_player_projectile(position: Vector3, direction: Vector3) -> void:
 	var projectile := Area3D.new()
 	projectile.name = "PulseBlaster3DProjectile"
@@ -14716,17 +14727,14 @@ func _spawn_nova_effect(position: Vector3) -> void:
 	_spawn_burst(position, NOVA_BURST_IMPACT_FLASH_SCALE, "burst_cyan")
 	var root := Node3D.new()
 	root.name = "NovaBurstExpandingTorus"
-	root.position = Vector3(position.x, 0.90, position.z)
+	root.position = Vector3(position.x, NOVA_BURST_VISUAL_FLOOR_Y, position.z)
+	root.scale = _nova_burst_visual_scale_for_radius(NOVA_BURST_VISUAL_START_SCALE)
 	_fx_root.add_child(root)
 	var ring := Kit.add_mesh(root, "NovaShockwaveAnnulus", Kit.torus_mesh(0.50, 0.080, 60, 6), _materials["nova"])
-	ring.rotation.x = PI * 0.5
 	var core_ring := Kit.add_mesh(root, "NovaWhiteHotTubeCore", Kit.torus_mesh(0.50, 0.028, 56, 5), _materials["burst_hot_core"])
-	core_ring.rotation.x = PI * 0.5
 	var magenta_ring := Kit.add_mesh(root, "NovaMagentaOuterAccent", Kit.torus_mesh(0.62, 0.028, 56, 5), _materials["burst_magenta"])
-	magenta_ring.rotation.x = PI * 0.5
 	var nova_visual_radius := _nova_burst_visual_radius()
-	_add_weapon_blender_model(root, "nova_burst", nova_visual_radius / 0.78, Vector3(0.0, 0.13, 0.0), 0.0, false)
-	_beam_effects.append({"node": root, "outer": ring, "core": core_ring, "life": NOVA_BURST_EFFECT_DURATION, "duration": NOVA_BURST_EFFECT_DURATION, "nova": true, "max_radius": nova_visual_radius})
+	_beam_effects.append({"node": root, "outer": ring, "core": core_ring, "life": NOVA_BURST_EFFECT_DURATION, "duration": NOVA_BURST_EFFECT_DURATION, "nova": true, "max_radius": nova_visual_radius, "floor_plane": NOVA_BURST_VISUAL_FLOOR_PLANE_ONLY})
 	_play_sfx("lance", 0.18)
 	_add_screen_shake(0.10, 0.18)
 
@@ -14816,7 +14824,8 @@ func _update_beam_effects(delta: float) -> void:
 		var duration: float = maxf(0.001, float(effect["duration"]))
 		var phase := clampf(1.0 - float(effect["life"]) / duration, 0.0, 1.0)
 		if bool(effect.get("nova", false)):
-			node.scale = Vector3.ONE * lerpf(0.6, float(effect.get("max_radius", NOVA_RADIUS * 1.55)), phase)
+			var nova_radius := lerpf(NOVA_BURST_VISUAL_START_SCALE, float(effect.get("max_radius", NOVA_BURST_VISUAL_MAX_RADIUS)), phase)
+			node.scale = _nova_burst_visual_scale_for_radius(nova_radius)
 		elif bool(effect.get("chain_link", false)):
 			node.scale = Vector3.ONE * lerpf(1.0, 0.88, phase)
 		else:
