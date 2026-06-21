@@ -40,6 +40,7 @@ const PLAYER_CORE_VISUAL_SCALE := PLAYER_CORE_BASE_VISUAL_SCALE * PLAYER_CORE_VI
 const PLAYER_CORE_VISUAL_PITCH_DEGREES := 25.0
 const PLAYER_CORE_AIM_FACING_EXPERIMENT_ENABLED := true
 const PLAYER_CORE_AIM_FACING_YAW_RESPONSE := 14.0
+const PLAYER_VISUAL_ENEMY_AUTO_FACE_ENABLED := false
 const PLAYER_APPROVED_FALLBACK_CORE_PATH := "res://art/player/exported/3d/player_core.glb"
 const PLAYER_SHOOTING_ANIMATED_CORE_EXPERIMENT_ENABLED := true
 const PLAYER_SHOOTING_ANIMATED_CORE_PATH := "res://art/player/exported/3d/player_core_user_replacement_pre_orientation_hotfix_shooting_animated.glb"
@@ -1102,6 +1103,8 @@ func _input(event: InputEvent) -> void:
 		return
 	if event.is_action_pressed("pause"):
 		_toggle_pause()
+		return
+	_handle_player_mouse_aim_input(event)
 
 
 func _handle_run_event_test_input(event: InputEvent) -> bool:
@@ -1377,6 +1380,7 @@ func _process(delta: float) -> void:
 	_campaign_node_elapsed += delta
 	_player_invuln = maxf(0.0, _player_invuln - delta)
 	_update_player(delta)
+	_update_player_manual_aim_facing()
 	_update_campaign_progression()
 	_update_wave_director(delta)
 	_update_run_event_director(delta)
@@ -10834,6 +10838,58 @@ func _update_player(delta: float) -> void:
 	_update_player_presentation_effects(delta)
 
 
+func _player_manual_aim_input_allowed() -> bool:
+	if _opening_intro_active or _title_menu_active or get_tree().paused:
+		return false
+	if _game_over or _run_success:
+		return false
+	if _weapon_reward_decision_active or _level_up_active or _sector_reward_active:
+		return false
+	if _help_visible or _armory_visible or _core_upgrades_visible or _title_options_visible or _pause_options_visible:
+		return false
+	return is_instance_valid(_player_area)
+
+
+func _update_player_manual_aim_facing() -> void:
+	if not _player_manual_aim_input_allowed():
+		return
+	var direction := _get_aim_direction()
+	if direction.length_squared() >= 0.01:
+		_set_player_core_aim_facing_direction(direction)
+
+
+func _handle_player_mouse_aim_input(event: InputEvent) -> void:
+	if not _player_manual_aim_input_allowed():
+		return
+	if event is InputEventMouseMotion:
+		_set_player_core_mouse_aim_facing_from_viewport_position((event as InputEventMouseMotion).position)
+	elif event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
+		_set_player_core_mouse_aim_facing_from_viewport_position((event as InputEventMouseButton).position)
+
+
+func _player_mouse_aim_world_position(viewport_position: Vector2) -> Vector3:
+	if not is_instance_valid(_camera) or not is_instance_valid(_player_area):
+		return Vector3.ZERO
+	var ray_origin := _camera.project_ray_origin(viewport_position)
+	var ray_direction := _camera.project_ray_normal(viewport_position)
+	if absf(ray_direction.y) <= 0.0001:
+		return Vector3.ZERO
+	var distance_to_player_plane := (_player_area.position.y - ray_origin.y) / ray_direction.y
+	if distance_to_player_plane < 0.0:
+		return Vector3.ZERO
+	return ray_origin + ray_direction * distance_to_player_plane
+
+
+func _set_player_core_mouse_aim_facing_from_viewport_position(viewport_position: Vector2) -> bool:
+	var target_position := _player_mouse_aim_world_position(viewport_position)
+	var direction := target_position - _player_area.position
+	direction.y = 0.0
+	if direction.length_squared() < 0.01:
+		return false
+	_set_player_core_aim_facing_direction(direction)
+	return true
+
+
 func _set_player_core_aim_facing_direction(direction: Vector3) -> void:
 	if not PLAYER_CORE_AIM_FACING_EXPERIMENT_ENABLED:
 		return
@@ -12747,7 +12803,8 @@ func _get_primary_fire_direction() -> Vector3:
 	if direction.length_squared() < 0.01:
 		return Vector3.ZERO
 	direction = direction.normalized()
-	_set_player_core_aim_facing_direction(direction)
+	if PLAYER_VISUAL_ENEMY_AUTO_FACE_ENABLED:
+		_set_player_core_aim_facing_direction(direction)
 	return direction
 
 
