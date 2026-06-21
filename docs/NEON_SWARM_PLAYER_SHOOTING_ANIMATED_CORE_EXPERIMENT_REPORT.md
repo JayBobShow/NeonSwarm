@@ -71,7 +71,9 @@ Weapon fire events call a visual-only trigger. If `shooting_arm_loop` is already
 
 The orientation hotfix keeps the animated GLB root upright with the model/root transform values below. The previous forearm-only `Skeleton3D` pose override was tested against the unforced imported animation and is now behind a safety toggle that defaults off. The override can still be re-enabled for debugging, but it is not part of the approved runtime look because it can twist the side-aim arm silhouette.
 
-The arm-level hotfix keeps that forearm-only aim override off and adds a separate local arm-chain pitch correction. The runtime cause of the floor-shooting pose was that the imported shooting pose's forearm forward axis entered gameplay with a strong downward component after the player root aim-facing transform was applied. Runtime capture measured the baseline `Left_Forearm` and `Right_Forearm` forward axes at approximately `Y = -0.740`. The fix does not rotate the player body. It applies a controlled local `-75` degree pitch to the existing animated upper-arm and forearm poses after the clip pose is evaluated, which raises the weapons to a nearly level axis without replacing the forearm aim basis or reintroducing the prior twist.
+The arm-level hotfix keeps that forearm-only aim override off and adds a separate local arm-chain pitch correction. The runtime cause of the floor-shooting pose was that the imported shooting pose's forearm forward axis entered gameplay with a strong downward component after the player root aim-facing transform was applied. Runtime capture measured the baseline `Left_Forearm` and `Right_Forearm` forward axes at approximately `Y = -0.740`. The fix does not rotate the player body. The first level pass used a controlled local `-75` degree pitch on the existing animated upper-arm and forearm poses after the clip pose was evaluated, which raised the weapons without replacing the forearm aim basis or reintroducing the prior twist.
+
+The outward-aim hotfix keeps the arms level but retunes that correction so the forearms point forward toward the fire direction instead of remaining side-splayed. The cause was that the level-only correction left a large horizontal side component: the forearm aim dot against the fire direction was only about `0.695` while the arms were visibly spread away from the target line. The final correction uses a shallower arm pitch plus mirrored left/right yaw spread, which keeps vertical pitch near level while moving both forearm axes onto the aim vector.
 
 ## Tuning Values
 
@@ -88,8 +90,11 @@ Current experiment tuning:
 - `PLAYER_SHOOTING_ANIMATED_CORE_FOREARM_POSE_OVERRIDE_AMOUNT`: `1.0`
 - `PLAYER_SHOOTING_ANIMATED_CORE_FOREARM_POSE_BONES`: `["Left_Forearm", "Right_Forearm"]`
 - `PLAYER_SHOOTING_ANIMATED_CORE_ARM_LEVEL_CORRECTION_ENABLED`: `true`
-- `PLAYER_SHOOTING_ANIMATED_CORE_ARM_PITCH_DEGREES`: `-75.0`
+- `PLAYER_SHOOTING_ANIMATED_CORE_ARM_PITCH_DEGREES`: `-55.0`
 - `PLAYER_SHOOTING_ANIMATED_CORE_ARM_YAW_DEGREES`: `0.0`
+- `PLAYER_SHOOTING_ANIMATED_CORE_ARM_SPREAD_DEGREES`: `40.0`
+- `PLAYER_SHOOTING_ANIMATED_CORE_LEFT_ARM_YAW_DEGREES`: `40.0`
+- `PLAYER_SHOOTING_ANIMATED_CORE_RIGHT_ARM_YAW_DEGREES`: `-40.0`
 - `PLAYER_SHOOTING_ANIMATED_CORE_ARM_ROLL_DEGREES`: `0.0`
 - `PLAYER_SHOOTING_ANIMATED_CORE_ARM_POSE_OVERRIDE_AMOUNT`: `1.0`
 - `PLAYER_SHOOTING_ANIMATED_CORE_ARM_POSE_BONES`: `["Left_UpperArm", "Left_Forearm", "Right_UpperArm", "Right_Forearm"]`
@@ -126,6 +131,10 @@ Temporary runtime validation confirmed:
 - Final runtime capture reported `arm_level_should_apply=true`, `forearm_pose_correction_should_apply=false`, `arm_pose_bone_count=4`, and `forearm_pose_bone_count=2`.
 - Final forearm forward-axis vertical components were near level: aim up approximately `-0.004`, aim down approximately `-0.030`, aim left approximately `-0.025`, and aim right approximately `-0.004`.
 - The screenshots covered aim up, aim down, aim left, and aim right. The body still faces the aim direction, the arms no longer point down into the floor, and the prior forearm twist/cross-body correction remains disabled.
+- Outward-aim gameplay screenshots were captured from the actual patched runtime at `/tmp/neon_swarm_arm_outward_final/final_aim_up.png`, `/tmp/neon_swarm_arm_outward_final/final_aim_down.png`, `/tmp/neon_swarm_arm_outward_final/final_aim_left.png`, and `/tmp/neon_swarm_arm_outward_final/final_aim_right.png`.
+- Outward-aim final runtime capture reported `arm_level_should_apply=true`, `forearm_pose_correction_should_apply=false`, `arm_pose_bone_count=4`, and `forearm_pose_bone_count=2`.
+- Final forearm vertical components stayed near level at approximately `0.025` to `0.030`. Final horizontal aim dots were approximately `0.994` for aim up, `0.992` to `0.997` for aim down, `0.925` to `0.981` for aim left, and `0.994` to `0.997` for aim right.
+- Left and right arms required separate mirrored yaw offsets: left arm `+40` degrees and right arm `-40` degrees. A common yaw alone improved one arm while worsening the other, so mirrored spread was required to avoid inward/cross-body aiming.
 
 ## Remaining Improvements
 

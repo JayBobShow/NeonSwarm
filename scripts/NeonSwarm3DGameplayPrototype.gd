@@ -54,8 +54,11 @@ const PLAYER_SHOOTING_ANIMATED_CORE_FOREARM_POSE_CORRECTION_ENABLED := false
 const PLAYER_SHOOTING_ANIMATED_CORE_FOREARM_POSE_OVERRIDE_AMOUNT := 1.0
 const PLAYER_SHOOTING_ANIMATED_CORE_FOREARM_POSE_BONES := ["Left_Forearm", "Right_Forearm"]
 const PLAYER_SHOOTING_ANIMATED_CORE_ARM_LEVEL_CORRECTION_ENABLED := true
-const PLAYER_SHOOTING_ANIMATED_CORE_ARM_PITCH_DEGREES := -75.0
+const PLAYER_SHOOTING_ANIMATED_CORE_ARM_PITCH_DEGREES := -55.0
 const PLAYER_SHOOTING_ANIMATED_CORE_ARM_YAW_DEGREES := 0.0
+const PLAYER_SHOOTING_ANIMATED_CORE_ARM_SPREAD_DEGREES := 40.0
+const PLAYER_SHOOTING_ANIMATED_CORE_LEFT_ARM_YAW_DEGREES := PLAYER_SHOOTING_ANIMATED_CORE_ARM_SPREAD_DEGREES
+const PLAYER_SHOOTING_ANIMATED_CORE_RIGHT_ARM_YAW_DEGREES := -PLAYER_SHOOTING_ANIMATED_CORE_ARM_SPREAD_DEGREES
 const PLAYER_SHOOTING_ANIMATED_CORE_ARM_ROLL_DEGREES := 0.0
 const PLAYER_SHOOTING_ANIMATED_CORE_ARM_POSE_OVERRIDE_AMOUNT := 1.0
 const PLAYER_SHOOTING_ANIMATED_CORE_ARM_POSE_BONES := ["Left_UpperArm", "Left_Forearm", "Right_UpperArm", "Right_Forearm"]
@@ -3936,17 +3939,27 @@ func _clear_player_shooting_forearm_pose_correction() -> void:
 	_clear_player_shooting_arm_pose_corrections()
 
 
-func _player_shooting_arm_level_correction_basis() -> Basis:
+func _player_shooting_arm_level_yaw_for_bone(bone_name: String) -> float:
+	var yaw_degrees := PLAYER_SHOOTING_ANIMATED_CORE_ARM_YAW_DEGREES
+	if bone_name.begins_with("Left_"):
+		yaw_degrees += PLAYER_SHOOTING_ANIMATED_CORE_LEFT_ARM_YAW_DEGREES
+	elif bone_name.begins_with("Right_"):
+		yaw_degrees += PLAYER_SHOOTING_ANIMATED_CORE_RIGHT_ARM_YAW_DEGREES
+	return yaw_degrees
+
+
+func _player_shooting_arm_level_correction_basis(bone_name: String) -> Basis:
 	var correction := Basis.IDENTITY
-	correction = (correction * Basis(Vector3.UP, deg_to_rad(PLAYER_SHOOTING_ANIMATED_CORE_ARM_YAW_DEGREES))).orthonormalized()
+	correction = (correction * Basis(Vector3.UP, deg_to_rad(_player_shooting_arm_level_yaw_for_bone(bone_name)))).orthonormalized()
 	correction = (correction * Basis(Vector3.RIGHT, deg_to_rad(PLAYER_SHOOTING_ANIMATED_CORE_ARM_PITCH_DEGREES))).orthonormalized()
 	correction = (correction * Basis(Vector3.FORWARD, deg_to_rad(PLAYER_SHOOTING_ANIMATED_CORE_ARM_ROLL_DEGREES))).orthonormalized()
 	return correction
 
 
 func _apply_player_shooting_arm_level_correction() -> void:
-	var correction_basis := _player_shooting_arm_level_correction_basis()
 	for bone_index in _player_core_arm_pose_bone_indices:
+		var bone_name := _player_core_skeleton.get_bone_name(bone_index)
+		var correction_basis := _player_shooting_arm_level_correction_basis(bone_name)
 		var pose := _player_core_skeleton.get_bone_global_pose_no_override(bone_index)
 		pose.basis = (pose.basis * correction_basis).orthonormalized()
 		_player_core_skeleton.set_bone_global_pose_override(
