@@ -180,8 +180,8 @@ Nova/radial tuning added:
 
 - `NOVA_BURST_RADIUS_MULTIPLIER = 1.20`
 - `NOVA_BURST_MAX_RADIUS = 9.0`
-- `NOVA_BURST_VISUAL_RADIUS_MULTIPLIER = 0.70`
-- `NOVA_BURST_VISUAL_MAX_RADIUS = 5.4`
+- `NOVA_BURST_VISUAL_RADIUS_MULTIPLIER = 1.40`
+- `NOVA_BURST_VISUAL_MAX_RADIUS = 10.8`
 - `NOVA_BURST_IMPACT_FLASH_SCALE = 1.05`
 - `NOVA_BURST_EFFECT_DURATION = 0.58`
 - `STAR_PULSE_MAX_RADIUS = 8.4`
@@ -202,7 +202,7 @@ Nova Burst damage and visual scale are now tuned separately. Damage still uses `
 Nova visual size:
 
 - Before this hotfix, the base visual radius from the prior pass was about `10.04` world units (`NOVA_RADIUS * NOVA_BURST_RADIUS_MULTIPLIER * 1.35`).
-- After this hotfix, the base visual radius is about `5.21` world units (`_nova_burst_radius() * 0.70`) with `NOVA_BURST_VISUAL_MAX_RADIUS = 5.4`.
+- After that hotfix, the base visual radius was about `5.21` world units (`_nova_burst_radius() * 0.70`) with `NOVA_BURST_VISUAL_MAX_RADIUS = 5.4`. This smaller value was intentionally doubled in the final floor-plane size tuning below.
 - The impact flash was reduced from an inline `1.70` burst scale to `NOVA_BURST_IMPACT_FLASH_SCALE = 1.05`.
 
 Nova damage proof:
@@ -233,7 +233,7 @@ What changed:
 
 - `NOVA_BURST_VISUAL_FLOOR_PLANE_ONLY = true`
 - `NOVA_BURST_VISUAL_VERTICAL_SCALE = 1.0`
-- `NOVA_BURST_VISUAL_START_SCALE = 0.60`
+- `NOVA_BURST_VISUAL_START_SCALE = 1.20`
 - `NOVA_BURST_VISUAL_FLOOR_Y = 0.12`
 - `NOVA_BURST_VISUAL_MAX_SCREEN_DIAMETER_PX = 1000.0`
 
@@ -244,12 +244,32 @@ The dynamic weapon Blender model was removed from the expanding Nova shockwave b
 Validation proof:
 
 - Focused validation: `NOVA_FLOOR_PLANE_LOGIC_VALIDATION_PASS`.
-- Projected gameplay-camera diameter: `280.68 px`, below `NOVA_BURST_VISUAL_MAX_SCREEN_DIAMETER_PX = 1000.0`.
+- Initial floor-plane validation projected gameplay-camera diameter: `280.68 px`, below `NOVA_BURST_VISUAL_MAX_SCREEN_DIAMETER_PX = 1000.0`.
 - Nova visual root stays at `NOVA_BURST_VISUAL_FLOOR_Y = 0.12`.
 - Nova visual Y scale remains `1.0` while X/Z scale expands.
 - Nova torus child `rotation.x` remains `0.0`, so the torus is not rotated upright toward the camera.
 - Nova still damaged exactly `2 / 3` validation enemies: the two inside damage radius were hit and the outside enemy was not.
 - Native viewport screenshot capture was not available under this headless/dummy-renderer environment; the validation image generated from the gameplay-camera projection is `/tmp/neon_swarm_nova_floor_plane_hotfix_validation.png`.
+
+## Nova Floor-Plane Size Final Tuning
+
+Nova Burst floor-plane orientation stayed approved, but the flat visual was too small after the orientation fix. The final tuning doubles only the floor-plane visual size:
+
+- `NOVA_BURST_VISUAL_RADIUS_MULTIPLIER` changed from `0.70` to `1.40`.
+- `NOVA_BURST_VISUAL_MAX_RADIUS` changed from `5.4` to `10.8`.
+- `NOVA_BURST_VISUAL_START_SCALE` changed from `0.60` to `1.20`.
+- `NOVA_BURST_VISUAL_FLOOR_PLANE_ONLY` remains `true`.
+- `NOVA_BURST_VISUAL_VERTICAL_SCALE` remains `1.0`.
+- `NOVA_BURST_VISUAL_MAX_SCREEN_DIAMETER_PX` remains `1000.0`.
+
+The visual continues to scale as `Vector3(radius, NOVA_BURST_VISUAL_VERTICAL_SCALE, radius)`, so the shockwave grows across the arena floor without vertical/camera-axis growth. Damage radius remains separate and unchanged.
+
+Final size validation:
+
+- Focused validation: `NOVA_FLOOR_PLANE_LOGIC_VALIDATION_PASS`.
+- Projected gameplay-camera diameter changed from `280.68 px` to `561.37 px`.
+- Final projected diameter remains below `NOVA_BURST_VISUAL_MAX_SCREEN_DIAMETER_PX = 1000.0`.
+- Nova still damaged exactly `2 / 3` validation enemies.
 
 ## Reward / Run Weapon Behavior
 
@@ -330,7 +350,7 @@ Nova floor-plane validation:
 - Focused validation: `NOVA_FLOOR_PLANE_LOGIC_VALIDATION_PASS`.
 - Confirmed the Nova shockwave lies on the arena X/Z floor plane.
 - Confirmed the visual does not scale on the vertical/camera axis.
-- Confirmed projected gameplay-camera diameter is `280.68 px`, below the `1000 px` cap.
+- Confirmed projected gameplay-camera diameter is `561.37 px`, doubled from `280.68 px` and below the `1000 px` cap.
 - Confirmed Nova still damages in-radius enemies.
 
 Required final validation commands were run after implementation and documentation.
