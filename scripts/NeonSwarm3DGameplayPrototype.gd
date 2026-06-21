@@ -420,18 +420,17 @@ const PULSE_DAMAGE := 27.0
 const PULSE_SPEED := 23.0
 const PULSE_LIFE := 1.25
 const AUTO_TARGET_RANGE := 26.0
+const ACTIVE_WEAPON_SLOT_CAP := 5
+const EQUIPMENT_SLOT_UNLOCK_LEVELS := [1, 1, 4, 10, 20, 35, 50, 70]
 const WEAPON_FIRE_SLOT_ACTIONS := [
 	"fire_weapon_slot_1",
 	"fire_weapon_slot_2",
 	"fire_weapon_slot_3",
 	"fire_weapon_slot_4",
-	"fire_weapon_slot_5",
-	"fire_weapon_slot_6",
-	"fire_weapon_slot_7",
-	"fire_weapon_slot_8"
+	"fire_weapon_slot_5"
 ]
-const WEAPON_FIRE_SLOT_KEYBOARD_LABELS := ["LMB", "RMB", "Q", "E", "R", "F", "Z", "X"]
-const WEAPON_FIRE_SLOT_CONTROLLER_LABELS := ["RT", "LT", "RB", "LB", "--", "--", "--", "--"]
+const WEAPON_FIRE_SLOT_KEYBOARD_LABELS := ["LMB", "RMB", "Q", "E", "R"]
+const WEAPON_FIRE_SLOT_CONTROLLER_LABELS := ["RT", "LT", "RB", "LB", "L3"]
 const ORBIT_COOLDOWN := 0.16
 const ORBIT_DAMAGE := 16.0
 const ORBIT_RADIUS := 2.35
@@ -620,6 +619,7 @@ var _player_health := PLAYER_MAX_HEALTH
 var _player_max_health := PLAYER_MAX_HEALTH
 var _player_invuln := 0.0
 var _player_level := 1
+var _pending_equipment_slot_unlock_notice := ""
 var _player_xp := 0
 var _xp_required := 10
 var _damage_multiplier := 1.0
@@ -1495,12 +1495,19 @@ func _create_default_weapon_loadout() -> void:
 	_stash_weapon_instances.clear()
 	_discovered_weapon_families.clear()
 	_weapon_instance_counter = 0
-	for definition_id in WeaponCatalog.default_loadout_ids():
+	var default_ids := WeaponCatalog.default_loadout_ids()
+	for i in range(default_ids.size()):
+		var definition_id := str(default_ids[i])
 		_weapon_instance_counter += 1
 		var instance := WeaponCatalog.default_weapon_instance(str(definition_id), _next_weapon_instance_id())
-		instance = _normalize_weapon_instance(instance, true)
-		_equipped_weapon_instances.append(instance)
+		instance = _normalize_weapon_instance(instance, i == 0)
+		if i == 0:
+			_equipped_weapon_instances.append(instance)
+		else:
+			instance["equipped"] = false
+			_stash_weapon_instances.append(instance)
 		_remember_discovered_weapon(instance)
+	_normalize_equipped_weapon_slots()
 
 
 func _load_weapon_inventory() -> bool:
@@ -1522,7 +1529,9 @@ func _load_weapon_inventory() -> bool:
 	var loaded_stash: Array = config.get_value("inventory", "stash", [])
 	var loaded_discovered: Array = config.get_value("inventory", "discovered_families", [])
 	for item in loaded_equipped:
-		if item is Dictionary and WeaponCatalog.has_definition(str(Dictionary(item).get("definition_id", ""))):
+		if item is Dictionary and Dictionary(item).is_empty():
+			_equipped_weapon_instances.append({})
+		elif item is Dictionary and WeaponCatalog.has_definition(str(Dictionary(item).get("definition_id", ""))):
 			var instance := _normalize_weapon_instance(Dictionary(item).duplicate(true), true)
 			_equipped_weapon_instances.append(instance)
 			_remember_discovered_weapon(instance)
@@ -1537,8 +1546,7 @@ func _load_weapon_inventory() -> bool:
 			_discovered_weapon_families.append(family_name)
 	if _equipped_weapon_instances.is_empty():
 		return false
-	while _equipped_weapon_instances.size() > EQUIPPED_WEAPON_SLOT_CAP:
-		_equipped_weapon_instances.pop_back()
+	_normalize_equipped_weapon_slots()
 	while _stash_weapon_instances.size() > STASH_WEAPON_CAP:
 		_stash_weapon_instances.pop_back()
 	return true
@@ -1574,7 +1582,38 @@ func _normalize_weapon_instance(instance: Dictionary, equipped: bool) -> Diction
 	return instance
 
 
+func _normalize_equipped_weapon_slots() -> void:
+	for i in range(_equipped_weapon_instances.size() - 1, -1, -1):
+		var item = _equipped_weapon_instances[i]
+		if item is Dictionary and Dictionary(item).is_empty():
+			_equipped_weapon_instances[i] = {}
+			continue
+		if item is Dictionary and WeaponCatalog.has_definition(str(Dictionary(item).get("definition_id", ""))):
+			_equipped_weapon_instances[i] = _normalize_weapon_instance(Dictionary(item).duplicate(true), true)
+			continue
+		_equipped_weapon_instances[i] = {}
+	while _equipped_weapon_instances.size() > EQUIPPED_WEAPON_SLOT_CAP:
+		var extra := Dictionary(_equipped_weapon_instances.pop_back())
+		if not extra.is_empty() and _stash_weapon_instances.size() < STASH_WEAPON_CAP:
+			extra["equipped"] = false
+			_stash_weapon_instances.append(extra)
+	while _equipped_weapon_instances.size() < EQUIPPED_WEAPON_SLOT_CAP:
+		_equipped_weapon_instances.append({})
+
+
+func _equipped_weapon_count(include_locked := true) -> int:
+	_normalize_equipped_weapon_slots()
+	var count := 0
+	for i in range(EQUIPPED_WEAPON_SLOT_CAP):
+		if not include_locked and not _is_equipment_slot_unlocked(i):
+			continue
+		if not Dictionary(_equipped_weapon_instances[i]).is_empty():
+			count += 1
+	return count
+
+
 func _save_weapon_inventory() -> void:
+	_normalize_equipped_weapon_slots()
 	var config := ConfigFile.new()
 	config.set_value("inventory", "schema_version", 3)
 	config.set_value("inventory", "instance_counter", _weapon_instance_counter)
@@ -1725,10 +1764,158 @@ func _remember_discovered_weapon(instance: Dictionary) -> void:
 		_discovered_weapon_families.append(family)
 
 
+func _equipment_slot_unlock_level(slot_index: int) -> int:
+	if slot_index < 0:
+		return 9999
+	if slot_index >= EQUIPMENT_SLOT_UNLOCK_LEVELS.size():
+		return 9999
+	return int(EQUIPMENT_SLOT_UNLOCK_LEVELS[slot_index])
+
+
+func _unlocked_equipment_slot_count(level := -1) -> int:
+	var check_level := _player_level if level < 0 else level
+	var count := 0
+	for i in range(EQUIPPED_WEAPON_SLOT_CAP):
+		if check_level >= _equipment_slot_unlock_level(i):
+			count += 1
+	return count
+
+
+func _is_equipment_slot_unlocked(slot_index: int, level := -1) -> bool:
+	if slot_index < 0 or slot_index >= EQUIPPED_WEAPON_SLOT_CAP:
+		return false
+	var check_level := _player_level if level < 0 else level
+	return check_level >= _equipment_slot_unlock_level(slot_index)
+
+
+func _equipment_slot_instance(slot_index: int) -> Dictionary:
+	_normalize_equipped_weapon_slots()
+	if slot_index < 0 or slot_index >= EQUIPPED_WEAPON_SLOT_CAP:
+		return {}
+	return Dictionary(_equipped_weapon_instances[slot_index])
+
+
+func _equipment_slot_is_empty(slot_index: int) -> bool:
+	return _equipment_slot_instance(slot_index).is_empty()
+
+
+func _is_passive_weapon_family(definition_id: String) -> bool:
+	var id := definition_id.to_lower()
+	var definition := WeaponCatalog.weapon_definition(definition_id)
+	var family := str(definition.get("family", definition_id)).to_lower()
+	var archetype := str(definition.get("archetype", "")).to_lower()
+	var is_chain := id.find("chain") >= 0 or family.find("chain") >= 0 or archetype.find("chain") >= 0
+	var is_nova := id.find("nova") >= 0 or family.find("nova") >= 0 or archetype.find("nova") >= 0
+	var is_burst := id.find("burst") >= 0 or family.find("burst") >= 0 or archetype.find("burst") >= 0
+	return is_chain or is_nova or is_burst
+
+
+func _is_passive_weapon_instance(instance: Dictionary) -> bool:
+	return not instance.is_empty() and _is_passive_weapon_family(str(instance.get("definition_id", "")))
+
+
+func _active_fire_index_for_equipment_slot(slot_index: int) -> int:
+	_normalize_equipped_weapon_slots()
+	if not _is_equipment_slot_unlocked(slot_index):
+		return -1
+	var instance := _equipment_slot_instance(slot_index)
+	if instance.is_empty() or _is_passive_weapon_instance(instance):
+		return -1
+	var active_index := 0
+	for i in range(EQUIPPED_WEAPON_SLOT_CAP):
+		if i == slot_index:
+			return active_index if active_index < ACTIVE_WEAPON_SLOT_CAP else -1
+		if not _is_equipment_slot_unlocked(i):
+			continue
+		var previous := _equipment_slot_instance(i)
+		if previous.is_empty() or _is_passive_weapon_instance(previous):
+			continue
+		active_index += 1
+	return -1
+
+
+func _active_equipped_weapon_count() -> int:
+	_normalize_equipped_weapon_slots()
+	var count := 0
+	for i in range(EQUIPPED_WEAPON_SLOT_CAP):
+		if not _is_equipment_slot_unlocked(i):
+			continue
+		var instance := _equipment_slot_instance(i)
+		if not instance.is_empty() and not _is_passive_weapon_instance(instance):
+			count += 1
+	return count
+
+
+func _active_fire_binding_label(active_index: int) -> String:
+	if not _manual_weapon_fire_enabled():
+		return "AUTO"
+	if active_index < 0 or active_index >= WEAPON_FIRE_SLOT_KEYBOARD_LABELS.size():
+		return "NO BIND"
+	var keyboard_label := str(WEAPON_FIRE_SLOT_KEYBOARD_LABELS[active_index])
+	var controller_label := str(WEAPON_FIRE_SLOT_CONTROLLER_LABELS[active_index])
+	if controller_label == "--":
+		return keyboard_label
+	return "%s/%s" % [keyboard_label, controller_label]
+
+
+func _equipment_slot_binding_label(slot_index: int) -> String:
+	if not _is_equipment_slot_unlocked(slot_index):
+		return "LOCKED"
+	var instance := _equipment_slot_instance(slot_index)
+	if instance.is_empty():
+		return "EMPTY"
+	if _is_passive_weapon_instance(instance):
+		return "PASSIVE"
+	return _active_fire_binding_label(_active_fire_index_for_equipment_slot(slot_index))
+
+
+func _prospective_equipment_slot_binding_label(slot_index: int, candidate: Dictionary) -> String:
+	if candidate.is_empty():
+		return _equipment_slot_binding_label(slot_index)
+	if not _is_equipment_slot_unlocked(slot_index):
+		return "LOCKED"
+	if _is_passive_weapon_instance(candidate):
+		return "PASSIVE"
+	var active_index := 0
+	for i in range(EQUIPPED_WEAPON_SLOT_CAP):
+		if not _is_equipment_slot_unlocked(i):
+			continue
+		var instance := candidate if i == slot_index else _equipment_slot_instance(i)
+		if instance.is_empty() or _is_passive_weapon_instance(instance):
+			continue
+		if i == slot_index:
+			return _active_fire_binding_label(active_index)
+		active_index += 1
+	return "NO BIND"
+
+
+func _equipment_slot_accepts_weapon(slot_index: int, instance: Dictionary) -> bool:
+	if instance.is_empty() or not WeaponCatalog.has_definition(str(instance.get("definition_id", ""))):
+		return false
+	if not _is_equipment_slot_unlocked(slot_index):
+		return false
+	if _is_passive_weapon_instance(instance):
+		return true
+	var current := _equipment_slot_instance(slot_index)
+	if not current.is_empty() and not _is_passive_weapon_instance(current):
+		return true
+	return _active_equipped_weapon_count() < ACTIVE_WEAPON_SLOT_CAP
+
+
+func _equipment_mode_label_for_instance(instance: Dictionary) -> String:
+	if instance.is_empty():
+		return "EMPTY"
+	return "PASSIVE" if _is_passive_weapon_instance(instance) else "ACTIVE"
+
+
 func _rebuild_weapon_stat_bonuses() -> void:
+	_normalize_equipped_weapon_slots()
 	_weapon_family_stat_bonuses.clear()
 	var active_runtime_weapons := {}
-	for instance in _equipped_weapon_instances:
+	for slot_index in range(EQUIPPED_WEAPON_SLOT_CAP):
+		if not _is_equipment_slot_unlocked(slot_index):
+			continue
+		var instance := _equipment_slot_instance(slot_index)
 		var definition_id := str(instance.get("definition_id", ""))
 		if definition_id == "":
 			continue
@@ -1822,8 +2009,12 @@ func _is_weapon_family_equipped(definition_id: String) -> bool:
 
 
 func _equipped_weapon_index_for_definition(definition_id: String) -> int:
-	for i in range(_equipped_weapon_instances.size()):
-		if str(_equipped_weapon_instances[i].get("definition_id", "")) == definition_id:
+	_normalize_equipped_weapon_slots()
+	for i in range(EQUIPPED_WEAPON_SLOT_CAP):
+		if not _is_equipment_slot_unlocked(i):
+			continue
+		var instance := _equipment_slot_instance(i)
+		if not instance.is_empty() and str(instance.get("definition_id", "")) == definition_id:
 			return i
 	return -1
 
@@ -1864,11 +2055,11 @@ func _weapon_range_multiplier(definition_id: String) -> float:
 func _weapon_choice_action(instance: Dictionary) -> String:
 	var definition_id := str(instance.get("definition_id", ""))
 	var equipped_index := _equipped_weapon_index_for_definition(definition_id)
-	if equipped_index >= 0:
-		var current_power := float(_equipped_weapon_instances[equipped_index].get("power_score", 1.0))
+	if equipped_index >= 0 and _is_equipment_slot_unlocked(equipped_index):
+		var current_power := float(_equipment_slot_instance(equipped_index).get("power_score", 1.0))
 		var candidate_power := float(instance.get("power_score", 1.0))
 		return "UPGRADE" if candidate_power >= current_power else "REPLACE"
-	if _equipped_weapon_instances.size() < EQUIPPED_WEAPON_SLOT_CAP:
+	if _find_open_weapon_slot_index_for_instance(instance) >= 0:
 		return "NEW"
 	if _stash_weapon_instances.size() < STASH_WEAPON_CAP:
 		return "STASH"
@@ -1879,7 +2070,7 @@ func _make_weapon_reward_choice() -> Dictionary:
 	var instance := WeaponCatalog.roll_weapon_instance(_weapon_loot_rng, _sector_index, _generate_weapon_instance_id())
 	var action := _weapon_choice_action(instance)
 	var equipped_index := _equipped_weapon_index_for_definition(str(instance.get("definition_id", "")))
-	var current := _equipped_weapon_instances[equipped_index] if equipped_index >= 0 else {}
+	var current := _equipment_slot_instance(equipped_index) if equipped_index >= 0 else {}
 	return {
 		"kind": "weapon_loot",
 		"title": str(instance["name"]),
@@ -1921,18 +2112,21 @@ func _apply_weapon_reward(upgrade: Dictionary) -> void:
 	match action:
 		"UPGRADE", "REPLACE":
 			var equipped_index := _equipped_weapon_index_for_definition(definition_id)
-			if equipped_index >= 0:
+			if equipped_index >= 0 and _is_equipment_slot_unlocked(equipped_index):
 				instance["equipped"] = true
 				_equipped_weapon_instances[equipped_index] = instance
-			elif _equipped_weapon_instances.size() < EQUIPPED_WEAPON_SLOT_CAP:
-				instance["equipped"] = true
-				_equipped_weapon_instances.append(instance)
-			elif _stash_weapon_instances.size() < STASH_WEAPON_CAP:
-				_stash_weapon_instances.append(instance)
+			else:
+				var open_index := _find_open_weapon_slot_index_for_instance(instance)
+				if open_index >= 0:
+					instance["equipped"] = true
+					_equipped_weapon_instances[open_index] = instance
+				elif _stash_weapon_instances.size() < STASH_WEAPON_CAP:
+					_stash_weapon_instances.append(instance)
 		"NEW":
-			if _equipped_weapon_instances.size() < EQUIPPED_WEAPON_SLOT_CAP:
+			var open_index := _find_open_weapon_slot_index_for_instance(instance)
+			if open_index >= 0:
 				instance["equipped"] = true
-				_equipped_weapon_instances.append(instance)
+				_equipped_weapon_instances[open_index] = instance
 			elif _stash_weapon_instances.size() < STASH_WEAPON_CAP:
 				_stash_weapon_instances.append(instance)
 		"STASH":
@@ -3138,7 +3332,7 @@ func _tutorial_prompt_data(key: String) -> Dictionary:
 		"xp":
 			return {"title": "XP SHARDS", "body": "Collect XP shards to level up. XP is not weapon loot."}
 		"weapons":
-			return {"title": "SLOT FIRE", "body": "Hold a weapon slot fire button to trigger that equipped weapon. Manual aim controls projectile shots."}
+			return {"title": "EQUIPMENT FIRE", "body": "Hold an active weapon button to fire active equipment. Passive equipment triggers without a held button."}
 		"sectors":
 			return {"title": "SECTOR FLOW", "body": "Clear sectors to earn rewards. Sector weapon rewards can be equipped, stashed, or scrapped."}
 		"weapon_loot":
@@ -6239,7 +6433,7 @@ func _create_armory_menu() -> void:
 	header.add_theme_color_override("font_color", Color(1.0, 0.94, 0.18))
 	layout.add_child(header)
 
-	var prompt := _make_hud_label("LEFT STICK / D-PAD: SELECT  |  RIGHT STICK: SCROLL ACTIVE PANEL  |  A / ENTER: CONFIRM  |  B / ESC: BACK")
+	var prompt := _make_hud_label("LEFT STICK / D-PAD: SELECT  |  RIGHT STICK: SCROLL ACTIVE PANEL  |  A / ENTER: CONFIRM  |  CLEAR: EQUIPPED SLOT ACTION  |  B / ESC: BACK")
 	prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	prompt.add_theme_font_size_override("font_size", 10)
 	prompt.add_theme_color_override("font_color", Color(0.76, 0.98, 1.0, 0.88))
@@ -6251,7 +6445,7 @@ func _create_armory_menu() -> void:
 	_armory_dust_label.add_theme_color_override("font_color", Color(1.0, 0.94, 0.18))
 	layout.add_child(_armory_dust_label)
 
-	_armory_help_label = _make_hud_label("EQUIPPED LOADOUT = ACTIVE WEAPONS  |  INVENTORY / STASH = STORED WEAPONS  |  FORGE SPENDS NEON DUST  |  SCRAP STORED WEAPONS FOR NEON DUST")
+	_armory_help_label = _make_hud_label("EQUIPMENT = ACTIVE BUTTON WEAPONS + PASSIVES  |  LOCKED SLOTS OPEN BY LEVEL  |  STASH = STORED WEAPONS  |  CLEAR EQUIPPED SLOTS FROM SLOT ACTIONS")
 	_armory_help_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_armory_help_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_armory_help_label.custom_minimum_size = Vector2(1000, 30)
@@ -6867,7 +7061,7 @@ func _help_page_data() -> Array[Dictionary]:
 	return [
 		{
 			"title": "BASIC CONTROLS",
-			"body": "MOVE\nKeyboard: WASD / arrows. Controller: left stick / D-pad.\n\nAIM\nMouse or right stick turns the player core. If no aim input is active, the last manual aim direction is preserved.\n\nFIRE\nHold weapon slot buttons to fire equipped weapons: LMB, RMB, Q, E, R, F, Z, X. Controller defaults cover the first four slots: RT, LT, RB, LB.\n\nMENUS\nA / Enter confirms. B / Esc backs out. D-pad / arrows move selection.\n\nPAUSE\nPress Start, P, or Esc during a run."
+			"body": "MOVE\nKeyboard: WASD / arrows. Controller: left stick / D-pad.\n\nAIM\nMouse or right stick turns the player core. If no aim input is active, the last manual aim direction is preserved.\n\nACTIVE FIRE\nHold active weapon buttons to fire equipped active weapons: LMB, RMB, Q, E, R. Controller defaults: RT, LT, RB, LB, L3.\n\nPASSIVES\nPassive equipment fires from its own cooldown and does not need a held button.\n\nMENUS\nA / Enter confirms. B / Esc backs out. D-pad / arrows move selection.\n\nPAUSE\nPress Start, P, or Esc during a run."
 		},
 		{
 			"title": "CORE LOOP",
@@ -6879,19 +7073,19 @@ func _help_page_data() -> Array[Dictionary]:
 		},
 		{
 			"title": "WEAPON SYSTEMS",
-			"body": "WEAPONS USE SLOT FIRE\nEquipped weapon systems fire or trigger only while their slot fire input is held. Cooldowns and fire rates still apply.\n\nEQUIPPED LOADOUT\nStart Game uses up to 8 weapons chosen from Armory. They persist with your loadout and appear in the right-side HUD.\n\nWEAPON ICONS\nIcons show the weapon family behavior: pulse, orbit, spear, chain, saw, well, bloom, and other geometry roles.\n\nRANDOM WEAPONS\nGenerated weapons can have rarity, random stats, and modifiers.\n\nARMORY\nUse Armory from the title screen to inspect, compare, and swap stored weapons."
+			"body": "ACTIVE / PASSIVE EQUIPMENT\nActive equipped weapons fire only while their assigned button is held. Passive chain, nova, and burst weapons trigger from their own cooldowns without a button.\n\nEQUIPPED LOADOUT\nThe loadout has up to 8 total equipment slots. Slots unlock by player level, can be empty, and appear in the right-side HUD as a button label, PASSIVE, EMPTY, or LOCKED.\n\nWEAPON ICONS\nIcons show the weapon family behavior: pulse, orbit, spear, chain, saw, well, bloom, and other geometry roles.\n\nRANDOM WEAPONS\nGenerated weapons can have rarity, random stats, and modifiers.\n\nARMORY\nUse Armory from the title screen to inspect, compare, clear, and swap stored weapons."
 		},
 		{
 			"title": "EQUIPPED VS RUN WEAPONS",
-			"body": "EQUIPPED LOADOUT WEAPONS\nYour 8 equipped weapons are your starting loadout. They are chosen from Armory, shown in the right-side HUD, and persist as loadout weapons.\n\nRUN WEAPONS\nDuring a run, boss, mini-boss, or Warden rewards may add temporary run weapons. A NEW RUN WEAPON uses the next available slot fire binding when one is available.\n\nLOADOUT UNCHANGED\nRun weapons do not need Armory equip and do not replace one of your 8 equipped weapons.\n\nRUN ONLY\nRun weapons help only during the current run unless a separate loot or save reward stores that weapon elsewhere."
+			"body": "EQUIPPED LOADOUT WEAPONS\nYour equipment slots are your starting loadout. They are chosen from Armory, shown in the right-side HUD, and persist as loadout weapons.\n\nACTIVE BUTTONS\nOnly five active fire bindings are available. Passive weapons do not consume one of those buttons.\n\nRUN WEAPONS\nDuring a run, boss, mini-boss, or Warden rewards may add temporary run weapons. Current run-only bonus weapons behave as temporary passive systems.\n\nLOADOUT UNCHANGED\nRun weapons do not need Armory equip and do not replace one of your equipped weapons."
 		},
 		{
 			"title": "SECTOR REWARDS",
-			"body": "SECTOR-CLEAR REWARDS\nAfter a sector boss or major event, choose a reward before moving on. Clearing sectors also banks a small Neon Dust bonus.\n\nNEW RUN WEAPON\nSome boss rewards add a temporary run weapon. It is run-only, uses an available fire slot when possible, and does not replace your equipped loadout.\n\nGENERATED WEAPON SYSTEMS\nWeapon rewards are random weapons with rarity and stat rolls.\n\nLOOT ROUTES\nEquip Now adds to an open slot. Replace Slot swaps with an equipped weapon. Send To Stash stores it. Scrap / Skip converts the weapon into Neon Dust.\n\nENEMIES CURRENTLY DROP XP, NOT WEAPONS."
+			"body": "SECTOR-CLEAR REWARDS\nAfter a sector boss or major event, choose a reward before moving on. Clearing sectors also banks a small Neon Dust bonus.\n\nNEW RUN WEAPON\nSome boss rewards add a temporary run weapon. Current run-only weapons behave as temporary passive systems and do not replace your equipped loadout.\n\nGENERATED WEAPON SYSTEMS\nWeapon rewards are random weapons with rarity and stat rolls.\n\nLOOT ROUTES\nEquip Now uses a valid unlocked equipment slot. Replace Slot swaps with an equipped weapon. Send To Stash stores it. Scrap / Skip converts the weapon into Neon Dust.\n\nENEMIES CURRENTLY DROP XP, NOT WEAPONS."
 		},
 		{
 			"title": "ARMORY / STASH",
-			"body": "EQUIPPED\nWeapons in equipped slots are active during gameplay.\n\nSTASH\nStashed weapons are stored only. They do not fire until equipped.\n\nSWAP\nSelecting a stash weapon equips it into the selected equipped slot. The old equipped weapon moves to stash.\n\nSCRAP\nStored weapons can be scrapped for Neon Dust. Equipped weapons cannot be scrapped from this screen.\n\nCORE UPGRADES\nUse Neon Dust to buy modest permanent core upgrades.\n\nSTART GAME USES THE EQUIPPED LOADOUT."
+			"body": "EQUIPPED\nEquipment slots can be active, passive, empty, or locked. Locked slots open by player level.\n\nSTASH\nStashed weapons are stored only. They do not fire until equipped.\n\nSWAP\nSelecting a stash weapon equips it into the selected equipment slot. The old equipped weapon moves to stash.\n\nCLEAR SLOT\nSelect an equipped weapon action and choose CLEAR SLOT to move that weapon back to stash, leaving the slot empty.\n\nSCRAP\nStored weapons can be scrapped for Neon Dust. Equipped weapons must be cleared to stash first.\n\nCORE UPGRADES\nUse Neon Dust to buy modest permanent core upgrades."
 		},
 		{
 			"title": "SECTORS / BOSSES",
@@ -7605,7 +7799,8 @@ func _open_armory() -> void:
 	_armory_action_selected_index = 0
 	_clear_armory_forge_pending()
 	_armory_selected_section = "equipped"
-	_armory_equipped_selected_index = clampi(_armory_equipped_selected_index, 0, maxi(0, _equipped_weapon_instances.size() - 1))
+	_normalize_equipped_weapon_slots()
+	_armory_equipped_selected_index = clampi(_armory_equipped_selected_index, 0, EQUIPPED_WEAPON_SLOT_CAP - 1)
 	_armory_stash_selected_index = clampi(_armory_stash_selected_index, 0, maxi(0, _stash_weapon_instances.size() - 1))
 	_armory_status_text = "SELECT STORED WEAPON TO COMPARE OR EQUIP"
 	_update_title_menu_labels()
@@ -8077,9 +8272,7 @@ func _move_core_upgrade_selection(direction: int) -> void:
 
 func _move_armory_selection(direction: int) -> void:
 	if _armory_selected_section == "equipped":
-		if _equipped_weapon_instances.is_empty():
-			return
-		_armory_equipped_selected_index = wrapi(_armory_equipped_selected_index + direction, 0, _equipped_weapon_instances.size())
+		_armory_equipped_selected_index = wrapi(_armory_equipped_selected_index + direction, 0, EQUIPPED_WEAPON_SLOT_CAP)
 	else:
 		if _stash_weapon_instances.is_empty():
 			_armory_status_text = "NO STORED WEAPONS // CLEAR SECTORS TO GENERATE WEAPON REWARDS"
@@ -8097,7 +8290,7 @@ func _switch_armory_section() -> void:
 	if _armory_selected_section == "stash" and _stash_weapon_instances.is_empty():
 		_armory_status_text = "NO STORED WEAPONS // CLEAR SECTORS TO GENERATE WEAPON REWARDS"
 	else:
-		_armory_status_text = "STASH ACTIONS: A OPENS EQUIP / FORGE / SCRAP OPTIONS" if _armory_selected_section == "stash" else "EQUIPPED LOADOUT ACTIVE // A OPENS FORGE OPTIONS"
+		_armory_status_text = "STASH ACTIONS: A OPENS EQUIP / FORGE / SCRAP OPTIONS" if _armory_selected_section == "stash" else "EQUIPPED LOADOUT ACTIVE // A OPENS FORGE OR CLEAR OPTIONS"
 	_armory_nav_cooldown = 0.14
 	_update_armory_ui()
 	_focus_armory_choice()
@@ -8161,15 +8354,22 @@ func _open_armory_stash_actions() -> void:
 
 
 func _open_armory_equipped_actions() -> void:
-	if _equipped_weapon_instances.is_empty():
-		_armory_status_text = "NO EQUIPPED WEAPON SELECTED"
+	_normalize_equipped_weapon_slots()
+	_armory_equipped_selected_index = clampi(_armory_equipped_selected_index, 0, EQUIPPED_WEAPON_SLOT_CAP - 1)
+	if not _is_equipment_slot_unlocked(_armory_equipped_selected_index):
+		_armory_status_text = "E%02d LOCKED UNTIL LEVEL %d" % [_armory_equipped_selected_index + 1, _equipment_slot_unlock_level(_armory_equipped_selected_index)]
+		_update_armory_ui()
+		_play_sfx("ui_back", 0.08)
+		return
+	if _equipment_slot_is_empty(_armory_equipped_selected_index):
+		_armory_status_text = "E%02d EMPTY // SELECT A STASHED WEAPON AND CONFIRM EQUIP" % [_armory_equipped_selected_index + 1]
 		_update_armory_ui()
 		_play_sfx("ui_back", 0.08)
 		return
 	_armory_action_mode = "equipped_actions"
 	_armory_action_selected_index = 0
 	_clear_armory_forge_pending()
-	_armory_status_text = "EQUIPPED WEAPON SELECTED // OPEN FORGE TO SPEND NEON DUST"
+	_armory_status_text = "EQUIPPED WEAPON SELECTED // FORGE OR CLEAR THIS SLOT"
 	_update_armory_ui()
 	call_deferred("_focus_armory_action_choice")
 	_play_sfx("ui_select", 0.08)
@@ -8184,6 +8384,34 @@ func _open_armory_scrap_confirm() -> void:
 	var instance: Dictionary = _stash_weapon_instances[clampi(_armory_stash_selected_index, 0, _stash_weapon_instances.size() - 1)]
 	var dust_amount := _neon_dust_value_for_weapon(instance)
 	_armory_status_text = "SCRAP THIS WEAPON FOR %d NEON DUST? %s // THIS REMOVES IT FROM STASH" % [dust_amount, str(instance.get("name", "WEAPON")).to_upper()]
+	_update_armory_ui()
+	call_deferred("_focus_armory_action_choice")
+	_play_sfx("ui_select", 0.08)
+
+
+func _open_armory_clear_slot_confirm() -> void:
+	_normalize_equipped_weapon_slots()
+	_armory_equipped_selected_index = clampi(_armory_equipped_selected_index, 0, EQUIPPED_WEAPON_SLOT_CAP - 1)
+	if not _is_equipment_slot_unlocked(_armory_equipped_selected_index):
+		_armory_status_text = "E%02d LOCKED UNTIL LEVEL %d" % [_armory_equipped_selected_index + 1, _equipment_slot_unlock_level(_armory_equipped_selected_index)]
+		_update_armory_ui()
+		_play_sfx("ui_back", 0.08)
+		return
+	var instance := _equipment_slot_instance(_armory_equipped_selected_index)
+	if instance.is_empty():
+		_armory_status_text = "E%02d ALREADY EMPTY" % [_armory_equipped_selected_index + 1]
+		_update_armory_ui()
+		_play_sfx("ui_back", 0.08)
+		return
+	if _stash_weapon_instances.size() >= STASH_WEAPON_CAP:
+		_armory_status_text = "STASH FULL // CLEAR SLOT BLOCKED"
+		_update_armory_ui()
+		_play_sfx("ui_back", 0.08)
+		return
+	_armory_action_mode = "clear_slot_confirm"
+	_armory_action_selected_index = 0
+	_clear_armory_forge_pending()
+	_armory_status_text = "CLEAR E%02d? %s MOVES TO STASH" % [_armory_equipped_selected_index + 1, str(instance.get("name", "WEAPON")).to_upper()]
 	_update_armory_ui()
 	call_deferred("_focus_armory_action_choice")
 	_play_sfx("ui_select", 0.08)
@@ -8340,6 +8568,8 @@ func _activate_armory_action_selection() -> void:
 			_equip_selected_stash_weapon()
 		"forge":
 			_open_armory_forge_actions()
+		"clear_slot":
+			_open_armory_clear_slot_confirm()
 		"forge_power", "reroll_stats", "reroll_modifier":
 			_open_armory_forge_confirm(action)
 		"evolve_fuse":
@@ -8361,6 +8591,8 @@ func _activate_armory_action_selection() -> void:
 			_open_armory_scrap_confirm()
 		"confirm_scrap":
 			_scrap_selected_stash_weapon()
+		"confirm_clear_slot":
+			_clear_selected_equipped_slot()
 		_:
 			_close_armory_action_mode()
 
@@ -8840,12 +9072,13 @@ func _update_armory_ui() -> void:
 		if _armory_selection_cursor:
 			_armory_selection_cursor.visible = false
 		return
-	_armory_equipped_selected_index = clampi(_armory_equipped_selected_index, 0, maxi(0, _equipped_weapon_instances.size() - 1))
+	_normalize_equipped_weapon_slots()
+	_armory_equipped_selected_index = clampi(_armory_equipped_selected_index, 0, EQUIPPED_WEAPON_SLOT_CAP - 1)
 	_armory_stash_selected_index = clampi(_armory_stash_selected_index, 0, maxi(0, _stash_weapon_instances.size() - 1))
 	if _armory_dust_label:
 		_armory_dust_label.text = "NEON DUST: %d" % _neon_dust
 	if _armory_equipped_title_label:
-		_armory_equipped_title_label.text = "EQUIPPED LOADOUT %d / %d" % [_equipped_weapon_instances.size(), EQUIPPED_WEAPON_SLOT_CAP]
+		_armory_equipped_title_label.text = "EQUIPMENT %d / %d  //  %d UNLOCKED" % [_equipped_weapon_count(false), EQUIPPED_WEAPON_SLOT_CAP, _unlocked_equipment_slot_count()]
 		_armory_equipped_title_label.add_theme_color_override("font_color", Color(1.0, 0.94, 0.18) if _armory_selected_section == "equipped" else Color(0.0, 0.96, 1.0))
 	if _armory_stash_title_label:
 		_armory_stash_title_label.text = "INVENTORY / STASH %d / %d" % [_stash_weapon_instances.size(), STASH_WEAPON_CAP]
@@ -8853,8 +9086,8 @@ func _update_armory_ui() -> void:
 	_update_armory_equipped_rows()
 	_update_armory_stash_rows()
 	var selected := _armory_selected_weapon_instance()
-	if selected.is_empty() and not _equipped_weapon_instances.is_empty():
-		selected = _equipped_weapon_instances[_armory_equipped_selected_index]
+	if selected.is_empty() and _armory_selected_section == "equipped":
+		selected = _equipment_slot_instance(_armory_equipped_selected_index)
 	_set_weapon_icon(_armory_preview_icon, selected, not selected.is_empty())
 	if _armory_action_mode == "forge_confirm" and not _armory_forge_preview_instance.is_empty():
 		_set_weapon_icon(_armory_compare_current_icon, selected, not selected.is_empty())
@@ -8868,7 +9101,7 @@ func _update_armory_ui() -> void:
 		_set_weapon_icon(_armory_compare_candidate_icon, material, not material.is_empty())
 	elif _armory_selected_section == "stash" and not selected.is_empty():
 		var equipped_index := _armory_comparison_equipped_index(selected)
-		var current := _equipped_weapon_instances[equipped_index] if equipped_index >= 0 else {}
+		var current := _equipment_slot_instance(equipped_index) if equipped_index >= 0 else {}
 		_set_weapon_icon(_armory_compare_current_icon, current, not current.is_empty())
 		_set_weapon_icon(_armory_compare_candidate_icon, selected, true)
 	else:
@@ -8890,21 +9123,26 @@ func _update_armory_equipped_rows() -> void:
 		if not is_instance_valid(button):
 			continue
 		button.set_meta("armory_index", i)
-		if i < _equipped_weapon_instances.size():
-			var instance: Dictionary = _equipped_weapon_instances[i]
-			button.visible = true
-			button.disabled = false
+		button.visible = true
+		if not _is_equipment_slot_unlocked(i):
+			button.disabled = true
+			button.text = "E%02d  LOCKED\nUNLOCKS LEVEL %d\n--" % [i + 1, _equipment_slot_unlock_level(i)]
+			if i < _armory_equipped_icons.size():
+				_set_weapon_icon(_armory_equipped_icons[i], "unknown_weapon", false)
+			_apply_armory_button_accent(button, {}, _armory_selected_section == "equipped" and i == _armory_equipped_selected_index)
+			continue
+		var instance := _equipment_slot_instance(i)
+		button.disabled = false
+		if not instance.is_empty():
 			button.text = _armory_weapon_row_text(instance, i, true)
 			if i < _armory_equipped_icons.size():
 				_set_weapon_icon(_armory_equipped_icons[i], instance, true)
 			_apply_armory_button_accent(button, instance, _armory_selected_section == "equipped" and i == _armory_equipped_selected_index)
 		else:
-			button.visible = true
-			button.disabled = true
-			button.text = "%02d EMPTY SLOT" % [i + 1]
+			button.text = "E%02d  EMPTY\nUNLOCKED SLOT\nSELECT STASH TO EQUIP" % [i + 1]
 			if i < _armory_equipped_icons.size():
 				_set_weapon_icon(_armory_equipped_icons[i], "unknown_weapon", false)
-			_apply_armory_button_accent(button, {}, false)
+			_apply_armory_button_accent(button, {}, _armory_selected_section == "equipped" and i == _armory_equipped_selected_index)
 
 
 func _update_armory_stash_rows() -> void:
@@ -8944,6 +9182,7 @@ func _update_armory_action_buttons() -> void:
 		"equipped_actions":
 			specs = [
 				{"id": "forge", "text": "FORGE SELECTED\nSPEND NEON DUST", "color": Color(1.0, 0.94, 0.18, 0.95)},
+				{"id": "clear_slot", "text": "CLEAR SLOT\nMOVE TO STASH", "color": Color(1.0, 0.08, 0.86, 0.90)},
 				{"id": "cancel", "text": "CANCEL\nBACK TO LOADOUT", "color": Color(0.0, 0.96, 1.0, 0.92)}
 			]
 		"stash_actions":
@@ -8989,6 +9228,11 @@ func _update_armory_action_buttons() -> void:
 			specs = [
 				{"id": "confirm_scrap", "text": "CONFIRM SCRAP\n+%d NEON DUST" % confirm_amount, "color": Color(1.0, 0.94, 0.18, 0.95)},
 				{"id": "cancel", "text": "CANCEL\nKEEP WEAPON", "color": Color(0.0, 0.96, 1.0, 0.92)}
+			]
+		"clear_slot_confirm":
+			specs = [
+				{"id": "confirm_clear_slot", "text": "CONFIRM CLEAR\nMOVE TO STASH", "color": Color(1.0, 0.94, 0.18, 0.95)},
+				{"id": "cancel", "text": "CANCEL\nKEEP EQUIPPED", "color": Color(0.0, 0.96, 1.0, 0.92)}
 			]
 		_:
 			specs = []
@@ -9045,10 +9289,11 @@ func _armory_weapon_row_text(instance: Dictionary, index: int, equipped: bool) -
 	var rarity_code := _rarity_display_code(rarity)
 	var power := float(instance.get("power_score", WeaponCatalog.estimate_power(instance)))
 	var prefix := "E" if equipped else "S"
+	var mode := _equipment_slot_binding_label(index) if equipped else _equipment_mode_label_for_instance(instance)
 	var forge_rank := clampi(int(instance.get("forge_power_rank", 0)), 0, FORGE_POWER_MAX_RANK)
 	var forge_label := " F%d" % forge_rank if forge_rank > 0 else ""
 	var evolution_label := " EV%d" % _evolution_rank(instance) if _evolution_rank(instance) > 0 else ""
-	return "%s%02d  %s  %s%s%s  PWR %.2f" % [prefix, index + 1, _compact_weapon_name(instance, 12 if equipped else 14), rarity_code, forge_label, evolution_label, power]
+	return "%s%02d  %s  %s\n%s%s%s  PWR %.2f" % [prefix, index + 1, mode, _compact_weapon_name(instance, 12 if equipped else 14), rarity_code, forge_label, evolution_label, power]
 
 
 func _armory_stash_window_start() -> int:
@@ -9078,8 +9323,8 @@ func _armory_selected_weapon_instance() -> Dictionary:
 		if _armory_stash_selected_index >= 0 and _armory_stash_selected_index < _stash_weapon_instances.size():
 			return _stash_weapon_instances[_armory_stash_selected_index]
 		return {}
-	if _armory_equipped_selected_index >= 0 and _armory_equipped_selected_index < _equipped_weapon_instances.size():
-		return _equipped_weapon_instances[_armory_equipped_selected_index]
+	if _armory_equipped_selected_index >= 0 and _armory_equipped_selected_index < EQUIPPED_WEAPON_SLOT_CAP:
+		return _equipment_slot_instance(_armory_equipped_selected_index)
 	return {}
 
 
@@ -9092,7 +9337,7 @@ func _set_armory_selected_weapon_instance(instance: Dictionary) -> void:
 			instance["equipped"] = false
 			_stash_weapon_instances[_armory_stash_selected_index] = instance
 	else:
-		if _armory_equipped_selected_index >= 0 and _armory_equipped_selected_index < _equipped_weapon_instances.size():
+		if _armory_equipped_selected_index >= 0 and _armory_equipped_selected_index < EQUIPPED_WEAPON_SLOT_CAP:
 			instance["equipped"] = true
 			_equipped_weapon_instances[_armory_equipped_selected_index] = instance
 	_remember_discovered_weapon(instance)
@@ -9191,7 +9436,7 @@ func _restore_fusion_primary_selection() -> void:
 	if _armory_selected_section == "stash":
 		_armory_stash_selected_index = clampi(_armory_fusion_primary_index, 0, maxi(0, _stash_weapon_instances.size() - 1))
 	else:
-		_armory_equipped_selected_index = clampi(_armory_fusion_primary_index, 0, maxi(0, _equipped_weapon_instances.size() - 1))
+		_armory_equipped_selected_index = clampi(_armory_fusion_primary_index, 0, EQUIPPED_WEAPON_SLOT_CAP - 1)
 
 
 func _armory_fusion_selected_material() -> Dictionary:
@@ -9477,7 +9722,7 @@ func _apply_pending_fusion_action(cost: int) -> void:
 	var primary_index := _armory_fusion_primary_index
 	var material_index := _armory_fusion_material_index
 	if primary_section == "equipped":
-		primary_index = clampi(primary_index, 0, _equipped_weapon_instances.size() - 1)
+		primary_index = clampi(primary_index, 0, EQUIPPED_WEAPON_SLOT_CAP - 1)
 		forged["equipped"] = true
 		_equipped_weapon_instances[primary_index] = forged
 		_stash_weapon_instances.remove_at(material_index)
@@ -9510,6 +9755,11 @@ func _apply_pending_fusion_action(cost: int) -> void:
 
 func _armory_weapon_detail_text(instance: Dictionary) -> String:
 	if instance.is_empty():
+		if _armory_selected_section == "equipped":
+			var slot_index := clampi(_armory_equipped_selected_index, 0, EQUIPPED_WEAPON_SLOT_CAP - 1)
+			if not _is_equipment_slot_unlocked(slot_index):
+				return "EQUIPMENT SLOT %02d\n\nLOCKED\nUnlocks at player level %d.\n\nLocked slots cannot equip or fire weapons." % [slot_index + 1, _equipment_slot_unlock_level(slot_index)]
+			return "EQUIPMENT SLOT %02d\n\nEMPTY\nSelect a stashed weapon and confirm EQUIP / SWAP to fill this slot.\n\nEmpty slots do not fire." % [slot_index + 1]
 		return "NO WEAPON SELECTED\n\nNO STORED WEAPONS\nClear sectors to generate weapon rewards."
 	var definition_id := str(instance.get("definition_id", ""))
 	var definition := WeaponCatalog.weapon_definition(definition_id)
@@ -9561,15 +9811,17 @@ func _armory_compare_text_for_selection() -> String:
 	if _armory_action_mode in ["forge_actions", "forge_confirm", "fusion_materials", "fusion_confirm"]:
 		return _armory_forge_compare_text(_fusion_primary_or_selected_weapon())
 	if _armory_selected_section != "stash":
+		if not _is_equipment_slot_unlocked(_armory_equipped_selected_index):
+			return "E%02d LOCKED\nUnlocks at level %d.\n\nLocked slots cannot equip or fire weapons." % [_armory_equipped_selected_index + 1, _equipment_slot_unlock_level(_armory_equipped_selected_index)]
 		var current := _armory_selected_weapon_instance()
 		if current.is_empty():
-			return "SELECT A STASHED WEAPON TO COMPARE."
-		return "CURRENTLY EQUIPPED\n%s\n\nSwitch to STASH to compare stored weapons." % _armory_weapon_brief(current)
+			return "E%02d EMPTY\nSelect a stashed weapon, then confirm to equip it into this slot." % [_armory_equipped_selected_index + 1]
+		return "CURRENTLY EQUIPPED E%02d [%s]\n%s\n\nSwitch to STASH to compare stored weapons." % [_armory_equipped_selected_index + 1, _equipment_slot_binding_label(_armory_equipped_selected_index), _armory_weapon_brief(current)]
 	if _stash_weapon_instances.is_empty():
 		return "NO STORED WEAPONS\nClear sectors to generate weapon rewards."
 	var candidate: Dictionary = _armory_selected_weapon_instance()
 	var equipped_index := _armory_comparison_equipped_index(candidate)
-	var current := _equipped_weapon_instances[equipped_index] if equipped_index >= 0 else {}
+	var current := _equipment_slot_instance(equipped_index) if equipped_index >= 0 else {}
 	return _armory_comparison_text(candidate, current, equipped_index)
 
 
@@ -9664,20 +9916,26 @@ func _armory_forge_compare_text(instance: Dictionary) -> String:
 
 
 func _armory_comparison_equipped_index(candidate: Dictionary) -> int:
-	if candidate.is_empty() or _equipped_weapon_instances.is_empty():
+	if candidate.is_empty():
 		return -1
-	return clampi(_armory_equipped_selected_index, 0, _equipped_weapon_instances.size() - 1)
+	var target_index := clampi(_armory_equipped_selected_index, 0, EQUIPPED_WEAPON_SLOT_CAP - 1)
+	if not _is_equipment_slot_unlocked(target_index):
+		return -1
+	return target_index
 
 
 func _armory_comparison_text(candidate: Dictionary, current: Dictionary, equipped_index: int) -> String:
 	if candidate.is_empty():
 		return "NO STORED WEAPON SELECTED."
 	var lines: Array[String] = []
-	if current.is_empty():
-		lines.append("NO EQUIPPED COMPARISON SLOT")
+	if equipped_index < 0:
+		var locked_index := clampi(_armory_equipped_selected_index, 0, EQUIPPED_WEAPON_SLOT_CAP - 1)
+		lines.append("TARGET E%02d LOCKED UNTIL LEVEL %d" % [locked_index + 1, _equipment_slot_unlock_level(locked_index)])
+	elif current.is_empty():
+		lines.append("CURRENT E%02d: EMPTY" % [equipped_index + 1])
 	else:
-		lines.append("CURRENT E%02d: %s" % [equipped_index + 1, _armory_weapon_brief(current)])
-	lines.append("STASHED: %s" % _armory_weapon_brief(candidate))
+		lines.append("CURRENT E%02d [%s]: %s" % [equipped_index + 1, _equipment_slot_binding_label(equipped_index), _armory_weapon_brief(current)])
+	lines.append("STASHED [%s]: %s" % [_equipment_mode_label_for_instance(candidate), _armory_weapon_brief(candidate)])
 	if not current.is_empty():
 		var comparison: Dictionary = WeaponCatalog.comparison_data(candidate, current)
 		var power_delta := float(comparison.get("power_delta", 0.0))
@@ -9700,16 +9958,21 @@ func _armory_comparison_text(candidate: Dictionary, current: Dictionary, equippe
 	var matching := _equipped_weapon_index_for_definition(str(candidate.get("definition_id", "")))
 	if target_index >= 0:
 		lines.append("")
-		lines.append("A: EQUIP INTO E%02d" % [target_index + 1])
-		lines.append("Current slot weapon moves to stash.")
+		if _equipment_slot_accepts_weapon(target_index, candidate):
+			lines.append("A: EQUIP INTO E%02d" % [target_index + 1])
+			if current.is_empty():
+				lines.append("Selected stash weapon fills this empty slot.")
+			else:
+				lines.append("Current slot weapon moves to stash.")
+			lines.append("LABEL AFTER EQUIP: %s" % _prospective_equipment_slot_binding_label(target_index, candidate))
+		else:
+			lines.append("A: EQUIP BLOCKED")
+			lines.append("No active fire button is free. Clear/replace an active slot or equip a passive.")
 		if matching >= 0 and matching != target_index:
 			lines.append("Duplicate family stats stack safely.")
-	elif _equipped_weapon_instances.size() < EQUIPPED_WEAPON_SLOT_CAP:
-		lines.append("")
-		lines.append("A: EQUIP INTO EMPTY SLOT")
 	else:
 		lines.append("")
-		lines.append("NO EQUIPPED SLOT AVAILABLE")
+		lines.append("A: EQUIP BLOCKED BY LOCKED SLOT")
 	return "\n".join(lines)
 
 
@@ -9782,29 +10045,31 @@ func _equip_selected_stash_weapon() -> void:
 		_update_armory_ui()
 		_play_sfx("ui_back", 0.08)
 		return
-	if not _equipped_weapon_instances.is_empty():
-		var target_index := clampi(_armory_equipped_selected_index, 0, _equipped_weapon_instances.size() - 1)
-		var previous: Dictionary = Dictionary(_equipped_weapon_instances[target_index]).duplicate(true)
-		candidate["equipped"] = true
-		previous["equipped"] = false
-		_equipped_weapon_instances[target_index] = candidate
-		_stash_weapon_instances[_armory_stash_selected_index] = previous
-		_armory_equipped_selected_index = target_index
-		_armory_selected_section = "equipped"
-		_armory_status_text = "EQUIPPED %s INTO E%02d // OLD WEAPON SENT TO STASH" % [str(candidate.get("name", "WEAPON")).to_upper(), target_index + 1]
-	elif _equipped_weapon_instances.size() < EQUIPPED_WEAPON_SLOT_CAP:
-		candidate["equipped"] = true
-		_equipped_weapon_instances.append(candidate)
-		_stash_weapon_instances.remove_at(_armory_stash_selected_index)
-		_armory_equipped_selected_index = _equipped_weapon_instances.size() - 1
-		_armory_stash_selected_index = clampi(_armory_stash_selected_index, 0, maxi(0, _stash_weapon_instances.size() - 1))
-		_armory_selected_section = "equipped"
-		_armory_status_text = "EQUIPPED %s INTO EMPTY SLOT" % str(candidate.get("name", "WEAPON")).to_upper()
-	else:
-		_armory_status_text = "NO EQUIPPED SLOT AVAILABLE // EQUIP BLOCKED"
+	_normalize_equipped_weapon_slots()
+	var target_index := clampi(_armory_equipped_selected_index, 0, EQUIPPED_WEAPON_SLOT_CAP - 1)
+	if not _is_equipment_slot_unlocked(target_index):
+		_armory_status_text = "E%02d LOCKED UNTIL LEVEL %d // EQUIP BLOCKED" % [target_index + 1, _equipment_slot_unlock_level(target_index)]
 		_update_armory_ui()
 		_play_sfx("ui_back", 0.08)
 		return
+	if not _equipment_slot_accepts_weapon(target_index, candidate):
+		_armory_status_text = "ACTIVE BUTTON LIMIT REACHED // EQUIP PASSIVE OR REPLACE ACTIVE SLOT"
+		_update_armory_ui()
+		_play_sfx("ui_back", 0.08)
+		return
+	var previous := _equipment_slot_instance(target_index)
+	candidate["equipped"] = true
+	_equipped_weapon_instances[target_index] = candidate
+	if previous.is_empty():
+		_stash_weapon_instances.remove_at(_armory_stash_selected_index)
+		_armory_stash_selected_index = clampi(_armory_stash_selected_index, 0, maxi(0, _stash_weapon_instances.size() - 1))
+		_armory_status_text = "EQUIPPED %s INTO E%02d // %s" % [str(candidate.get("name", "WEAPON")).to_upper(), target_index + 1, _equipment_slot_binding_label(target_index)]
+	else:
+		previous["equipped"] = false
+		_stash_weapon_instances[_armory_stash_selected_index] = previous
+		_armory_status_text = "EQUIPPED %s INTO E%02d // OLD WEAPON SENT TO STASH // %s" % [str(candidate.get("name", "WEAPON")).to_upper(), target_index + 1, _equipment_slot_binding_label(target_index)]
+	_armory_equipped_selected_index = target_index
+	_armory_selected_section = "equipped"
 	_remember_discovered_weapon(candidate)
 	_rebuild_weapon_stat_bonuses()
 	_save_weapon_inventory()
@@ -9812,6 +10077,45 @@ func _equip_selected_stash_weapon() -> void:
 	_update_armory_ui()
 	_play_sfx("reward", 0.12)
 	_trigger_presentation_flash(Color(0.0, 0.94, 1.0), 0.08, 0.18)
+
+
+func _clear_selected_equipped_slot() -> void:
+	_normalize_equipped_weapon_slots()
+	_armory_equipped_selected_index = clampi(_armory_equipped_selected_index, 0, EQUIPPED_WEAPON_SLOT_CAP - 1)
+	if not _is_equipment_slot_unlocked(_armory_equipped_selected_index):
+		_armory_action_mode = "browse"
+		_armory_status_text = "E%02d LOCKED UNTIL LEVEL %d" % [_armory_equipped_selected_index + 1, _equipment_slot_unlock_level(_armory_equipped_selected_index)]
+		_update_armory_ui()
+		_play_sfx("ui_back", 0.08)
+		return
+	var removed := _equipment_slot_instance(_armory_equipped_selected_index)
+	if removed.is_empty():
+		_armory_action_mode = "browse"
+		_armory_status_text = "E%02d ALREADY EMPTY" % [_armory_equipped_selected_index + 1]
+		_update_armory_ui()
+		_focus_armory_choice()
+		_play_sfx("ui_back", 0.08)
+		return
+	if _stash_weapon_instances.size() >= STASH_WEAPON_CAP:
+		_armory_action_mode = "browse"
+		_armory_status_text = "STASH FULL // CLEAR SLOT BLOCKED"
+		_update_armory_ui()
+		_play_sfx("ui_back", 0.08)
+		return
+	removed["equipped"] = false
+	_stash_weapon_instances.append(removed)
+	_equipped_weapon_instances[_armory_equipped_selected_index] = {}
+	_armory_action_mode = "browse"
+	_armory_selected_section = "equipped"
+	_armory_status_text = "CLEARED E%02d // %s MOVED TO STASH" % [_armory_equipped_selected_index + 1, str(removed.get("name", "WEAPON")).to_upper()]
+	_rebuild_weapon_stat_bonuses()
+	_save_weapon_inventory()
+	_update_orbit_visual_visibility()
+	_update_hud()
+	_update_armory_ui()
+	_focus_armory_choice()
+	_play_sfx("reward", 0.12)
+	_trigger_presentation_flash(Color(1.0, 0.08, 0.86), 0.08, 0.18)
 
 
 func _scrap_selected_stash_weapon() -> void:
@@ -9850,7 +10154,7 @@ func _open_weapon_reward_decision(upgrade: Dictionary, was_sector_reward: bool) 
 	_weapon_reward_mode = "actions"
 	_clear_chain_link_effects()
 	_weapon_reward_action_selected_index = 0
-	_weapon_reward_slot_selected_index = clampi(_armory_equipped_selected_index, 0, maxi(0, _equipped_weapon_instances.size() - 1))
+	_weapon_reward_slot_selected_index = clampi(_armory_equipped_selected_index, 0, EQUIPPED_WEAPON_SLOT_CAP - 1)
 	_weapon_reward_status_text = "CHOOSE A ROUTE FOR %s" % str(_weapon_reward_pending_instance.get("name", "WEAPON")).to_upper()
 	_weapon_reward_last_result_text = ""
 	if _level_up_panel:
@@ -9893,7 +10197,7 @@ func _move_weapon_reward_selection(direction: Vector2i) -> void:
 	if not _weapon_reward_decision_active or _weapon_reward_mode == "result":
 		return
 	if _weapon_reward_mode == "slots":
-		var count := mini(EQUIPPED_WEAPON_SLOT_CAP, _equipped_weapon_instances.size())
+		var count := EQUIPPED_WEAPON_SLOT_CAP
 		if count <= 0:
 			return
 		var step := direction.x
@@ -9923,10 +10227,10 @@ func _activate_weapon_reward_selection() -> void:
 	var action := _weapon_reward_action_id(_weapon_reward_action_selected_index)
 	match action:
 		"equip":
-			if _find_open_weapon_slot_index() >= 0:
+			if _find_open_weapon_slot_index_for_instance(_weapon_reward_pending_instance) >= 0:
 				_equip_pending_weapon_reward_now()
 			else:
-				_open_weapon_reward_slot_picker("LOADOUT FULL // CHOOSE A SLOT TO REPLACE")
+				_open_weapon_reward_slot_picker("NO OPEN COMPATIBLE SLOT // CHOOSE A SLOT TO REPLACE")
 		"replace":
 			_open_weapon_reward_slot_picker("CHOOSE EQUIPPED SLOT TO REPLACE")
 		"stash":
@@ -9961,16 +10265,9 @@ func _cancel_weapon_reward_selection() -> void:
 
 
 func _open_weapon_reward_slot_picker(status_text: String) -> void:
-	if _equipped_weapon_instances.is_empty():
-		if _find_open_weapon_slot_index() >= 0:
-			_equip_pending_weapon_reward_now()
-		else:
-			_weapon_reward_status_text = "NO EQUIPPED SLOT AVAILABLE // SEND TO STASH OR SCRAP"
-			_update_weapon_reward_ui()
-			_play_sfx("ui_back", 0.08)
-		return
+	_normalize_equipped_weapon_slots()
 	_weapon_reward_mode = "slots"
-	_weapon_reward_slot_selected_index = clampi(_weapon_reward_slot_selected_index, 0, _equipped_weapon_instances.size() - 1)
+	_weapon_reward_slot_selected_index = clampi(_weapon_reward_slot_selected_index, 0, EQUIPPED_WEAPON_SLOT_CAP - 1)
 	_weapon_reward_status_text = status_text
 	_update_weapon_reward_ui()
 	_focus_weapon_reward_choice()
@@ -9980,13 +10277,13 @@ func _open_weapon_reward_slot_picker(status_text: String) -> void:
 func _equip_pending_weapon_reward_now() -> void:
 	if _weapon_reward_pending_instance.is_empty():
 		return
-	var open_index := _find_open_weapon_slot_index()
+	var open_index := _find_open_weapon_slot_index_for_instance(_weapon_reward_pending_instance)
 	if open_index < 0:
-		_open_weapon_reward_slot_picker("LOADOUT FULL // CHOOSE A SLOT TO REPLACE")
+		_open_weapon_reward_slot_picker("NO OPEN COMPATIBLE SLOT // CHOOSE A SLOT TO REPLACE")
 		return
 	var instance := _weapon_reward_pending_instance.duplicate(true)
 	instance["equipped"] = true
-	_equipped_weapon_instances.append(instance)
+	_equipped_weapon_instances[open_index] = instance
 	_remember_discovered_weapon(instance)
 	_rebuild_weapon_stat_bonuses()
 	_save_weapon_inventory()
@@ -9996,27 +10293,44 @@ func _equip_pending_weapon_reward_now() -> void:
 
 
 func _replace_pending_weapon_reward_slot(slot_index: int) -> void:
-	if _weapon_reward_pending_instance.is_empty() or _equipped_weapon_instances.is_empty():
+	if _weapon_reward_pending_instance.is_empty():
 		return
-	slot_index = clampi(slot_index, 0, _equipped_weapon_instances.size() - 1)
-	if _stash_weapon_instances.size() >= STASH_WEAPON_CAP:
-		_weapon_reward_status_text = "STASH FULL // CANNOT STORE OLD E%02d WEAPON" % [slot_index + 1]
+	_normalize_equipped_weapon_slots()
+	slot_index = clampi(slot_index, 0, EQUIPPED_WEAPON_SLOT_CAP - 1)
+	if not _is_equipment_slot_unlocked(slot_index):
+		_weapon_reward_status_text = "E%02d LOCKED UNTIL LEVEL %d" % [slot_index + 1, _equipment_slot_unlock_level(slot_index)]
 		_update_weapon_reward_ui()
 		_focus_weapon_reward_choice()
 		_play_sfx("ui_back", 0.08)
 		return
 	var instance := _weapon_reward_pending_instance.duplicate(true)
+	if not _equipment_slot_accepts_weapon(slot_index, instance):
+		_weapon_reward_status_text = "E%02d CANNOT TAKE THIS ACTIVE WEAPON // FIVE ACTIVE BUTTONS MAX" % [slot_index + 1]
+		_update_weapon_reward_ui()
+		_focus_weapon_reward_choice()
+		_play_sfx("ui_back", 0.08)
+		return
 	var previous := Dictionary(_equipped_weapon_instances[slot_index]).duplicate(true)
+	if not previous.is_empty() and _stash_weapon_instances.size() >= STASH_WEAPON_CAP:
+		_weapon_reward_status_text = "STASH FULL // CANNOT STORE OLD E%02d WEAPON" % [slot_index + 1]
+		_update_weapon_reward_ui()
+		_focus_weapon_reward_choice()
+		_play_sfx("ui_back", 0.08)
+		return
 	instance["equipped"] = true
-	previous["equipped"] = false
 	_equipped_weapon_instances[slot_index] = instance
-	_stash_weapon_instances.append(previous)
+	if not previous.is_empty():
+		previous["equipped"] = false
+		_stash_weapon_instances.append(previous)
 	_remember_discovered_weapon(instance)
-	_remember_discovered_weapon(previous)
+	if not previous.is_empty():
+		_remember_discovered_weapon(previous)
 	_rebuild_weapon_stat_bonuses()
 	_save_weapon_inventory()
 	_run_weapons_gained += 1
-	_weapon_reward_last_result_text = "REPLACED E%02d // NEW: %s // OLD WEAPON SENT TO STASH" % [slot_index + 1, _weapon_progression_summary(instance)]
+	var route := "REPLACED" if not previous.is_empty() else "EQUIPPED"
+	var suffix := " // OLD WEAPON SENT TO STASH" if not previous.is_empty() else ""
+	_weapon_reward_last_result_text = "%s E%02d // NEW: %s%s" % [route, slot_index + 1, _weapon_progression_summary(instance), suffix]
 	_show_weapon_reward_result(_weapon_reward_last_result_text, Color(1.0, 0.08, 0.86))
 
 
@@ -10119,7 +10433,7 @@ func _update_weapon_reward_ui() -> void:
 			"result":
 				_weapon_reward_prompt.text = "A / Enter: Continue    B / Esc: Continue"
 			_:
-				_weapon_reward_prompt.text = "Equipped weapons auto-fire. Stashed weapons can be managed in Armory. Scrap converts the weapon to Neon Dust.\nA / Enter: Select Route    B / Esc: Back To Reward Card    D-Pad / Arrows: Navigate    RS: Scroll"
+				_weapon_reward_prompt.text = "Equipped weapons use active buttons or passive cooldowns. Stashed weapons can be managed in Armory. Scrap converts the weapon to Neon Dust.\nA / Enter: Select Route    B / Esc: Back To Reward Card    D-Pad / Arrows: Navigate    RS: Scroll"
 	if _weapon_reward_detail_label:
 		_weapon_reward_detail_label.text = _weapon_reward_detail_text(instance)
 	if _weapon_reward_compare_label:
@@ -10132,8 +10446,9 @@ func _update_weapon_reward_ui() -> void:
 		_set_weapon_icon(_weapon_reward_compare_current_icon, "unknown_weapon", false)
 		_set_weapon_icon(_weapon_reward_compare_candidate_icon, instance, true)
 	else:
-		var compare_slot := clampi(_weapon_reward_slot_selected_index, 0, _equipped_weapon_instances.size() - 1)
-		_set_weapon_icon(_weapon_reward_compare_current_icon, _equipped_weapon_instances[compare_slot], true)
+		var compare_slot := clampi(_weapon_reward_slot_selected_index, 0, EQUIPPED_WEAPON_SLOT_CAP - 1)
+		var compare_instance := _equipment_slot_instance(compare_slot)
+		_set_weapon_icon(_weapon_reward_compare_current_icon, compare_instance, not compare_instance.is_empty())
 		_set_weapon_icon(_weapon_reward_compare_candidate_icon, instance, true)
 	if _weapon_reward_action_row:
 		_weapon_reward_action_row.visible = _weapon_reward_mode == "actions"
@@ -10160,16 +10475,17 @@ func _update_weapon_reward_action_buttons(accent: Color) -> void:
 func _update_weapon_reward_slot_buttons(instance: Dictionary, accent: Color) -> void:
 	for i in range(_weapon_reward_slot_buttons.size()):
 		var button := _weapon_reward_slot_buttons[i]
-		if _weapon_reward_mode != "slots" or i >= _equipped_weapon_instances.size():
+		if _weapon_reward_mode != "slots" or i >= EQUIPPED_WEAPON_SLOT_CAP:
 			button.visible = false
 			if i < _weapon_reward_slot_icons.size():
 				_set_weapon_icon(_weapon_reward_slot_icons[i], "unknown_weapon", false)
 			continue
 		button.visible = true
-		button.disabled = false
+		button.disabled = not _is_equipment_slot_unlocked(i)
 		button.text = _weapon_reward_slot_button_text(i, instance)
 		if i < _weapon_reward_slot_icons.size():
-			_set_weapon_icon(_weapon_reward_slot_icons[i], _equipped_weapon_instances[i], true)
+			var current := _equipment_slot_instance(i)
+			_set_weapon_icon(_weapon_reward_slot_icons[i], current, not current.is_empty() and _is_equipment_slot_unlocked(i))
 		_apply_weapon_reward_button_accent(button, i == _weapon_reward_slot_selected_index, accent)
 
 
@@ -10188,8 +10504,8 @@ func _weapon_reward_action_id(index: int) -> String:
 func _weapon_reward_action_text(action: String) -> String:
 	match action:
 		"equip":
-			var open_index := _find_open_weapon_slot_index()
-			return "EQUIP NOW\n%s" % ("OPEN SLOT E%02d" % [open_index + 1] if open_index >= 0 else "LOADOUT FULL")
+			var open_index := _find_open_weapon_slot_index_for_instance(_weapon_reward_pending_instance)
+			return "EQUIP NOW\n%s" % ("OPEN SLOT E%02d" % [open_index + 1] if open_index >= 0 else "NO OPEN SLOT")
 		"replace":
 			return "REPLACE SLOT\nPICK EQUIPPED SLOT"
 		"stash":
@@ -10224,38 +10540,55 @@ func _weapon_reward_compare_text(instance: Dictionary) -> String:
 		return "NO WEAPON SELECTED"
 	if _weapon_reward_mode == "result":
 		return "%s\n\n%s" % [_weapon_reward_last_result_text, _weapon_reward_detail_text(instance)]
-	if _equipped_weapon_instances.is_empty():
-		return "NO EQUIPPED WEAPON TO COMPARE.\nEQUIP NOW WILL USE THE FIRST OPEN SLOT."
-	var slot_index := clampi(_weapon_reward_slot_selected_index, 0, _equipped_weapon_instances.size() - 1)
-	var current: Dictionary = _equipped_weapon_instances[slot_index]
-	var comparison: Dictionary = WeaponCatalog.comparison_data(instance, current)
-	var power_delta := float(comparison.get("power_delta", 0.0))
+	var slot_index := clampi(_weapon_reward_slot_selected_index, 0, EQUIPPED_WEAPON_SLOT_CAP - 1)
+	if not _is_equipment_slot_unlocked(slot_index):
+		return "E%02d LOCKED\nUnlocks at level %d.\n\nNEW: %s" % [slot_index + 1, _equipment_slot_unlock_level(slot_index), _armory_weapon_brief(instance)]
+	var current := _equipment_slot_instance(slot_index)
 	var lines: Array[String] = []
-	lines.append("CURRENT E%02d: %s" % [slot_index + 1, _armory_weapon_brief(current)])
+	if current.is_empty():
+		lines.append("CURRENT E%02d: EMPTY" % [slot_index + 1])
+	else:
+		lines.append("CURRENT E%02d: %s" % [slot_index + 1, _armory_weapon_brief(current)])
 	lines.append("NEW: %s" % _armory_weapon_brief(instance))
-	lines.append("FAMILY: %s -> %s" % [str(current.get("family", current.get("definition_id", ""))).to_upper(), str(instance.get("family", instance.get("definition_id", ""))).to_upper()])
-	lines.append("RARITY: %s -> %s" % [str(current.get("rarity", "Common")).to_upper(), str(instance.get("rarity", "Common")).to_upper()])
-	lines.append("POWER %s %+.2f" % [_armory_arrow(power_delta), power_delta])
-	var deltas: Dictionary = comparison.get("stat_deltas", {})
-	var shown := 0
-	for stat_id in ["damage_bonus", "fire_rate_bonus", "cooldown_reduction", "range_bonus", "lifetime_bonus", "projectile_speed_bonus", "projectile_count_bonus", "pierce_bonus", "split_count_bonus", "chain_count_bonus", "orbit_count_bonus"]:
-		if not deltas.has(stat_id):
-			continue
-		var delta := float(deltas[stat_id])
-		if absf(delta) < 0.0005:
-			continue
-		lines.append("%s %s %s" % [_weapon_stat_display_label(stat_id), _armory_arrow(delta), _format_armory_stat_delta(stat_id, delta)])
-		shown += 1
-		if shown >= 5:
-			break
-	if shown == 0:
-		lines.append("ROLL DELTAS: EVEN / DIFFERENT")
+	lines.append("MODE: %s" % _equipment_mode_label_for_instance(instance))
+	lines.append("LABEL AFTER EQUIP: %s" % _prospective_equipment_slot_binding_label(slot_index, instance))
+	if not _equipment_slot_accepts_weapon(slot_index, instance):
+		lines.append("ROUTE BLOCKED: LOCKED OR ACTIVE BUTTON LIMIT")
+	if not current.is_empty():
+		var comparison: Dictionary = WeaponCatalog.comparison_data(instance, current)
+		var power_delta := float(comparison.get("power_delta", 0.0))
+		lines.append("FAMILY: %s -> %s" % [str(current.get("family", current.get("definition_id", ""))).to_upper(), str(instance.get("family", instance.get("definition_id", ""))).to_upper()])
+		lines.append("RARITY: %s -> %s" % [str(current.get("rarity", "Common")).to_upper(), str(instance.get("rarity", "Common")).to_upper()])
+		lines.append("POWER %s %+.2f" % [_armory_arrow(power_delta), power_delta])
+		var deltas: Dictionary = comparison.get("stat_deltas", {})
+		var shown := 0
+		for stat_id in ["damage_bonus", "fire_rate_bonus", "cooldown_reduction", "range_bonus", "lifetime_bonus", "projectile_speed_bonus", "projectile_count_bonus", "pierce_bonus", "split_count_bonus", "chain_count_bonus", "orbit_count_bonus"]:
+			if not deltas.has(stat_id):
+				continue
+			var delta := float(deltas[stat_id])
+			if absf(delta) < 0.0005:
+				continue
+			lines.append("%s %s %s" % [_weapon_stat_display_label(stat_id), _armory_arrow(delta), _format_armory_stat_delta(stat_id, delta)])
+			shown += 1
+			if shown >= 5:
+				break
+		if shown == 0:
+			lines.append("ROLL DELTAS: EVEN / DIFFERENT")
 	lines.append("SPECIAL: %s" % WeaponCatalog.primary_modifier_text(instance).to_upper())
 	return "\n".join(lines)
 
 
 func _weapon_reward_slot_button_text(slot_index: int, candidate: Dictionary) -> String:
-	var current: Dictionary = _equipped_weapon_instances[slot_index]
+	if not _is_equipment_slot_unlocked(slot_index):
+		return "E%02d  LOCKED\nUNLOCKS AT LEVEL %d\n--" % [slot_index + 1, _equipment_slot_unlock_level(slot_index)]
+	var current := _equipment_slot_instance(slot_index)
+	if current.is_empty():
+		return "E%02d  EMPTY  %s\n%s\n%s" % [
+			slot_index + 1,
+			_prospective_equipment_slot_binding_label(slot_index, candidate),
+			"CAN EQUIP" if _equipment_slot_accepts_weapon(slot_index, candidate) else "BLOCKED",
+			_equipment_mode_label_for_instance(candidate)
+		]
 	var comparison: Dictionary = WeaponCatalog.comparison_data(candidate, current)
 	var power_delta := float(comparison.get("power_delta", 0.0))
 	var deltas: Dictionary = comparison.get("stat_deltas", {})
@@ -10269,9 +10602,10 @@ func _weapon_reward_slot_button_text(slot_index: int, candidate: Dictionary) -> 
 			break
 	if stat_bits.is_empty():
 		stat_bits.append("DIFFERENT BUILD")
-	return "E%02d  %s\nPWR %.2f -> %.2f  %s %+.2f\n%s" % [
+	return "E%02d  %s -> %s\nPWR %.2f -> %.2f  %s %+.2f\n%s" % [
 		slot_index + 1,
-		_armory_weapon_brief(current),
+		_equipment_slot_binding_label(slot_index),
+		_prospective_equipment_slot_binding_label(slot_index, candidate),
 		float(current.get("power_score", WeaponCatalog.estimate_power(current))),
 		float(candidate.get("power_score", WeaponCatalog.estimate_power(candidate))),
 		_armory_arrow(power_delta),
@@ -10331,7 +10665,19 @@ func _update_weapon_reward_cursor_position(immediate: bool) -> void:
 
 
 func _find_open_weapon_slot_index() -> int:
-	return _equipped_weapon_instances.size() if _equipped_weapon_instances.size() < EQUIPPED_WEAPON_SLOT_CAP else -1
+	return _find_open_weapon_slot_index_for_instance({})
+
+
+func _find_open_weapon_slot_index_for_instance(instance: Dictionary) -> int:
+	_normalize_equipped_weapon_slots()
+	for i in range(EQUIPPED_WEAPON_SLOT_CAP):
+		if not _is_equipment_slot_unlocked(i):
+			continue
+		if not _equipment_slot_is_empty(i):
+			continue
+		if instance.is_empty() or _equipment_slot_accepts_weapon(i, instance):
+			return i
+	return -1
 
 
 func _update_title_cursor_position(immediate: bool) -> void:
@@ -12384,15 +12730,7 @@ func _get_fire_action_for_weapon_slot(slot_index: int) -> String:
 
 
 func _fire_binding_label_for_weapon_slot(slot_index: int) -> String:
-	if not _manual_weapon_fire_enabled():
-		return "AUTO"
-	if slot_index < 0 or slot_index >= WEAPON_FIRE_SLOT_KEYBOARD_LABELS.size():
-		return "NO BIND"
-	var keyboard_label := str(WEAPON_FIRE_SLOT_KEYBOARD_LABELS[slot_index])
-	var controller_label := str(WEAPON_FIRE_SLOT_CONTROLLER_LABELS[slot_index])
-	if controller_label == "--":
-		return keyboard_label
-	return "%s/%s" % [keyboard_label, controller_label]
+	return _active_fire_binding_label(slot_index)
 
 
 func _run_bonus_weapon_manual_definition_ids() -> Array[String]:
@@ -12411,28 +12749,20 @@ func _run_bonus_weapon_manual_definition_ids() -> Array[String]:
 
 
 func _run_bonus_weapon_fire_slot_index(definition_id: String) -> int:
-	var ids := _run_bonus_weapon_manual_definition_ids()
-	var run_bonus_index := ids.find(definition_id)
-	if run_bonus_index < 0:
-		return -1
-	var slot_index := _equipped_weapon_instances.size() + run_bonus_index
-	if slot_index < 0 or slot_index >= EQUIPPED_WEAPON_SLOT_CAP:
-		return -1
-	return slot_index
+	return -1
 
 
 func _fire_slot_indices_for_weapon_definition(definition_id: String) -> Array[int]:
 	var slots: Array[int] = []
 	if definition_id == "":
 		return slots
-	for i in range(_equipped_weapon_instances.size()):
-		if i >= EQUIPPED_WEAPON_SLOT_CAP:
-			break
-		if str(_equipped_weapon_instances[i].get("definition_id", "")) == definition_id:
+	_normalize_equipped_weapon_slots()
+	for i in range(EQUIPPED_WEAPON_SLOT_CAP):
+		if not _is_equipment_slot_unlocked(i):
+			continue
+		var instance := _equipment_slot_instance(i)
+		if not instance.is_empty() and str(instance.get("definition_id", "")) == definition_id:
 			slots.append(i)
-	var run_bonus_slot := _run_bonus_weapon_fire_slot_index(definition_id)
-	if run_bonus_slot >= 0 and not slots.has(run_bonus_slot):
-		slots.append(run_bonus_slot)
 	return slots
 
 
@@ -12448,11 +12778,21 @@ func _should_weapon_slot_fire(slot_index: int, weapon_data: Dictionary) -> bool:
 		return false
 	if slot_index < 0 or slot_index >= EQUIPPED_WEAPON_SLOT_CAP:
 		return false
-	return _is_weapon_slot_fire_pressed(slot_index)
+	if not _is_equipment_slot_unlocked(slot_index):
+		return false
+	var instance := _equipment_slot_instance(slot_index)
+	if instance.is_empty():
+		return false
+	if _is_passive_weapon_instance(instance):
+		return true
+	var active_index := _active_fire_index_for_equipment_slot(slot_index)
+	return active_index >= 0 and _is_weapon_slot_fire_pressed(active_index)
 
 
 func _is_weapon_definition_fire_pressed(definition_id: String) -> bool:
 	if not _manual_weapon_fire_enabled():
+		return true
+	if _has_run_bonus_weapon(definition_id) and not _is_weapon_family_equipped(definition_id):
 		return true
 	for slot_index in _fire_slot_indices_for_weapon_definition(definition_id):
 		if _should_weapon_slot_fire(slot_index, {"definition_id": definition_id}):
@@ -12465,9 +12805,9 @@ func _fire_binding_label_for_weapon_definition(definition_id: String) -> String:
 		return "AUTO"
 	var pieces: Array[String] = []
 	for slot_index in _fire_slot_indices_for_weapon_definition(definition_id):
-		pieces.append(_fire_binding_label_for_weapon_slot(slot_index))
+		pieces.append(_equipment_slot_binding_label(slot_index))
 	if pieces.is_empty():
-		return "NO BIND"
+		return "RUN/PASSIVE" if _has_run_bonus_weapon(definition_id) else "NO BIND"
 	return "+".join(pieces)
 
 
@@ -14755,9 +15095,9 @@ func _upgrade_choice_target_text(choice: Dictionary) -> String:
 		var equipped_index := _equipped_weapon_index_for_definition(definition_id)
 		if equipped_index >= 0:
 			return "AFFECTS: SLOT %02d - %s FAMILY" % [equipped_index + 1, _weapon_display_name_for_definition(definition_id).to_upper()]
-		if _find_open_weapon_slot_index() >= 0:
+		if _find_open_weapon_slot_index_for_instance(instance) >= 0:
 			return "AFFECTS: NEW WEAPON - OPEN SLOT"
-		return "AFFECTS: NEW WEAPON - LOADOUT FULL"
+		return "AFFECTS: NEW WEAPON - NO OPEN COMPATIBLE SLOT"
 	var definitions := _upgrade_choice_affected_definitions(choice)
 	var equipped_slots: Array[String] = []
 	for definition_id in definitions:
@@ -15111,7 +15451,11 @@ func _collect_xp(value: int) -> void:
 	_play_sfx("xp", 0.030)
 	if not _level_up_active and _player_xp >= _xp_required:
 		_player_xp -= _xp_required
+		var previous_unlocked_slots := _unlocked_equipment_slot_count(_player_level)
 		_player_level += 1
+		var current_unlocked_slots := _unlocked_equipment_slot_count(_player_level)
+		if current_unlocked_slots > previous_unlocked_slots:
+			_pending_equipment_slot_unlock_notice = "EQUIPMENT SLOT %02d UNLOCKED" % current_unlocked_slots
 		_xp_required = int(ceil(float(_xp_required) * 1.16 + 5.0))
 		_begin_level_up()
 
@@ -15126,7 +15470,10 @@ func _begin_level_up() -> void:
 	if _level_up_title:
 		_level_up_title.text = "LEVEL %d UPGRADE" % _player_level
 	if _level_up_prompt:
-		_level_up_prompt.text = "D-Pad / Left Stick: Select to preview linked slots    A / Enter: Confirm"
+		var prompt_text := "D-Pad / Left Stick: Select to preview linked slots    A / Enter: Confirm"
+		if _pending_equipment_slot_unlock_notice != "":
+			prompt_text = "%s\n%s" % [_pending_equipment_slot_unlock_notice, prompt_text]
+		_level_up_prompt.text = prompt_text
 	for i in range(_upgrade_buttons.size()):
 		var button := _upgrade_buttons[i]
 		if i < _upgrade_choices.size():
@@ -15315,6 +15662,9 @@ func _finish_level_up_choice(was_sector_reward: bool) -> void:
 		get_tree().paused = _manual_pause
 	_update_orbit_visual_visibility()
 	_update_hud()
+	if _pending_equipment_slot_unlock_notice != "":
+		_show_combat_notice(_pending_equipment_slot_unlock_notice, Color(0.0, 0.96, 1.0), 1.75)
+		_pending_equipment_slot_unlock_notice = ""
 
 
 func _apply_upgrade(upgrade: Dictionary) -> void:
@@ -15917,7 +16267,7 @@ func _weapon_hud_tooltip(instance: Dictionary, slot_number: int) -> String:
 		slot_number,
 		str(instance.get("name", "WEAPON")),
 		rarity,
-		_fire_binding_label_for_weapon_slot(slot_number - 1),
+		_equipment_slot_binding_label(slot_number - 1),
 		_weapon_hud_status_text(definition_id),
 		feedback
 	]
@@ -15932,8 +16282,16 @@ func _update_gameplay_loadout_slots() -> void:
 		var label := _gameplay_weapon_slot_labels[i]
 		if not is_instance_valid(panel) or not is_instance_valid(icon) or not is_instance_valid(label):
 			continue
-		if i < _equipped_weapon_instances.size():
-			var instance: Dictionary = _equipped_weapon_instances[i]
+		if not _is_equipment_slot_unlocked(i):
+			panel.add_theme_stylebox_override("panel", _gameplay_loadout_slot_style(Color(0.0, 0.010, 0.032, 0.46), Color(0.22, 0.30, 0.36, 0.58), 1))
+			_set_weapon_icon(icon, "unknown_weapon", true)
+			icon.modulate = Color(0.36, 0.42, 0.48, 0.28)
+			label.text = "SLOT %02d  LOCKED\nUNLOCKS LV %d\n--" % [i + 1, _equipment_slot_unlock_level(i)]
+			label.tooltip_text = "Slot %02d: Locked\nUnlocks at level %d" % [i + 1, _equipment_slot_unlock_level(i)]
+			label.add_theme_color_override("font_color", Color(0.48, 0.58, 0.64, 0.62))
+			continue
+		var instance := _equipment_slot_instance(i)
+		if not instance.is_empty():
 			var definition_id := str(instance.get("definition_id", ""))
 			var rarity := str(instance.get("rarity", "Common"))
 			var accent := Color.html("#%s" % WeaponCatalog.rarity_accent_hex(rarity)) if WeaponCatalog.rarity_tiers().has(rarity) else Color(0.0, 0.95, 1.0, 0.96)
@@ -15956,7 +16314,7 @@ func _update_gameplay_loadout_slots() -> void:
 			label.text = "SLOT %02d  %s  %s\n%s\n%s" % [
 				i + 1,
 				_rarity_display_code(rarity),
-				_fire_binding_label_for_weapon_slot(i),
+				_equipment_slot_binding_label(i),
 				_compact_weapon_name(instance, 18),
 				"%s  %s" % [_weapon_hud_status_text(definition_id), _weapon_hud_feedback_text(instance)]
 			]
@@ -15971,8 +16329,8 @@ func _update_gameplay_loadout_slots() -> void:
 			panel.add_theme_stylebox_override("panel", _gameplay_loadout_slot_style(Color(0.0, 0.010, 0.032, 0.52), Color(0.18, 0.42, 0.52, 0.50), 1))
 			_set_weapon_icon(icon, "unknown_weapon", true)
 			icon.modulate = Color(0.46, 0.64, 0.72, 0.34)
-			label.text = "SLOT %02d  %s\nEMPTY\n--" % [i + 1, _fire_binding_label_for_weapon_slot(i)]
-			label.tooltip_text = "Slot %02d: Empty\nFire: %s" % [i + 1, _fire_binding_label_for_weapon_slot(i)]
+			label.text = "SLOT %02d  EMPTY\nUNLOCKED\n--" % [i + 1]
+			label.tooltip_text = "Slot %02d: Empty\nUnlocked equipment slot" % [i + 1]
 			label.add_theme_color_override("font_color", Color(0.58, 0.78, 0.86, 0.54))
 
 

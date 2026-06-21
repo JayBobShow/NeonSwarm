@@ -64,17 +64,12 @@ static func ensure_actions() -> void:
 		_joy_button(JOY_BUTTON_LEFT_SHOULDER)
 	])
 	_configure_action("fire_weapon_slot_5", 0.2, [
-		_key(KEY_R)
+		_key(KEY_R),
+		_joy_button(JOY_BUTTON_LEFT_STICK)
 	])
-	_configure_action("fire_weapon_slot_6", 0.2, [
-		_key(KEY_F)
-	])
-	_configure_action("fire_weapon_slot_7", 0.2, [
-		_key(KEY_Z)
-	])
-	_configure_action("fire_weapon_slot_8", 0.2, [
-		_key(KEY_X)
-	])
+	_configure_action("fire_weapon_slot_6", 0.2, [])
+	_configure_action("fire_weapon_slot_7", 0.2, [])
+	_configure_action("fire_weapon_slot_8", 0.2, [])
 
 	_configure_action("confirm", 0.2, [
 		_key(KEY_ENTER),
