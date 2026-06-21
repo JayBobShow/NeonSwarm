@@ -69,7 +69,7 @@ The imported `AnimationPlayer` is discovered under the generated GLB scene. Avai
 
 Weapon fire events call a visual-only trigger. If `shooting_arm_loop` is already playing, the trigger extends the hold timer and does not restart the clip, avoiding per-frame or spread-shot jitter. With no idle animation available, the player returns to the first pose of the shooting clip after the firing hold expires.
 
-The orientation hotfix keeps the animated GLB root upright and uses a forearm-only `Skeleton3D` pose override while the shooting clip is active. The imported forearm mesh length follows each forearm bone's local `+Y` axis, so the runtime correction aligns that axis to the current aim direction projected onto the arena plane. This fixes the downward shooting pose without changing movement, collision, weapon fire, or the approved fallback player asset.
+The orientation hotfix keeps the animated GLB root upright with the model/root transform values below. The previous forearm-only `Skeleton3D` pose override was tested against the unforced imported animation and is now behind a safety toggle that defaults off. The override can still be re-enabled for debugging, but it is not part of the approved runtime look because it can twist the side-aim arm silhouette.
 
 ## Tuning Values
 
@@ -82,9 +82,9 @@ Current experiment tuning:
 - `PLAYER_SHOOTING_ANIMATED_CORE_Y_OFFSET`: `0.05`
 - `PLAYER_SHOOTING_ANIMATED_CORE_Z_OFFSET`: `0.0`
 - `PLAYER_SHOOTING_ANIMATED_CORE_MIN_PLAY_SECONDS`: `0.35`
-- `PLAYER_SHOOTING_ANIMATED_CORE_ARM_POSE_CORRECTION_ENABLED`: `true`
-- `PLAYER_SHOOTING_ANIMATED_CORE_ARM_POSE_OVERRIDE_AMOUNT`: `1.0`
-- `PLAYER_SHOOTING_ANIMATED_CORE_ARM_POSE_BONES`: `["Left_Forearm", "Right_Forearm"]`
+- `PLAYER_SHOOTING_ANIMATED_CORE_FOREARM_POSE_CORRECTION_ENABLED`: `false`
+- `PLAYER_SHOOTING_ANIMATED_CORE_FOREARM_POSE_OVERRIDE_AMOUNT`: `1.0`
+- `PLAYER_SHOOTING_ANIMATED_CORE_FOREARM_POSE_BONES`: `["Left_Forearm", "Right_Forearm"]`
 
 The selected clip length is approximately `2.0417` seconds, so a firing trigger holds the animation for that full clip length unless further shots extend it.
 
@@ -105,12 +105,14 @@ Temporary runtime validation confirmed:
 - Re-triggering while the shooting clip is already playing preserved the current animation position at `0.500`, confirming no restart jitter.
 - Aim-facing right updates player core yaw to approximately `89.6` degrees with the yaw correction applied.
 - Aim-facing preserves local position and scale.
-- Gameplay-view screenshot validation showed the body no longer using the backward/pitched setup and the forearms lifted out of the floor into a forward firing pose.
-- Runtime bone-axis validation for aim `(0, 0, -1)` reported both forearm `+Y` axes at approximately `(0, 0, -1)`, `dot_aim=1.000`, `vertical=0.000`.
-- Runtime bone-axis validation for aim `(1, 0, 0)` reported both forearm `+Y` axes at approximately `(1, 0, 0)`, `dot_aim=1.000`, `vertical=0.000`.
-- Runtime movement sanity check moved the player on `move_right` by `0.653` world units.
+- Gameplay-view A/B screenshots tested forearm correction ON and OFF across aim up, aim down, aim left, and aim right.
+- Forearm correction ON forced the `Left_Forearm` and `Right_Forearm` bones to the aim vector, but the side-aim screenshots showed a twisted/cross-body forearm silhouette that looked worse than the imported animation.
+- Forearm correction OFF preserved the imported arm animation and looked better overall in gameplay. This is the current default.
+- Final gameplay-view screenshots with correction OFF covered aim up, aim down, aim left, and aim right. The player body faces the aim direction, the old floor-pointing pose is not present, and the arms no longer receive the runtime twist.
+- Runtime check reported `forearm_pose_correction_should_apply=false`.
+- Runtime movement sanity check moved the player on `move_right` by `0.816` world units.
 - Runtime weapon sanity check produced `9` player projectiles after the run started.
-- Runtime campaign sanity check reported `campaign_node_elapsed=1.280`, `title_menu_active=false`, and `sector_name=Neon Grid`.
+- Runtime campaign sanity check reported `campaign_node_elapsed=1.279`, `title_menu_active=false`, and `sector_name=Neon Grid`.
 - Collision, HUD, Lyra, Memory Shards, boss cards, reward panels, Sector 1 arenas, and Sector 2 arenas were not changed by the hotfix.
 
 ## Remaining Improvements
