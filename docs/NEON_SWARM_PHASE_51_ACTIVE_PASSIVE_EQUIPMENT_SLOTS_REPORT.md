@@ -35,13 +35,22 @@ Implementation constants:
 
 Passive classification is centralized in `_is_passive_weapon_family(definition_id)`.
 
-Prototype passive families:
+Current passive weapon definition ids:
 
-- chain
-- nova
-- burst
+- `prism_chain`
+- `nova_burst`
+- `star_pulse`
+- `gravity_mine`
+- `gravity_well`
 
-The helper checks the weapon definition id, family, and archetype text so content-pack weapons such as `prism_chain`, `nova_burst`, `nova_needle`, and `tri_burst_cannon` route consistently. Everything else remains active unless it matches one of those passive terms.
+The helper now checks the explicit `PASSIVE_WEAPON_DEFINITION_IDS` table instead of broad id/family/archetype substring matches. This keeps outward chain/nova/radial/field weapons passive while preventing aimed weapons such as `tri_burst_cannon`, `nova_needle`, `arc_beam`, and `hex_mortar` from becoming passive only because their names contain `burst`, `nova`, or beam/chain wording.
+
+Active aimed examples after the hotfix:
+
+- `tri_burst_cannon`: active aimed spread projectile
+- `nova_needle`: active aimed needle projectile
+- `arc_beam`: active manual beam weapon
+- `hex_mortar`: active aimed arcing shell that bursts after launch
 
 ## Slot Unlock Curve
 
@@ -156,6 +165,34 @@ Stash / inventory display behavior:
 - The detail panel now states `ACTIVE WEAPON` with the projected target slot button, or `PASSIVE WEAPON` with no fire button required.
 - The Armory overlay scrim is darker while Armory is open to improve card contrast without removing the existing visual style.
 
+## Passive Nova/Burst Hotfix
+
+The Phase 51 passive classification was narrowed after user clarification that "burst weapons are passive" means outward/bomb/radial/shockwave-style build powers, not every aimed projectile with `burst` in its name.
+
+What changed:
+
+- `PASSIVE_WEAPON_DEFINITION_IDS` is the single classification table.
+- `nova_burst`, `star_pulse`, `gravity_mine`, `gravity_well`, and `prism_chain` fire from cooldown without held input.
+- `tri_burst_cannon`, `nova_needle`, `arc_beam`, and `hex_mortar` require their assigned active slot button.
+- Passive nova/radial effects still pulse the correct equipment HUD slot when they trigger.
+
+Nova/radial tuning added:
+
+- `NOVA_BURST_RADIUS_MULTIPLIER = 1.20`
+- `NOVA_BURST_MAX_RADIUS = 9.0`
+- `NOVA_BURST_VISUAL_RADIUS_MULTIPLIER = 1.35`
+- `NOVA_BURST_EFFECT_DURATION = 0.58`
+- `STAR_PULSE_MAX_RADIUS = 8.4`
+- `STAR_PULSE_EFFECT_DURATION = 0.42`
+
+Projectile range / cleanup tuning added:
+
+- `PLAYER_PROJECTILE_RANGE_MULTIPLIER = 1.18`
+- `PLAYER_PROJECTILE_MAX_TRAVEL_DISTANCE = 42.0`
+- `PLAYER_PROJECTILE_OFFSCREEN_CLEANUP_MARGIN = 8.0`
+
+These values are Godot world units, not screen pixels. No literal `600` pixel projectile cleanup constant was found. Before this pass, player projectiles were cleaned up by lifetime plus `_outside_arena(node.position, 2.0)`. The off-arena margin is now named and wider for player projectiles, and each player projectile records `spawn_position` and `max_travel` so range cleanup is tunable without allowing infinite projectile leaks.
+
 ## Reward / Run Weapon Behavior
 
 Generated weapon rewards use unlocked compatible equipment slots for `Equip Now`; replacement blocks locked slots and blocks adding a sixth active weapon unless replacing an existing active slot or equipping a passive.
@@ -165,7 +202,7 @@ Run-only bonus weapons remain outside persistent equipment slots for this protot
 ## Known Balance Risks
 
 - Active button assignment is compacted by active weapon order, so equipping an active weapon into an earlier equipment slot can shift later active weapon labels.
-- Passive family classification is intentionally broad for prototype speed; future weapon design may need explicit metadata instead of id/family/archetype string matching.
+- Passive classification is explicit for the current weapon catalog; future weapon design should move this to catalog metadata if more weapon families are added.
 - Existing saves with weapons in locked slots preserve those entries but do not activate them until the slot unlocks.
 - Full controller remapping UI is still future work.
 
@@ -181,7 +218,7 @@ Focused checks covered:
 - LMB/RMB/Q/E/R active inputs.
 - RT/LT/RB/LB/L3 controller mappings.
 - F/Z/X old active slot bindings disabled.
-- Passive chain/nova/burst classification.
+- Explicit passive classification for passive slot behavior.
 - Level unlock thresholds.
 - Active slot labels, passive labels, empty labels, and locked labels.
 - Active held-button firing.
@@ -206,5 +243,15 @@ HUD polish validation:
 - Confirmed Armory equipped cards and stash cards expose glyph/state labels.
 - Confirmed reward/detail text reports active target buttons and passive no-button behavior.
 - Confirmed slot-fire pulse still uses existing HUD nodes and the idle HUD rebuild throttle remains intact.
+
+Passive nova/burst hotfix validation:
+
+- Focused passive/nova/burst validation: `PHASE51_PASSIVE_NOVA_BURST_VALIDATION_PASS`.
+- Confirmed `nova_burst`, `star_pulse`, and `prism_chain` function without held input.
+- Confirmed `tri_burst_cannon` and `nova_needle` do not fire while idle and do fire from their active slot button.
+- Confirmed passive nova/radial weapons show `PASSIVE` through the slot binding helper.
+- Confirmed passive cooldowns reset after firing.
+- Confirmed player projectile cleanup has named max-travel and offscreen-margin tuning.
+- Confirmed no infinite projectile leak in the focused max-travel cleanup check.
 
 Required final validation commands were run after implementation and documentation.

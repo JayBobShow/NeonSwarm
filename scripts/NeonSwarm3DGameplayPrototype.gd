@@ -433,12 +433,26 @@ const WEAPON_FIRE_SLOT_KEYBOARD_LABELS := ["LMB", "RMB", "Q", "E", "R"]
 const WEAPON_FIRE_SLOT_CONTROLLER_LABELS := ["RT", "LT", "RB", "LB", "L3"]
 const GAMEPLAY_EQUIPMENT_BADGE_SIZE := Vector2(96, 32)
 const ARMORY_EQUIPMENT_BADGE_SIZE := Vector2(96, 30)
+const PASSIVE_WEAPON_DEFINITION_IDS := {
+	"prism_chain": true,
+	"nova_burst": true,
+	"star_pulse": true,
+	"gravity_mine": true,
+	"gravity_well": true
+}
+const PLAYER_PROJECTILE_RANGE_MULTIPLIER := 1.18
+const PLAYER_PROJECTILE_MAX_TRAVEL_DISTANCE := 42.0
+const PLAYER_PROJECTILE_OFFSCREEN_CLEANUP_MARGIN := 8.0
 const ORBIT_COOLDOWN := 0.16
 const ORBIT_DAMAGE := 16.0
 const ORBIT_RADIUS := 2.35
 const NOVA_COOLDOWN := 8.5
 const NOVA_DAMAGE := 46.0
 const NOVA_RADIUS := 6.2
+const NOVA_BURST_RADIUS_MULTIPLIER := 1.20
+const NOVA_BURST_MAX_RADIUS := 9.0
+const NOVA_BURST_VISUAL_RADIUS_MULTIPLIER := 1.35
+const NOVA_BURST_EFFECT_DURATION := 0.58
 const ARC_BEAM_COOLDOWN := 1.35
 const ARC_BEAM_DAMAGE := 32.0
 const ARC_BEAM_RANGE := 8.2
@@ -516,6 +530,8 @@ const SHIELD_BREAKER_LIFE := 1.24
 const STAR_PULSE_COOLDOWN := 4.65
 const STAR_PULSE_DAMAGE := 34.0
 const STAR_PULSE_RADIUS := 5.25
+const STAR_PULSE_MAX_RADIUS := 8.4
+const STAR_PULSE_EFFECT_DURATION := 0.42
 
 const XP_ATTRACT_RADIUS := 6.25
 const XP_COLLECT_RADIUS := 1.35
@@ -1856,13 +1872,7 @@ func _is_passive_weapon_family(definition_id: String) -> bool:
 	if _passive_weapon_family_cache.has(definition_id):
 		return bool(_passive_weapon_family_cache[definition_id])
 	var id := definition_id.to_lower()
-	var definition := WeaponCatalog.weapon_definition(definition_id)
-	var family := str(definition.get("family", definition_id)).to_lower()
-	var archetype := str(definition.get("archetype", "")).to_lower()
-	var is_chain := id.find("chain") >= 0 or family.find("chain") >= 0 or archetype.find("chain") >= 0
-	var is_nova := id.find("nova") >= 0 or family.find("nova") >= 0 or archetype.find("nova") >= 0
-	var is_burst := id.find("burst") >= 0 or family.find("burst") >= 0 or archetype.find("burst") >= 0
-	var passive := is_chain or is_nova or is_burst
+	var passive := bool(PASSIVE_WEAPON_DEFINITION_IDS.get(id, false))
 	_passive_weapon_family_cache[definition_id] = passive
 	return passive
 
@@ -7187,7 +7197,7 @@ func _help_page_data() -> Array[Dictionary]:
 		},
 		{
 			"title": "WEAPON SYSTEMS",
-			"body": "ACTIVE / PASSIVE EQUIPMENT\nActive equipped weapons fire only while their assigned button is held. Passive chain, nova, and burst weapons trigger from their own cooldowns without a button.\n\nEQUIPPED LOADOUT\nThe loadout has up to 8 total equipment slots. Slots unlock by player level, can be empty, and appear in the right-side HUD with large badges such as LMB / RT, PASSIVE, EMPTY, or LV 20.\n\nWEAPON ICONS\nIcons show the weapon family behavior: pulse, orbit, spear, chain, saw, well, bloom, and other geometry roles.\n\nRANDOM WEAPONS\nGenerated weapons can have rarity, random stats, and modifiers.\n\nARMORY\nUse Armory from the title screen to inspect, compare, clear, and swap stored weapons."
+			"body": "ACTIVE / PASSIVE EQUIPMENT\nActive equipped weapons fire only while their assigned button is held. Passive chain, outward nova, radial pulse, and field weapons trigger from their own cooldowns without a button.\n\nEQUIPPED LOADOUT\nThe loadout has up to 8 total equipment slots. Slots unlock by player level, can be empty, and appear in the right-side HUD with large badges such as LMB / RT, PASSIVE, EMPTY, or LV 20.\n\nWEAPON ICONS\nIcons show the weapon family behavior: pulse, orbit, spear, chain, saw, well, bloom, and other geometry roles.\n\nRANDOM WEAPONS\nGenerated weapons can have rarity, random stats, and modifiers.\n\nARMORY\nUse Armory from the title screen to inspect, compare, clear, and swap stored weapons."
 		},
 		{
 			"title": "EQUIPPED VS RUN WEAPONS",
@@ -13281,12 +13291,13 @@ func _update_nova_burst(delta: float) -> void:
 	if float(state["timer"]) > 0.0:
 		_weapon_state["nova_burst"] = state
 		return
+	var radius := _nova_burst_radius()
 	for enemy_index in range(_enemies.size() - 1, -1, -1):
 		var enemy := _enemies[enemy_index]
 		var enemy_node: Area3D = enemy["node"]
 		if not is_instance_valid(enemy_node):
 			continue
-		if _xz_distance(_player_area.position, enemy_node.position) <= NOVA_RADIUS * _weapon_range_multiplier("nova_burst") + float(enemy["radius"]):
+		if _xz_distance(_player_area.position, enemy_node.position) <= radius + float(enemy["radius"]):
 			_damage_enemy_at(enemy_index, _scaled_damage(NOVA_DAMAGE) * _weapon_damage_multiplier("nova_burst"), _burst_key_for_enemy(enemy["type"]))
 	_spawn_nova_effect(_player_area.position)
 	_flash_fire_source_for_weapon_definition("nova_burst")
@@ -13625,7 +13636,7 @@ func _update_star_pulse(delta: float) -> void:
 	if float(state["timer"]) > 0.0:
 		_weapon_state["star_pulse"] = state
 		return
-	var radius := STAR_PULSE_RADIUS * _weapon_range_multiplier("star_pulse")
+	var radius := _star_pulse_radius()
 	for enemy_index in range(_enemies.size() - 1, -1, -1):
 		var enemy := _enemies[enemy_index]
 		var enemy_node: Area3D = enemy["node"]
@@ -13683,6 +13694,22 @@ func _nearest_enemy() -> Dictionary:
 	return best
 
 
+func _player_projectile_life(definition_id: String, base_life: float) -> float:
+	return base_life * PLAYER_PROJECTILE_RANGE_MULTIPLIER * _weapon_lifetime_multiplier(definition_id)
+
+
+func _player_projectile_max_travel(definition_id: String) -> float:
+	return PLAYER_PROJECTILE_MAX_TRAVEL_DISTANCE * _weapon_range_multiplier(definition_id)
+
+
+func _nova_burst_radius() -> float:
+	return minf(NOVA_BURST_MAX_RADIUS, NOVA_RADIUS * NOVA_BURST_RADIUS_MULTIPLIER * _weapon_range_multiplier("nova_burst"))
+
+
+func _star_pulse_radius() -> float:
+	return minf(STAR_PULSE_MAX_RADIUS, STAR_PULSE_RADIUS * _weapon_range_multiplier("star_pulse"))
+
+
 func _spawn_player_projectile(position: Vector3, direction: Vector3) -> void:
 	var projectile := Area3D.new()
 	projectile.name = "PulseBlaster3DProjectile"
@@ -13700,10 +13727,13 @@ func _spawn_player_projectile(position: Vector3, direction: Vector3) -> void:
 	_player_projectiles.append({
 		"node": projectile,
 		"direction": direction.normalized(),
-		"life": PULSE_LIFE * _weapon_lifetime_multiplier("pulse_blaster"),
+		"life": _player_projectile_life("pulse_blaster", PULSE_LIFE),
 		"damage": _scaled_damage(PULSE_DAMAGE) * _weapon_damage_multiplier("pulse_blaster"),
 		"pierce": 1,
-		"speed": PULSE_SPEED * _weapon_speed_multiplier("pulse_blaster")
+		"speed": PULSE_SPEED * _weapon_speed_multiplier("pulse_blaster"),
+		"radius": 0.30,
+		"spawn_position": projectile.position,
+		"max_travel": _player_projectile_max_travel("pulse_blaster")
 	})
 	_trigger_player_shooting_core_animation()
 	_play_sfx("shoot", 0.055)
@@ -13729,14 +13759,16 @@ func _spawn_hex_shatter_projectile(position: Vector3, direction: Vector3) -> voi
 	_player_projectiles.append({
 		"node": projectile,
 		"direction": direction.normalized(),
-		"life": HEX_SHATTER_LIFE * _weapon_lifetime_multiplier("hex_shatter"),
+		"life": _player_projectile_life("hex_shatter", HEX_SHATTER_LIFE),
 		"damage": _scaled_damage(HEX_SHATTER_DAMAGE) * _hex_shatter_damage_multiplier * _weapon_damage_multiplier("hex_shatter"),
 		"pierce": 1,
 		"speed": HEX_SHATTER_SPEED * _weapon_speed_multiplier("hex_shatter"),
 		"radius": 0.38,
 		"burst_key": "burst_hex",
 		"kind": "hex_shatter",
-		"split_count": 5 + _hex_shatter_split_bonus + _weapon_int_stat_bonus("hex_shatter", "split_count_bonus", 2)
+		"split_count": 5 + _hex_shatter_split_bonus + _weapon_int_stat_bonus("hex_shatter", "split_count_bonus", 2),
+		"spawn_position": projectile.position,
+		"max_travel": _player_projectile_max_travel("hex_shatter")
 	})
 	_trigger_player_shooting_core_animation()
 	_play_sfx("lance", 0.075)
@@ -13773,13 +13805,15 @@ func _spawn_hex_shatter_shard(position: Vector3, direction: Vector3) -> void:
 	_player_projectiles.append({
 		"node": projectile,
 		"direction": direction.normalized(),
-		"life": HEX_SHATTER_SPLIT_LIFE * _weapon_lifetime_multiplier("hex_shatter"),
+		"life": _player_projectile_life("hex_shatter", HEX_SHATTER_SPLIT_LIFE),
 		"damage": _scaled_damage(HEX_SHATTER_SPLIT_DAMAGE) * _hex_shatter_damage_multiplier * _weapon_damage_multiplier("hex_shatter"),
 		"pierce": 1,
 		"speed": HEX_SHATTER_SPLIT_SPEED * _weapon_speed_multiplier("hex_shatter"),
 		"radius": 0.24,
 		"burst_key": "burst_hex",
-		"kind": "hex_shatter_shard"
+		"kind": "hex_shatter_shard",
+		"spawn_position": projectile.position,
+		"max_travel": _player_projectile_max_travel("hex_shatter")
 	})
 
 
@@ -13804,14 +13838,16 @@ func _spawn_fractal_shard_projectile(position: Vector3, direction: Vector3) -> v
 	_player_projectiles.append({
 		"node": projectile,
 		"direction": direction.normalized(),
-		"life": (FRACTAL_SHARD_LIFE + _fractal_shard_life_bonus) * _weapon_lifetime_multiplier("fractal_shard"),
+		"life": _player_projectile_life("fractal_shard", FRACTAL_SHARD_LIFE + _fractal_shard_life_bonus),
 		"damage": _scaled_damage(FRACTAL_SHARD_DAMAGE) * _fractal_shard_damage_multiplier * _weapon_damage_multiplier("fractal_shard"),
 		"pierce": 1 + _fractal_shard_pierce_bonus + _weapon_int_stat_bonus("fractal_shard", "pierce_bonus", 1),
 		"speed": FRACTAL_SHARD_SPEED * _weapon_speed_multiplier("fractal_shard"),
 		"radius": 0.46,
 		"burst_key": "burst_fractal",
 		"kind": "fractal_shard",
-		"split_count": 5 + _fractal_shard_split_bonus + _weapon_int_stat_bonus("fractal_shard", "split_count_bonus", 2)
+		"split_count": 5 + _fractal_shard_split_bonus + _weapon_int_stat_bonus("fractal_shard", "split_count_bonus", 2),
+		"spawn_position": projectile.position,
+		"max_travel": _player_projectile_max_travel("fractal_shard")
 	})
 	_trigger_player_shooting_core_animation()
 	_play_sfx("lance", 0.16)
@@ -13848,13 +13884,15 @@ func _spawn_fractal_shard_child(position: Vector3, direction: Vector3) -> void:
 	_player_projectiles.append({
 		"node": projectile,
 		"direction": direction.normalized(),
-		"life": (FRACTAL_SHARD_SPLIT_LIFE + _fractal_shard_life_bonus * 0.35) * _weapon_lifetime_multiplier("fractal_shard"),
+		"life": _player_projectile_life("fractal_shard", FRACTAL_SHARD_SPLIT_LIFE + _fractal_shard_life_bonus * 0.35),
 		"damage": _scaled_damage(FRACTAL_SHARD_SPLIT_DAMAGE) * _fractal_shard_damage_multiplier * _weapon_damage_multiplier("fractal_shard"),
 		"pierce": 1,
 		"speed": FRACTAL_SHARD_SPLIT_SPEED * _weapon_speed_multiplier("fractal_shard"),
 		"radius": 0.25,
 		"burst_key": "burst_fractal",
-		"kind": "fractal_shard_child"
+		"kind": "fractal_shard_child",
+		"spawn_position": projectile.position,
+		"max_travel": _player_projectile_max_travel("fractal_shard")
 	})
 
 
@@ -13878,12 +13916,14 @@ func _spawn_prism_lance_projectile(position: Vector3, direction: Vector3) -> voi
 	_player_projectiles.append({
 		"node": projectile,
 		"direction": direction.normalized(),
-		"life": PRISM_LANCE_LIFE * _weapon_lifetime_multiplier("prism_lance"),
+		"life": _player_projectile_life("prism_lance", PRISM_LANCE_LIFE),
 		"damage": _scaled_damage(PRISM_LANCE_DAMAGE) * _prism_lance_damage_multiplier * _weapon_damage_multiplier("prism_lance"),
 		"pierce": PRISM_LANCE_PIERCE + _prism_lance_pierce_bonus + _weapon_int_stat_bonus("prism_lance", "pierce_bonus", 1),
 		"speed": PRISM_LANCE_SPEED * _weapon_speed_multiplier("prism_lance"),
 		"radius": 0.42,
-		"burst_key": "burst_violet"
+		"burst_key": "burst_violet",
+		"spawn_position": projectile.position,
+		"max_travel": _player_projectile_max_travel("prism_lance")
 	})
 	_trigger_player_shooting_core_animation()
 	_play_sfx("lance", 0.12)
@@ -13902,11 +13942,12 @@ func _spawn_weapon_projectile(definition_id: String, position: Vector3, directio
 	_add_sphere_collision(projectile, "%sCollisionSphere" % definition_id.to_pascal_case(), radius)
 	_create_weapon_projectile_visual(projectile, shape, material_key)
 	_apply_weapon_projectile_blender_model(projectile, definition_id)
+	var projectile_life := _player_projectile_life(definition_id, base_life)
 	var projectile_data := {
 		"node": projectile,
 		"direction": direction.normalized(),
-		"life": base_life * _weapon_lifetime_multiplier(definition_id),
-		"duration": base_life * _weapon_lifetime_multiplier(definition_id),
+		"life": projectile_life,
+		"duration": projectile_life,
 		"damage": _scaled_damage(base_damage) * _weapon_damage_multiplier(definition_id),
 		"pierce": pierce,
 		"speed": base_speed * _weapon_speed_multiplier(definition_id),
@@ -13914,7 +13955,9 @@ func _spawn_weapon_projectile(definition_id: String, position: Vector3, directio
 		"burst_key": str(extra.get("burst_key", material_key)),
 		"kind": kind,
 		"weapon_id": definition_id,
-		"base_y": projectile.position.y
+		"base_y": projectile.position.y,
+		"spawn_position": projectile.position,
+		"max_travel": _player_projectile_max_travel(definition_id)
 	}
 	for key in extra.keys():
 		projectile_data[key] = extra[key]
@@ -14086,7 +14129,7 @@ func _spawn_star_pulse_effect(position: Vector3, radius: float) -> void:
 	ring.rotation.x = PI * 0.5
 	ring.position = Vector3(position.x, 1.02, position.z)
 	_add_weapon_blender_model(root, "star_pulse", radius / 0.92, Vector3(position.x, 1.03, position.z), 0.0, false)
-	_beam_effects.append({"node": root, "life": 0.34, "duration": 0.34, "nova": false})
+	_beam_effects.append({"node": root, "life": STAR_PULSE_EFFECT_DURATION, "duration": STAR_PULSE_EFFECT_DURATION, "nova": false})
 	_play_sfx("level", 0.10)
 	_add_screen_shake(0.055, 0.12)
 
@@ -14674,9 +14717,9 @@ func _spawn_nova_effect(position: Vector3) -> void:
 	core_ring.rotation.x = PI * 0.5
 	var magenta_ring := Kit.add_mesh(root, "NovaMagentaOuterAccent", Kit.torus_mesh(0.62, 0.028, 56, 5), _materials["burst_magenta"])
 	magenta_ring.rotation.x = PI * 0.5
-	var nova_art_radius := NOVA_RADIUS * _weapon_range_multiplier("nova_burst")
+	var nova_art_radius := _nova_burst_radius()
 	_add_weapon_blender_model(root, "nova_burst", nova_art_radius / 0.78, Vector3(0.0, 0.13, 0.0), 0.0, false)
-	_beam_effects.append({"node": root, "outer": ring, "core": core_ring, "life": 0.44, "duration": 0.44, "nova": true, "max_radius": NOVA_RADIUS * _weapon_range_multiplier("nova_burst") * 1.55})
+	_beam_effects.append({"node": root, "outer": ring, "core": core_ring, "life": NOVA_BURST_EFFECT_DURATION, "duration": NOVA_BURST_EFFECT_DURATION, "nova": true, "max_radius": nova_art_radius * NOVA_BURST_VISUAL_RADIUS_MULTIPLIER})
 	_play_sfx("lance", 0.18)
 	_add_screen_shake(0.10, 0.18)
 
@@ -15108,6 +15151,9 @@ func _update_projectiles(delta: float) -> void:
 			var duration := maxf(0.001, float(projectile.get("duration", 1.0)))
 			var phase := clampf(1.0 - float(projectile["life"]) / duration, 0.0, 1.0)
 			node.position.y = float(projectile.get("base_y", 0.96)) + sin(phase * PI) * float(projectile.get("arc_height", 0.0))
+		var spawn_position: Vector3 = projectile.get("spawn_position", _player_area.position)
+		var max_travel := float(projectile.get("max_travel", PLAYER_PROJECTILE_MAX_TRAVEL_DISTANCE))
+		var travel_expired := max_travel > 0.0 and _xz_distance(node.position, spawn_position) > max_travel
 		var consumed := false
 		for enemy_index in range(_enemies.size() - 1, -1, -1):
 			var enemy := _enemies[enemy_index]
@@ -15130,7 +15176,7 @@ func _update_projectiles(delta: float) -> void:
 				if int(projectile["pierce"]) <= 0:
 					consumed = true
 				break
-		var outside := _outside_arena(node.position, 2.0)
+		var outside := _outside_arena(node.position, PLAYER_PROJECTILE_OFFSCREEN_CLEANUP_MARGIN)
 		if outside and int(projectile.get("bounce", 0)) > 0:
 			var bounced_direction := direction
 			if absf(node.position.x) > ARENA_HALF_SIZE:
@@ -15148,7 +15194,7 @@ func _update_projectiles(delta: float) -> void:
 		if not consumed and expired and kind_on_end == "hex_mortar":
 			_spawn_hex_mortar_burst(node.position, direction, int(projectile.get("split_count", 6)))
 			consumed = true
-		if consumed or expired or outside:
+		if consumed or expired or outside or travel_expired:
 			node.queue_free()
 			_player_projectiles.remove_at(i)
 		else:
