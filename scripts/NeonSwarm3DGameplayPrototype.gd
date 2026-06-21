@@ -53,6 +53,12 @@ const PLAYER_SHOOTING_ANIMATED_CORE_MIN_PLAY_SECONDS := 0.35
 const PLAYER_SHOOTING_ANIMATED_CORE_FOREARM_POSE_CORRECTION_ENABLED := false
 const PLAYER_SHOOTING_ANIMATED_CORE_FOREARM_POSE_OVERRIDE_AMOUNT := 1.0
 const PLAYER_SHOOTING_ANIMATED_CORE_FOREARM_POSE_BONES := ["Left_Forearm", "Right_Forearm"]
+const PLAYER_SHOOTING_ANIMATED_CORE_ARM_LEVEL_CORRECTION_ENABLED := true
+const PLAYER_SHOOTING_ANIMATED_CORE_ARM_PITCH_DEGREES := -75.0
+const PLAYER_SHOOTING_ANIMATED_CORE_ARM_YAW_DEGREES := 0.0
+const PLAYER_SHOOTING_ANIMATED_CORE_ARM_ROLL_DEGREES := 0.0
+const PLAYER_SHOOTING_ANIMATED_CORE_ARM_POSE_OVERRIDE_AMOUNT := 1.0
+const PLAYER_SHOOTING_ANIMATED_CORE_ARM_POSE_BONES := ["Left_UpperArm", "Left_Forearm", "Right_UpperArm", "Right_Forearm"]
 const SCREEN_SHAKE_MAX := 0.32
 const SFX_PLAYER_CAP := 12
 const MUSIC_MIX_RATE := 22050
@@ -584,6 +590,7 @@ var _player_core_visual: Node3D
 var _player_core_animation_player: AnimationPlayer
 var _player_core_skeleton: Skeleton3D
 var _player_core_forearm_pose_bone_indices: Array[int] = []
+var _player_core_arm_pose_bone_indices: Array[int] = []
 var _player_core_animation_names: Array[String] = []
 var _player_core_idle_animation_name := ""
 var _player_core_shooting_animation_name := ""
@@ -3718,6 +3725,7 @@ func _reset_player_core_animation_state() -> void:
 	_player_core_animation_player = null
 	_player_core_skeleton = null
 	_player_core_forearm_pose_bone_indices.clear()
+	_player_core_arm_pose_bone_indices.clear()
 	_player_core_animation_names.clear()
 	_player_core_idle_animation_name = ""
 	_player_core_shooting_animation_name = ""
@@ -3751,6 +3759,7 @@ func _configure_player_core_animation() -> void:
 	if not is_instance_valid(_player_core_animation_player):
 		return
 	_collect_player_core_forearm_pose_bones()
+	_collect_player_core_arm_pose_bones()
 	for animation_name in _player_core_animation_player.get_animation_list():
 		_player_core_animation_names.append(str(animation_name))
 	_player_core_shooting_animation_name = _select_player_core_animation(["shoot", "fire", "firing", "attack", "weapon"], true, [])
@@ -3796,6 +3805,16 @@ func _collect_player_core_forearm_pose_bones() -> void:
 			_player_core_forearm_pose_bone_indices.append(bone_index)
 
 
+func _collect_player_core_arm_pose_bones() -> void:
+	_player_core_arm_pose_bone_indices.clear()
+	if not is_instance_valid(_player_core_skeleton):
+		return
+	for bone_name in PLAYER_SHOOTING_ANIMATED_CORE_ARM_POSE_BONES:
+		var bone_index := _player_core_skeleton.find_bone(str(bone_name))
+		if bone_index >= 0:
+			_player_core_arm_pose_bone_indices.append(bone_index)
+
+
 func _animation_has_usable_tracks(animation: Animation) -> bool:
 	if animation == null:
 		return false
@@ -3837,10 +3856,10 @@ func _trigger_player_shooting_core_animation() -> void:
 	var play_seconds := maxf(PLAYER_SHOOTING_ANIMATED_CORE_MIN_PLAY_SECONDS, _player_core_shooting_animation_length)
 	_player_core_shooting_fire_hold_timer = maxf(_player_core_shooting_fire_hold_timer, play_seconds)
 	if _player_core_animation_player.current_animation == _player_core_shooting_animation_name and _player_core_animation_player.is_playing():
-		_apply_player_shooting_forearm_pose_correction()
+		_apply_player_shooting_arm_pose_corrections()
 		return
 	_player_core_animation_player.play(_player_core_shooting_animation_name)
-	_apply_player_shooting_forearm_pose_correction()
+	_apply_player_shooting_arm_pose_corrections()
 
 
 func _return_player_core_to_idle_animation() -> void:
@@ -3849,14 +3868,14 @@ func _return_player_core_to_idle_animation() -> void:
 	if _player_core_idle_animation_name != "":
 		if _player_core_animation_player.current_animation != _player_core_idle_animation_name or not _player_core_animation_player.is_playing():
 			_player_core_animation_player.play(_player_core_idle_animation_name)
-		_clear_player_shooting_forearm_pose_correction()
+		_clear_player_shooting_arm_pose_corrections()
 		return
 	if _player_core_shooting_animation_name != "":
 		if _player_core_animation_player.current_animation != _player_core_shooting_animation_name:
 			_player_core_animation_player.play(_player_core_shooting_animation_name)
 		_player_core_animation_player.seek(0.0, true)
 	_player_core_animation_player.stop()
-	_apply_player_shooting_forearm_pose_correction()
+	_apply_player_shooting_arm_pose_corrections()
 
 
 func _basis_with_plus_y_axis(forward: Vector3, up: Vector3) -> Basis:
@@ -3894,15 +3913,51 @@ func _should_apply_player_shooting_forearm_pose_correction() -> bool:
 	return _player_core_shooting_fire_hold_timer > 0.0
 
 
-func _clear_player_shooting_forearm_pose_correction() -> void:
+func _should_apply_player_shooting_arm_level_correction() -> bool:
+	if not PLAYER_SHOOTING_ANIMATED_CORE_ARM_LEVEL_CORRECTION_ENABLED:
+		return false
+	if not _player_core_uses_shooting_animation_experiment():
+		return false
+	if not is_instance_valid(_player_core_skeleton) or _player_core_arm_pose_bone_indices.is_empty():
+		return false
+	if _player_core_shooting_animation_name == "":
+		return false
+	if _player_core_idle_animation_name == "":
+		return true
+	return _player_core_shooting_fire_hold_timer > 0.0
+
+
+func _clear_player_shooting_arm_pose_corrections() -> void:
 	if is_instance_valid(_player_core_skeleton):
 		_player_core_skeleton.clear_bones_global_pose_override()
 
 
-func _apply_player_shooting_forearm_pose_correction() -> void:
-	if not _should_apply_player_shooting_forearm_pose_correction():
-		_clear_player_shooting_forearm_pose_correction()
-		return
+func _clear_player_shooting_forearm_pose_correction() -> void:
+	_clear_player_shooting_arm_pose_corrections()
+
+
+func _player_shooting_arm_level_correction_basis() -> Basis:
+	var correction := Basis.IDENTITY
+	correction = (correction * Basis(Vector3.UP, deg_to_rad(PLAYER_SHOOTING_ANIMATED_CORE_ARM_YAW_DEGREES))).orthonormalized()
+	correction = (correction * Basis(Vector3.RIGHT, deg_to_rad(PLAYER_SHOOTING_ANIMATED_CORE_ARM_PITCH_DEGREES))).orthonormalized()
+	correction = (correction * Basis(Vector3.FORWARD, deg_to_rad(PLAYER_SHOOTING_ANIMATED_CORE_ARM_ROLL_DEGREES))).orthonormalized()
+	return correction
+
+
+func _apply_player_shooting_arm_level_correction() -> void:
+	var correction_basis := _player_shooting_arm_level_correction_basis()
+	for bone_index in _player_core_arm_pose_bone_indices:
+		var pose := _player_core_skeleton.get_bone_global_pose_no_override(bone_index)
+		pose.basis = (pose.basis * correction_basis).orthonormalized()
+		_player_core_skeleton.set_bone_global_pose_override(
+			bone_index,
+			pose,
+			PLAYER_SHOOTING_ANIMATED_CORE_ARM_POSE_OVERRIDE_AMOUNT,
+			true
+		)
+
+
+func _apply_player_shooting_forearm_aim_pose_correction() -> void:
 	var world_forward := _player_shooting_forearm_pose_target_direction()
 	var local_forward := (_player_core_skeleton.global_transform.basis.inverse() * world_forward).normalized()
 	var local_up := (_player_core_skeleton.global_transform.basis.inverse() * Vector3.UP).normalized()
@@ -3918,6 +3973,23 @@ func _apply_player_shooting_forearm_pose_correction() -> void:
 		)
 
 
+func _apply_player_shooting_arm_pose_corrections() -> void:
+	var should_apply_arm_level := _should_apply_player_shooting_arm_level_correction()
+	var should_apply_forearm_aim := _should_apply_player_shooting_forearm_pose_correction()
+	if not should_apply_arm_level and not should_apply_forearm_aim:
+		_clear_player_shooting_arm_pose_corrections()
+		return
+	_clear_player_shooting_arm_pose_corrections()
+	if should_apply_arm_level:
+		_apply_player_shooting_arm_level_correction()
+	if should_apply_forearm_aim:
+		_apply_player_shooting_forearm_aim_pose_correction()
+
+
+func _apply_player_shooting_forearm_pose_correction() -> void:
+	_apply_player_shooting_arm_pose_corrections()
+
+
 func _update_player_core_animation(delta: float) -> void:
 	if not _player_core_uses_shooting_animation_experiment():
 		return
@@ -3927,7 +3999,7 @@ func _update_player_core_animation(delta: float) -> void:
 		_player_core_shooting_fire_hold_timer = maxf(0.0, _player_core_shooting_fire_hold_timer - delta)
 		if _player_core_shooting_fire_hold_timer <= 0.0:
 			_return_player_core_to_idle_animation()
-	_apply_player_shooting_forearm_pose_correction()
+	_apply_player_shooting_arm_pose_corrections()
 
 
 func _apply_xp_blender_model(root: Node3D) -> void:
@@ -10779,7 +10851,7 @@ func _update_player_core_aim_facing_visual(delta: float) -> void:
 	var target_yaw := wrapf(_player_core_local_yaw_for_world_direction(_player_core_aim_facing_direction) + _player_core_base_yaw(), -PI, PI)
 	var response := clampf(delta * PLAYER_CORE_AIM_FACING_YAW_RESPONSE, 0.0, 1.0)
 	_player_core_visual.rotation.y = lerp_angle(_player_core_visual.rotation.y, target_yaw, response)
-	_apply_player_shooting_forearm_pose_correction()
+	_apply_player_shooting_arm_pose_corrections()
 
 
 func _current_player_speed() -> float:

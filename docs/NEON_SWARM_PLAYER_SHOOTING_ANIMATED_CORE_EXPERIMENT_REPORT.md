@@ -71,6 +71,8 @@ Weapon fire events call a visual-only trigger. If `shooting_arm_loop` is already
 
 The orientation hotfix keeps the animated GLB root upright with the model/root transform values below. The previous forearm-only `Skeleton3D` pose override was tested against the unforced imported animation and is now behind a safety toggle that defaults off. The override can still be re-enabled for debugging, but it is not part of the approved runtime look because it can twist the side-aim arm silhouette.
 
+The arm-level hotfix keeps that forearm-only aim override off and adds a separate local arm-chain pitch correction. The runtime cause of the floor-shooting pose was that the imported shooting pose's forearm forward axis entered gameplay with a strong downward component after the player root aim-facing transform was applied. Runtime capture measured the baseline `Left_Forearm` and `Right_Forearm` forward axes at approximately `Y = -0.740`. The fix does not rotate the player body. It applies a controlled local `-75` degree pitch to the existing animated upper-arm and forearm poses after the clip pose is evaluated, which raises the weapons to a nearly level axis without replacing the forearm aim basis or reintroducing the prior twist.
+
 ## Tuning Values
 
 Current experiment tuning:
@@ -85,6 +87,12 @@ Current experiment tuning:
 - `PLAYER_SHOOTING_ANIMATED_CORE_FOREARM_POSE_CORRECTION_ENABLED`: `false`
 - `PLAYER_SHOOTING_ANIMATED_CORE_FOREARM_POSE_OVERRIDE_AMOUNT`: `1.0`
 - `PLAYER_SHOOTING_ANIMATED_CORE_FOREARM_POSE_BONES`: `["Left_Forearm", "Right_Forearm"]`
+- `PLAYER_SHOOTING_ANIMATED_CORE_ARM_LEVEL_CORRECTION_ENABLED`: `true`
+- `PLAYER_SHOOTING_ANIMATED_CORE_ARM_PITCH_DEGREES`: `-75.0`
+- `PLAYER_SHOOTING_ANIMATED_CORE_ARM_YAW_DEGREES`: `0.0`
+- `PLAYER_SHOOTING_ANIMATED_CORE_ARM_ROLL_DEGREES`: `0.0`
+- `PLAYER_SHOOTING_ANIMATED_CORE_ARM_POSE_OVERRIDE_AMOUNT`: `1.0`
+- `PLAYER_SHOOTING_ANIMATED_CORE_ARM_POSE_BONES`: `["Left_UpperArm", "Left_Forearm", "Right_UpperArm", "Right_Forearm"]`
 
 The selected clip length is approximately `2.0417` seconds, so a firing trigger holds the animation for that full clip length unless further shots extend it.
 
@@ -114,9 +122,13 @@ Temporary runtime validation confirmed:
 - Runtime weapon sanity check produced `9` player projectiles after the run started.
 - Runtime campaign sanity check reported `campaign_node_elapsed=1.279`, `title_menu_active=false`, and `sector_name=Neon Grid`.
 - Collision, HUD, Lyra, Memory Shards, boss cards, reward panels, Sector 1 arenas, and Sector 2 arenas were not changed by the hotfix.
+- Arm-level gameplay screenshots were captured from the actual patched runtime at `/tmp/neon_swarm_arm_level_final/final_aim_up.png`, `/tmp/neon_swarm_arm_level_final/final_aim_down.png`, `/tmp/neon_swarm_arm_level_final/final_aim_left.png`, and `/tmp/neon_swarm_arm_level_final/final_aim_right.png`.
+- Final runtime capture reported `arm_level_should_apply=true`, `forearm_pose_correction_should_apply=false`, `arm_pose_bone_count=4`, and `forearm_pose_bone_count=2`.
+- Final forearm forward-axis vertical components were near level: aim up approximately `-0.004`, aim down approximately `-0.030`, aim left approximately `-0.025`, and aim right approximately `-0.004`.
+- The screenshots covered aim up, aim down, aim left, and aim right. The body still faces the aim direction, the arms no longer point down into the floor, and the prior forearm twist/cross-body correction remains disabled.
 
 ## Remaining Improvements
 
 - Add a separate idle/default clip if a future player GLB includes one.
-- Tune the shooting arm pose further if the gameplay camera shows the arms competing with enemies, XP, bullets, Lyra, boss cards, reward panels, HUD, or Memory Shards.
+- Tune the shooting arm pose further if a future GLB changes the arm bone local axes or if the gameplay camera shows the arms competing with enemies, XP, bullets, Lyra, boss cards, reward panels, HUD, or Memory Shards.
 - If future GLBs use a different forward axis, adjust only the named yaw/pitch/roll/offset constants rather than hardcoding orientation values.
