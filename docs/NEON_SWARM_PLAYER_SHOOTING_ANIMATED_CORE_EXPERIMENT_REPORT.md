@@ -37,7 +37,7 @@ Approximate raw bounds:
 - Size: `(1.8987, 1.1401, 1.0852)`
 - Center: `(0.0004, 0.5701, -0.0041)`
 
-The model appears upright in Godot coordinates with height on `Y`. It is mounted with the same local `-Z` forward convention used by the current player aim-facing helper.
+The model appears upright in Godot coordinates with height on `Y`. In gameplay validation, the animated GLB needed a `180` degree yaw correction to match the current player aim-facing convention.
 
 ## Animation Reality
 
@@ -69,17 +69,22 @@ The imported `AnimationPlayer` is discovered under the generated GLB scene. Avai
 
 Weapon fire events call a visual-only trigger. If `shooting_arm_loop` is already playing, the trigger extends the hold timer and does not restart the clip, avoiding per-frame or spread-shot jitter. With no idle animation available, the player returns to the first pose of the shooting clip after the firing hold expires.
 
+The orientation hotfix keeps the animated GLB root upright and uses a forearm-only `Skeleton3D` pose override while the shooting clip is active. The imported forearm mesh length follows each forearm bone's local `+Y` axis, so the runtime correction aligns that axis to the current aim direction projected onto the arena plane. This fixes the downward shooting pose without changing movement, collision, weapon fire, or the approved fallback player asset.
+
 ## Tuning Values
 
 Current experiment tuning:
 
 - `PLAYER_SHOOTING_ANIMATED_CORE_SCALE`: `PLAYER_CORE_VISUAL_SCALE` (`1.18 * 1.375 = 1.6225`)
-- `PLAYER_SHOOTING_ANIMATED_CORE_YAW_DEGREES`: `0.0`
-- `PLAYER_SHOOTING_ANIMATED_CORE_PITCH_DEGREES`: `25.0`
+- `PLAYER_SHOOTING_ANIMATED_CORE_YAW_DEGREES`: `180.0`
+- `PLAYER_SHOOTING_ANIMATED_CORE_PITCH_DEGREES`: `0.0`
 - `PLAYER_SHOOTING_ANIMATED_CORE_ROLL_DEGREES`: `0.0`
 - `PLAYER_SHOOTING_ANIMATED_CORE_Y_OFFSET`: `0.05`
 - `PLAYER_SHOOTING_ANIMATED_CORE_Z_OFFSET`: `0.0`
 - `PLAYER_SHOOTING_ANIMATED_CORE_MIN_PLAY_SECONDS`: `0.35`
+- `PLAYER_SHOOTING_ANIMATED_CORE_ARM_POSE_CORRECTION_ENABLED`: `true`
+- `PLAYER_SHOOTING_ANIMATED_CORE_ARM_POSE_OVERRIDE_AMOUNT`: `1.0`
+- `PLAYER_SHOOTING_ANIMATED_CORE_ARM_POSE_BONES`: `["Left_Forearm", "Right_Forearm"]`
 
 The selected clip length is approximately `2.0417` seconds, so a firing trigger holds the animation for that full clip length unless further shots extend it.
 
@@ -91,15 +96,22 @@ Temporary runtime validation confirmed:
 - Active visual child is `Blender3DPlayerShootingAnimatedCoreExperiment`.
 - Player core local position is `(0.000, 0.050, 0.000)`.
 - Player core scale is `(1.622, 1.622, 1.622)`.
-- Player core rotation starts at `(25.000, 0.000, 0.000)` degrees.
+- Player core rotation starts at `(0.000, 180.000, 0.000)` degrees.
 - Player collision sphere radius remains `0.720`.
 - Animation player exists.
 - Runtime animation names are `["shooting_arm_loop"]`.
 - Selected shooting animation is `shooting_arm_loop`.
 - No idle animation was found.
 - Re-triggering while the shooting clip is already playing preserved the current animation position at `0.500`, confirming no restart jitter.
-- Aim-facing right updates player core yaw to `-90.000` degrees.
+- Aim-facing right updates player core yaw to approximately `89.6` degrees with the yaw correction applied.
 - Aim-facing preserves local position and scale.
+- Gameplay-view screenshot validation showed the body no longer using the backward/pitched setup and the forearms lifted out of the floor into a forward firing pose.
+- Runtime bone-axis validation for aim `(0, 0, -1)` reported both forearm `+Y` axes at approximately `(0, 0, -1)`, `dot_aim=1.000`, `vertical=0.000`.
+- Runtime bone-axis validation for aim `(1, 0, 0)` reported both forearm `+Y` axes at approximately `(1, 0, 0)`, `dot_aim=1.000`, `vertical=0.000`.
+- Runtime movement sanity check moved the player on `move_right` by `0.653` world units.
+- Runtime weapon sanity check produced `9` player projectiles after the run started.
+- Runtime campaign sanity check reported `campaign_node_elapsed=1.280`, `title_menu_active=false`, and `sector_name=Neon Grid`.
+- Collision, HUD, Lyra, Memory Shards, boss cards, reward panels, Sector 1 arenas, and Sector 2 arenas were not changed by the hotfix.
 
 ## Remaining Improvements
 
