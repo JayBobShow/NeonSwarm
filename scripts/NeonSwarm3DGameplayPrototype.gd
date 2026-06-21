@@ -786,6 +786,7 @@ var _pause_menu_selected_index := 0
 var _pause_options_selected_index := 0
 var _pause_nav_cooldown := 0.0
 var _armory_visible := false
+var _armory_context := "title"
 var _armory_selected_section := "equipped"
 var _armory_equipped_selected_index := 0
 var _armory_stash_selected_index := 0
@@ -1412,7 +1413,10 @@ func _process(delta: float) -> void:
 	if get_tree().paused:
 		if _manual_pause:
 			_pause_nav_cooldown = maxf(0.0, _pause_nav_cooldown - delta)
-			if _help_visible:
+			if _armory_visible:
+				_armory_nav_cooldown = maxf(0.0, _armory_nav_cooldown - delta)
+				_update_armory_cursor_position(false)
+			elif _help_visible:
 				_help_nav_cooldown = maxf(0.0, _help_nav_cooldown - delta)
 				_update_help_cursor_position(false)
 			else:
@@ -6515,7 +6519,7 @@ func _create_armory_menu() -> void:
 	_armory_panel.name = "ArmoryStashCommandConsole"
 	_armory_panel.visible = false
 	_armory_panel.process_mode = Node.PROCESS_MODE_ALWAYS
-	_title_menu_panel.add_child(_armory_panel)
+	_hud_design_root.add_child(_armory_panel)
 
 	var layout := VBoxContainer.new()
 	layout.alignment = BoxContainer.ALIGNMENT_BEGIN
@@ -6758,7 +6762,7 @@ func _create_armory_menu() -> void:
 	_armory_selection_cursor.size = Vector2(52, 34)
 	_armory_selection_cursor.custom_minimum_size = Vector2(52, 34)
 	_armory_selection_cursor.visible = false
-	_title_menu_panel.add_child(_armory_selection_cursor)
+	_hud_design_root.add_child(_armory_selection_cursor)
 
 
 func _create_core_upgrades_menu() -> void:
@@ -7204,7 +7208,7 @@ func _help_page_data() -> Array[Dictionary]:
 		},
 		{
 			"title": "WEAPON SYSTEMS",
-			"body": "ACTIVE / PASSIVE EQUIPMENT\nActive equipped weapons fire only while their assigned button is held. Passive chain, outward nova, radial pulse, and field weapons trigger from their own cooldowns without a button.\n\nEQUIPPED LOADOUT\nThe loadout has up to 8 total equipment slots. Slots unlock by player level, can be empty, and appear in the right-side HUD with large badges such as LMB / RT, PASSIVE, EMPTY, or LV 20.\n\nWEAPON ICONS\nIcons show the weapon family behavior: pulse, orbit, spear, chain, saw, well, bloom, and other geometry roles.\n\nRANDOM WEAPONS\nGenerated weapons can have rarity, random stats, and modifiers.\n\nARMORY\nUse Armory from the title screen to inspect, compare, clear, and swap stored weapons."
+			"body": "ACTIVE / PASSIVE EQUIPMENT\nActive equipped weapons fire only while their assigned button is held. Passive chain, outward nova, radial pulse, and field weapons trigger from their own cooldowns without a button.\n\nEQUIPPED LOADOUT\nThe loadout has up to 8 total equipment slots. Slots unlock by player level, can be empty, and appear in the right-side HUD with large badges such as LMB / RT, PASSIVE, EMPTY, or LV 20.\n\nWEAPON ICONS\nIcons show the weapon family behavior: pulse, orbit, spear, chain, saw, well, bloom, and other geometry roles.\n\nRANDOM WEAPONS\nGenerated weapons can have rarity, random stats, and modifiers.\n\nARMORY\nUse Armory from the title screen or pause menu to inspect, compare, clear, and swap stored weapons."
 		},
 		{
 			"title": "EQUIPPED VS RUN WEAPONS",
@@ -7216,7 +7220,7 @@ func _help_page_data() -> Array[Dictionary]:
 		},
 		{
 			"title": "ARMORY / STASH",
-			"body": "EQUIPPED\nEquipment slots can be active, passive, empty, or locked. Locked slots open by player level.\n\nSTASH\nStashed weapons are stored only. They do not fire until equipped.\n\nSWAP\nSelecting a stash weapon equips it into the selected equipment slot. The old equipped weapon moves to stash.\n\nCLEAR SLOT\nSelect an equipped weapon action and choose CLEAR SLOT to move that weapon back to stash, leaving the slot empty.\n\nSCRAP\nStored weapons can be scrapped for Neon Dust. Equipped weapons must be cleared to stash first.\n\nCORE UPGRADES\nUse Neon Dust to buy modest permanent core upgrades."
+			"body": "EQUIPPED\nEquipment slots can be active, passive, empty, or locked. Locked slots open by player level during the run.\n\nSTASH\nStashed weapons are stored only. They do not fire until equipped.\n\nSWAP\nSelecting a stash weapon equips it into the selected equipment slot. The old equipped weapon moves to stash.\n\nIN-RUN ARMORY\nOpen Armory / Equipment from pause to fill newly unlocked run slots before resuming combat.\n\nCLEAR SLOT\nSelect an equipped weapon action and choose CLEAR SLOT to move that weapon back to stash, leaving the slot empty.\n\nSCRAP\nStored weapons can be scrapped for Neon Dust. Equipped weapons must be cleared to stash first.\n\nCORE UPGRADES\nUse Neon Dust to buy modest permanent core upgrades."
 		},
 		{
 			"title": "SECTORS / BOSSES",
@@ -7513,6 +7517,7 @@ func _create_pause_menu(root: Control) -> void:
 
 	_pause_menu_buttons.clear()
 	_add_pause_menu_button(button_column, "RESUME", "resume")
+	_add_pause_menu_button(button_column, "ARMORY / EQUIPMENT", "armory")
 	_add_pause_menu_button(button_column, "OPTIONS", "options")
 	_add_pause_menu_button(button_column, "HOW TO PLAY", "help")
 	_add_pause_menu_button(button_column, "RETURN TO TITLE", "return_title")
@@ -8031,9 +8036,22 @@ func _close_title_options() -> void:
 func _open_armory() -> void:
 	if not _title_menu_active:
 		return
+	_open_armory_for_context("title")
+
+
+func _open_pause_armory() -> void:
+	if not _manual_pause:
+		return
+	get_tree().paused = true
+	_open_armory_for_context("pause")
+
+
+func _open_armory_for_context(context: String) -> void:
+	_armory_context = context
 	_title_options_visible = false
 	_core_upgrades_visible = false
 	_core_upgrade_confirm_pending_id = ""
+	_pause_options_visible = false
 	_armory_visible = true
 	_armory_nav_cooldown = 0.0
 	_armory_action_mode = "browse"
@@ -8043,8 +8061,16 @@ func _open_armory() -> void:
 	_normalize_equipped_weapon_slots()
 	_armory_equipped_selected_index = clampi(_armory_equipped_selected_index, 0, EQUIPPED_WEAPON_SLOT_CAP - 1)
 	_armory_stash_selected_index = clampi(_armory_stash_selected_index, 0, maxi(0, _stash_weapon_instances.size() - 1))
-	_armory_status_text = "SELECT STORED WEAPON TO COMPARE OR EQUIP"
-	_update_title_menu_labels()
+	if context == "pause":
+		_armory_status_text = "IN-RUN ARMORY // EQUIP UNLOCKED SLOTS OR CLEAR LOADOUT // GAMEPLAY PAUSED"
+		if _pause_panel:
+			_pause_panel.visible = false
+		if _pause_selection_cursor:
+			_pause_selection_cursor.visible = false
+		_update_pause_menu_labels()
+	else:
+		_armory_status_text = "SELECT STORED WEAPON TO COMPARE OR EQUIP"
+		_update_title_menu_labels()
 	_update_armory_ui()
 	_play_sfx("ui_select", 0.08)
 	_trigger_presentation_flash(Color(0.0, 0.94, 1.0), 0.06, 0.16)
@@ -8052,7 +8078,9 @@ func _open_armory() -> void:
 
 
 func _close_armory() -> void:
+	var context := _armory_context
 	_armory_visible = false
+	_armory_context = "title"
 	_armory_action_mode = "browse"
 	_armory_action_selected_index = 0
 	_clear_armory_forge_pending()
@@ -8061,10 +8089,20 @@ func _close_armory() -> void:
 		_armory_panel.visible = false
 	if _armory_selection_cursor:
 		_armory_selection_cursor.visible = false
-	_update_title_menu_labels()
+	if context == "pause":
+		_manual_pause = true
+		get_tree().paused = true
+		_mark_gameplay_weapon_slot_hud_dirty()
+		_update_hud()
+		_update_pause_menu_labels()
+	else:
+		_update_title_menu_labels()
 	_play_sfx("ui_back", 0.08)
 	_trigger_presentation_flash(Color(0.0, 0.94, 1.0), 0.035, 0.12)
-	call_deferred("_focus_title_menu_choice")
+	if context == "pause":
+		call_deferred("_focus_pause_menu_choice")
+	else:
+		call_deferred("_focus_title_menu_choice")
 
 
 func _open_core_upgrades() -> void:
@@ -8199,6 +8237,11 @@ func _resume_gameplay_from_pause() -> void:
 		return
 	_pause_options_visible = false
 	_help_visible = false
+	_armory_visible = false
+	_armory_context = "title"
+	_armory_action_mode = "browse"
+	_clear_armory_forge_pending()
+	_save_weapon_inventory()
 	_manual_pause = false
 	get_tree().paused = false
 	if _pause_panel:
@@ -8211,6 +8254,10 @@ func _resume_gameplay_from_pause() -> void:
 		_help_panel.visible = false
 	if _help_selection_cursor:
 		_help_selection_cursor.visible = false
+	if _armory_panel:
+		_armory_panel.visible = false
+	if _armory_selection_cursor:
+		_armory_selection_cursor.visible = false
 	_play_sfx("pause", 0.08)
 	_trigger_presentation_flash(Color(0.0, 0.94, 1.0), 0.035, 0.12)
 
@@ -8224,6 +8271,8 @@ func _return_to_title_from_pause() -> void:
 	_reset_memory_shard_runtime()
 	_pause_options_visible = false
 	_help_visible = false
+	_armory_visible = false
+	_armory_context = "title"
 	_manual_pause = false
 	_level_up_active = false
 	_sector_reward_active = false
@@ -8243,6 +8292,10 @@ func _return_to_title_from_pause() -> void:
 		_help_panel.visible = false
 	if _help_selection_cursor:
 		_help_selection_cursor.visible = false
+	if _armory_panel:
+		_armory_panel.visible = false
+	if _armory_selection_cursor:
+		_armory_selection_cursor.visible = false
 	_play_sfx("ui_back", 0.08)
 	get_tree().paused = false
 	call_deferred("_reload_official_scene")
@@ -8405,6 +8458,9 @@ func _handle_armory_action_input(event: InputEvent) -> void:
 
 
 func _handle_pause_menu_input(event: InputEvent) -> void:
+	if _armory_visible:
+		_handle_armory_input(event)
+		return
 	if _pause_options_visible:
 		_handle_pause_options_input(event)
 		return
@@ -9034,6 +9090,8 @@ func _activate_pause_menu_selection() -> void:
 	match action:
 		"resume":
 			_resume_gameplay_from_pause()
+		"armory":
+			_open_pause_armory()
 		"options":
 			_open_pause_options()
 		"help":
@@ -9224,9 +9282,9 @@ func _update_core_upgrades_ui() -> void:
 
 func _update_pause_menu_labels() -> void:
 	if _pause_panel:
-		_pause_panel.visible = _manual_pause and not _pause_options_visible and not (_help_visible and _help_context == "pause")
+		_pause_panel.visible = _manual_pause and not _armory_visible and not _pause_options_visible and not (_help_visible and _help_context == "pause")
 	if _pause_options_panel:
-		_pause_options_panel.visible = _manual_pause and _pause_options_visible and not (_help_visible and _help_context == "pause")
+		_pause_options_panel.visible = _manual_pause and not _armory_visible and _pause_options_visible and not (_help_visible and _help_context == "pause")
 	if _pause_options_label:
 		_pause_options_label.text = "OPTIONS"
 	for button in _pause_options_buttons:
@@ -11074,7 +11132,7 @@ func _update_core_upgrade_cursor_position(immediate: bool) -> void:
 
 
 func _update_armory_cursor_position(immediate: bool) -> void:
-	if not is_instance_valid(_armory_selection_cursor) or not is_instance_valid(_title_menu_panel):
+	if not is_instance_valid(_armory_selection_cursor):
 		return
 	if not _armory_visible:
 		_armory_selection_cursor.visible = false
@@ -11092,7 +11150,11 @@ func _update_armory_cursor_position(immediate: bool) -> void:
 		_armory_selection_cursor.visible = false
 		return
 	_armory_selection_cursor.visible = true
-	var local_transform := _title_menu_panel.get_global_transform_with_canvas().affine_inverse()
+	var cursor_parent := _armory_selection_cursor.get_parent() as Control
+	if not is_instance_valid(cursor_parent):
+		_armory_selection_cursor.visible = false
+		return
+	var local_transform := cursor_parent.get_global_transform_with_canvas().affine_inverse()
 	var button_global := button.get_global_rect()
 	var button_position := local_transform * button_global.position
 	var cursor_size := _armory_selection_cursor.size
@@ -11109,7 +11171,7 @@ func _update_armory_cursor_position(immediate: bool) -> void:
 func _update_pause_cursor_position(immediate: bool) -> void:
 	if not is_instance_valid(_pause_selection_cursor) or not is_instance_valid(_hud_design_root):
 		return
-	if _help_visible and _help_context == "pause":
+	if _armory_visible or (_help_visible and _help_context == "pause"):
 		_pause_selection_cursor.visible = false
 		return
 	var active_buttons := _pause_options_buttons if _pause_options_visible else _pause_menu_buttons

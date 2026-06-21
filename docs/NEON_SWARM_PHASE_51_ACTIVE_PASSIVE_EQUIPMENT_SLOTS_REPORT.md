@@ -271,6 +271,34 @@ Final size validation:
 - Final projected diameter remains below `NOVA_BURST_VISUAL_MAX_SCREEN_DIAMETER_PX = 1000.0`.
 - Nova still damaged exactly `2 / 3` validation enemies.
 
+## In-Run Pause Armory
+
+The pause command menu now includes `ARMORY / EQUIPMENT`. Selecting it opens the existing Armory/Stash equipment screen in a pause context instead of creating a separate loadout editor.
+
+Pause flow:
+
+- `Pause Menu -> ARMORY / EQUIPMENT -> Back -> Pause Menu -> Resume`.
+- The Armory panel is now parented to the shared HUD root so it can render both from title and from gameplay pause.
+- `_armory_context` tracks whether Armory was opened from `title` or `pause`.
+- Closing pause Armory returns to the pause menu, keeps `_manual_pause = true`, and keeps `get_tree().paused = true`.
+- Resuming from pause hides Armory safely, saves equipment changes, and unpauses gameplay.
+
+Pause enforcement:
+
+- The gameplay loop already returns before movement, enemy, projectile, weapon, timer, and combat updates while `get_tree().paused` is true.
+- Pause Armory input is routed before pause-menu resume/cancel handling, so Back closes Armory instead of accidentally resuming combat.
+- The focused validation held `fire_weapon_slot_3` while pause Armory was open and confirmed no player projectiles spawned.
+
+Run-level Slot 3 unlock flow:
+
+- Focused validation raised the run from Level 3 to Level 4 through XP.
+- Slot 3 changed from locked to unlocked/empty during the same run.
+- Pause Armory showed Slot 3 as usable after the Level 4 unlock.
+- A stashed active weapon was equipped into Slot 3 during that same paused run.
+- With active weapons already in Slots 1 and 2, Slot 3 displayed `Q / RB`.
+- Closing Armory and resuming gameplay preserved the Slot 3 equipment change.
+- Clear Slot was validated from pause Armory and moved the Slot 3 weapon back to stash.
+
 ## Reward / Run Weapon Behavior
 
 Generated weapon rewards use unlocked compatible equipment slots for `Equip Now`; replacement blocks locked slots and blocks adding a sixth active weapon unless replacing an existing active slot or equipping a passive.
@@ -352,5 +380,16 @@ Nova floor-plane validation:
 - Confirmed the visual does not scale on the vertical/camera axis.
 - Confirmed projected gameplay-camera diameter is `561.37 px`, doubled from `280.68 px` and below the `1000 px` cap.
 - Confirmed Nova still damages in-radius enemies.
+
+Pause Armory validation:
+
+- Focused validation: `PHASE51_PAUSE_ARMORY_VALIDATION_PASS`.
+- Confirmed pause menu contains `ARMORY / EQUIPMENT`.
+- Confirmed Armory opens from pause and gameplay remains paused.
+- Confirmed Level 4 unlock makes Slot 3 empty and usable in the same run.
+- Confirmed a stashed active weapon can be equipped into Slot 3 from pause Armory.
+- Confirmed fire input does not spawn projectiles while pause Armory is open.
+- Confirmed closing Armory returns to the pause menu, and Resume preserves the equipment change.
+- Confirmed Clear Slot still works from pause Armory.
 
 Required final validation commands were run after implementation and documentation.
