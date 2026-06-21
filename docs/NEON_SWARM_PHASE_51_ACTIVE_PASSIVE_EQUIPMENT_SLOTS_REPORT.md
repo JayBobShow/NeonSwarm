@@ -180,7 +180,9 @@ Nova/radial tuning added:
 
 - `NOVA_BURST_RADIUS_MULTIPLIER = 1.20`
 - `NOVA_BURST_MAX_RADIUS = 9.0`
-- `NOVA_BURST_VISUAL_RADIUS_MULTIPLIER = 1.35`
+- `NOVA_BURST_VISUAL_RADIUS_MULTIPLIER = 0.70`
+- `NOVA_BURST_VISUAL_MAX_RADIUS = 5.4`
+- `NOVA_BURST_IMPACT_FLASH_SCALE = 1.05`
 - `NOVA_BURST_EFFECT_DURATION = 0.58`
 - `STAR_PULSE_MAX_RADIUS = 8.4`
 - `STAR_PULSE_EFFECT_DURATION = 0.42`
@@ -192,6 +194,36 @@ Projectile range / cleanup tuning added:
 - `PLAYER_PROJECTILE_OFFSCREEN_CLEANUP_MARGIN = 8.0`
 
 These values are Godot world units, not screen pixels. No literal `600` pixel projectile cleanup constant was found. Before this pass, player projectiles were cleaned up by lifetime plus `_outside_arena(node.position, 2.0)`. The off-arena margin is now named and wider for player projectiles, and each player projectile records `spawn_position` and `max_travel` so range cleanup is tunable without allowing infinite projectile leaks.
+
+## Nova Size / Buff / Slot Flow Hotfix
+
+Nova Burst damage and visual scale are now tuned separately. Damage still uses `_nova_burst_radius()`, while the screen-space shockwave uses `_nova_burst_visual_radius()`.
+
+Nova visual size:
+
+- Before this hotfix, the base visual radius from the prior pass was about `10.04` world units (`NOVA_RADIUS * NOVA_BURST_RADIUS_MULTIPLIER * 1.35`).
+- After this hotfix, the base visual radius is about `5.21` world units (`_nova_burst_radius() * 0.70`) with `NOVA_BURST_VISUAL_MAX_RADIUS = 5.4`.
+- The impact flash was reduced from an inline `1.70` burst scale to `NOVA_BURST_IMPACT_FLASH_SCALE = 1.05`.
+
+Nova damage proof:
+
+- Focused validation spawned three enemies: two inside the tuned damage radius and one outside.
+- Result: Nova Burst damaged exactly `2 / 3` enemies, and the outside enemy remained undamaged.
+- The spawned Nova visual effect used the reduced `_nova_burst_visual_radius()` value.
+
+Fractal Shard / Fractal Splitter behavior:
+
+- `fractal_shard_unlock` was removed from the level-up upgrade pool. Fractal Shard is a weapon and must be intentionally acquired/equipped through weapon reward/equipment flow.
+- `Fractal Core`, `Fractal Splitter`, `Fractal Coolant`, `Fractal Tail`, and `Fractal Aperture` are now buffs only; they no longer include `fractal_shard_enable`.
+- Fractal buffs are filtered out of level-up rolls unless Fractal Shard is already equipped or otherwise active as a legacy run target.
+- Legacy `fractal_shard_enable` data no longer creates a run bonus weapon, does not set `_fractal_shard_enabled`, and does not start firing.
+- Fractal buffs do not bank hidden Fractal bonuses when Fractal Shard is absent; they modify the existing Fractal Shard only.
+
+In-run Level 4 Slot 3 unlock flow:
+
+- When an XP pickup crosses a slot threshold, equipment slots are normalized, the gameplay HUD is dirtied, and the HUD refreshes immediately.
+- Level 4 changes Slot 3 from `LV 4` / locked to `EMPTY` during that same run.
+- Weapon reward routing normalizes against the current in-run level before selecting an open slot, so a post-Level 4 in-run weapon reward can equip into Slot 3 without requiring death or main Armory.
 
 ## Reward / Run Weapon Behavior
 
@@ -253,5 +285,18 @@ Passive nova/burst hotfix validation:
 - Confirmed passive cooldowns reset after firing.
 - Confirmed player projectile cleanup has named max-travel and offscreen-margin tuning.
 - Confirmed no infinite projectile leak in the focused max-travel cleanup check.
+
+Nova size / buff / slot-flow hotfix validation:
+
+- Focused validation: `PHASE51_NOVA_BUFF_SLOT_HOTFIX_VALIDATION_PASS`.
+- Confirmed Nova visual radius reduced from about `10.04` world units to about `5.21` world units at base tuning.
+- Confirmed Nova damaged exactly two in-radius enemies and did not damage the out-of-radius enemy.
+- Confirmed Fractal Splitter no longer carries `fractal_shard_enable`.
+- Confirmed Fractal Splitter does not roll when Fractal Shard is absent.
+- Confirmed legacy Fractal enable data does not create a run bonus weapon, does not enable runtime Fractal Shard, and does not spawn projectiles.
+- Confirmed Fractal Splitter applies `+2` split bonus only when Fractal Shard is intentionally equipped.
+- Confirmed equipped Fractal Shard remains active/manual and does not fire while idle.
+- Confirmed Level 4 changes Slot 3 from `LV 4` to `EMPTY` during the same run.
+- Confirmed a same-run weapon reward after the Level 4 unlock selects and equips into Slot 3.
 
 Required final validation commands were run after implementation and documentation.

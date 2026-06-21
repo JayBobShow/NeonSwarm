@@ -451,7 +451,9 @@ const NOVA_DAMAGE := 46.0
 const NOVA_RADIUS := 6.2
 const NOVA_BURST_RADIUS_MULTIPLIER := 1.20
 const NOVA_BURST_MAX_RADIUS := 9.0
-const NOVA_BURST_VISUAL_RADIUS_MULTIPLIER := 1.35
+const NOVA_BURST_VISUAL_RADIUS_MULTIPLIER := 0.70
+const NOVA_BURST_VISUAL_MAX_RADIUS := 5.4
+const NOVA_BURST_IMPACT_FLASH_SCALE := 1.05
 const NOVA_BURST_EFFECT_DURATION := 0.58
 const ARC_BEAM_COOLDOWN := 1.35
 const ARC_BEAM_DAMAGE := 32.0
@@ -10453,6 +10455,7 @@ func _scrap_selected_stash_weapon() -> void:
 
 
 func _open_weapon_reward_decision(upgrade: Dictionary, was_sector_reward: bool) -> void:
+	_normalize_equipped_weapon_slots()
 	_weapon_reward_pending_upgrade = upgrade.duplicate(true)
 	_weapon_reward_pending_instance = Dictionary(upgrade.get("weapon_instance", {})).duplicate(true)
 	if _weapon_reward_pending_instance.is_empty():
@@ -13706,6 +13709,10 @@ func _nova_burst_radius() -> float:
 	return minf(NOVA_BURST_MAX_RADIUS, NOVA_RADIUS * NOVA_BURST_RADIUS_MULTIPLIER * _weapon_range_multiplier("nova_burst"))
 
 
+func _nova_burst_visual_radius() -> float:
+	return minf(NOVA_BURST_VISUAL_MAX_RADIUS, _nova_burst_radius() * NOVA_BURST_VISUAL_RADIUS_MULTIPLIER)
+
+
 func _star_pulse_radius() -> float:
 	return minf(STAR_PULSE_MAX_RADIUS, STAR_PULSE_RADIUS * _weapon_range_multiplier("star_pulse"))
 
@@ -14706,7 +14713,7 @@ func _spawn_beam_effect(start: Vector3, end: Vector3, duration: float) -> void:
 func _spawn_nova_effect(position: Vector3) -> void:
 	if _beam_effects.size() >= BEAM_EFFECT_CAP:
 		return
-	_spawn_burst(position, 1.70, "burst_cyan")
+	_spawn_burst(position, NOVA_BURST_IMPACT_FLASH_SCALE, "burst_cyan")
 	var root := Node3D.new()
 	root.name = "NovaBurstExpandingTorus"
 	root.position = Vector3(position.x, 0.90, position.z)
@@ -14717,9 +14724,9 @@ func _spawn_nova_effect(position: Vector3) -> void:
 	core_ring.rotation.x = PI * 0.5
 	var magenta_ring := Kit.add_mesh(root, "NovaMagentaOuterAccent", Kit.torus_mesh(0.62, 0.028, 56, 5), _materials["burst_magenta"])
 	magenta_ring.rotation.x = PI * 0.5
-	var nova_art_radius := _nova_burst_radius()
-	_add_weapon_blender_model(root, "nova_burst", nova_art_radius / 0.78, Vector3(0.0, 0.13, 0.0), 0.0, false)
-	_beam_effects.append({"node": root, "outer": ring, "core": core_ring, "life": NOVA_BURST_EFFECT_DURATION, "duration": NOVA_BURST_EFFECT_DURATION, "nova": true, "max_radius": nova_art_radius * NOVA_BURST_VISUAL_RADIUS_MULTIPLIER})
+	var nova_visual_radius := _nova_burst_visual_radius()
+	_add_weapon_blender_model(root, "nova_burst", nova_visual_radius / 0.78, Vector3(0.0, 0.13, 0.0), 0.0, false)
+	_beam_effects.append({"node": root, "outer": ring, "core": core_ring, "life": NOVA_BURST_EFFECT_DURATION, "duration": NOVA_BURST_EFFECT_DURATION, "nova": true, "max_radius": nova_visual_radius})
 	_play_sfx("lance", 0.18)
 	_add_screen_shake(0.10, 0.18)
 
@@ -15440,9 +15447,24 @@ func _upgrade_choice_has_global_core_effect(choice: Dictionary) -> bool:
 	return false
 
 
+func _upgrade_choice_affects_fractal_shard(choice: Dictionary) -> bool:
+	return _upgrade_choice_affected_definitions(choice).has("fractal_shard")
+
+
+func _fractal_shard_upgrade_target_available() -> bool:
+	return _is_weapon_family_equipped("fractal_shard") or _has_run_bonus_weapon("fractal_shard")
+
+
+func _upgrade_choice_is_eligible_for_current_loadout(choice: Dictionary) -> bool:
+	if str(choice.get("kind", "stat_upgrade")) == "weapon_loot":
+		return true
+	if _upgrade_choice_affects_fractal_shard(choice) and not _fractal_shard_upgrade_target_available():
+		return false
+	return true
+
+
 func _upgrade_choice_is_new_run_weapon(choice: Dictionary) -> bool:
-	var effects := _upgrade_choice_effects(choice)
-	return bool(effects.get("fractal_shard_enable", false)) and not _is_weapon_family_equipped("fractal_shard") and not _has_run_bonus_weapon("fractal_shard")
+	return false
 
 
 func _upgrade_choice_affects_run_bonus_weapon(choice: Dictionary) -> bool:
@@ -15487,6 +15509,8 @@ func _upgrade_choice_target_text(choice: Dictionary) -> String:
 				equipped_slots.append("SLOT %02d" % [equipped_index + 1])
 	if not equipped_slots.is_empty():
 		return "AFFECTS: %s" % " + ".join(equipped_slots)
+	if definitions.has("fractal_shard") and not _fractal_shard_upgrade_target_available():
+		return "AFFECTS: FRACTAL SHARD - EQUIP WEAPON FIRST"
 	if _upgrade_choice_is_new_run_weapon(choice):
 		return "ADDS: FRACTAL SHARD"
 	if _upgrade_choice_affects_run_bonus_weapon(choice):
@@ -15566,8 +15590,6 @@ func _upgrade_choice_impact_text(choice: Dictionary) -> String:
 		var current_hex_split := 5 + _hex_shatter_split_bonus + _weapon_int_stat_bonus("hex_shatter", "split_count_bonus", 2)
 		var added_hex_split := int(effects["hex_shatter_split_add"])
 		_append_upgrade_piece(pieces, "HEX SPLIT %d -> %d" % [current_hex_split, current_hex_split + added_hex_split])
-	if bool(effects.get("fractal_shard_enable", false)) and not _is_weapon_family_equipped("fractal_shard") and not _has_run_bonus_weapon("fractal_shard"):
-		_append_upgrade_piece(pieces, "UNLOCK FRACTAL")
 	if effects.has("fractal_shard_damage_multiplier_add"):
 		_append_upgrade_piece(pieces, "FRACTAL DMG +%d%%" % int(round(float(effects["fractal_shard_damage_multiplier_add"]) * 100.0)))
 	if effects.has("fractal_shard_cooldown_multiplier_add"):
@@ -15623,7 +15645,7 @@ func _new_run_weapon_gain_text(choice: Dictionary) -> String:
 
 func _upgrade_choice_button_text(choice: Dictionary) -> String:
 	if _upgrade_choice_is_new_run_weapon(choice):
-		return "%s\nTYPE: NEW RUN WEAPON\nADDS: %s\nSTARTS FIRING NOW\nRUN ONLY - DOES NOT REPLACE LOADOUT\n%s" % [
+		return "%s\nTYPE: WEAPON REWARD\nEQUIP REQUIRED\n%s\n%s" % [
 			str(choice.get("title", "UPGRADE")).to_upper(),
 			_new_run_weapon_display_name(choice),
 			_new_run_weapon_gain_text(choice)
@@ -15834,7 +15856,9 @@ func _collect_xp(value: int) -> void:
 		var current_unlocked_slots := _unlocked_equipment_slot_count(_player_level)
 		if current_unlocked_slots > previous_unlocked_slots:
 			_pending_equipment_slot_unlock_notice = "EQUIPMENT SLOT %02d UNLOCKED" % current_unlocked_slots
+			_normalize_equipped_weapon_slots()
 			_mark_gameplay_weapon_slot_hud_dirty()
+			_update_hud()
 		_xp_required = int(ceil(float(_xp_required) * 1.16 + 5.0))
 		_begin_level_up()
 
@@ -15881,6 +15905,11 @@ func _roll_upgrade_choices(amount: int) -> Array[Dictionary]:
 		if candidates.is_empty():
 			candidates = _upgrade_roll_candidates(pool, used_targets, false)
 		if candidates.is_empty():
+			for entry in pool:
+				var fallback_upgrade: Dictionary = entry
+				if _upgrade_choice_is_eligible_for_current_loadout(fallback_upgrade):
+					candidates.append(fallback_upgrade)
+		if candidates.is_empty():
 			candidates.assign(pool)
 		var selected: Dictionary = candidates[_upgrade_rng.randi_range(0, candidates.size() - 1)]
 		var selected_id := str(selected.get("id", ""))
@@ -15897,6 +15926,8 @@ func _upgrade_roll_candidates(pool: Array, used_targets: Dictionary, avoid_recen
 		var upgrade: Dictionary = entry
 		var upgrade_id := str(upgrade.get("id", ""))
 		if avoid_recent and _recent_level_upgrade_ids.has(upgrade_id):
+			continue
+		if not _upgrade_choice_is_eligible_for_current_loadout(upgrade):
 			continue
 		var target_key := _upgrade_choice_primary_target_key(upgrade)
 		if used_targets.has(target_key):
@@ -16072,16 +16103,14 @@ func _apply_upgrade(upgrade: Dictionary) -> void:
 	_hex_shatter_damage_multiplier += float(effects.get("hex_shatter_damage_multiplier_add", 0.0))
 	_hex_shatter_cooldown_multiplier = clampf(_hex_shatter_cooldown_multiplier + float(effects.get("hex_shatter_cooldown_multiplier_add", 0.0)), 0.46, 1.0)
 	_hex_shatter_split_bonus = mini(6, _hex_shatter_split_bonus + int(effects.get("hex_shatter_split_add", 0)))
-	if bool(effects.get("fractal_shard_enable", false)):
-		if not _is_weapon_family_equipped("fractal_shard"):
-			_activate_run_bonus_weapon("fractal_shard", was_new_run_weapon)
-		else:
-			_refresh_run_weapon_activation()
-	_fractal_shard_damage_multiplier += float(effects.get("fractal_shard_damage_multiplier_add", 0.0))
-	_fractal_shard_cooldown_multiplier = clampf(_fractal_shard_cooldown_multiplier + float(effects.get("fractal_shard_cooldown_multiplier_add", 0.0)), 0.52, 1.0)
-	_fractal_shard_split_bonus = mini(4, _fractal_shard_split_bonus + int(effects.get("fractal_shard_split_add", 0)))
-	_fractal_shard_life_bonus = minf(0.55, _fractal_shard_life_bonus + float(effects.get("fractal_shard_life_add", 0.0)))
-	_fractal_shard_pierce_bonus = mini(2, _fractal_shard_pierce_bonus + int(effects.get("fractal_shard_pierce_add", 0)))
+	var affects_fractal_shard := _upgrade_choice_affects_fractal_shard(upgrade)
+	if affects_fractal_shard and _fractal_shard_upgrade_target_available():
+		_fractal_shard_damage_multiplier += float(effects.get("fractal_shard_damage_multiplier_add", 0.0))
+		_fractal_shard_cooldown_multiplier = clampf(_fractal_shard_cooldown_multiplier + float(effects.get("fractal_shard_cooldown_multiplier_add", 0.0)), 0.52, 1.0)
+		_fractal_shard_split_bonus = mini(4, _fractal_shard_split_bonus + int(effects.get("fractal_shard_split_add", 0)))
+		_fractal_shard_life_bonus = minf(0.55, _fractal_shard_life_bonus + float(effects.get("fractal_shard_life_add", 0.0)))
+		_fractal_shard_pierce_bonus = mini(2, _fractal_shard_pierce_bonus + int(effects.get("fractal_shard_pierce_add", 0)))
+		_refresh_run_weapon_activation()
 	_xp_pull_speed_bonus = minf(6.0, _xp_pull_speed_bonus + float(effects.get("xp_pull_speed_add", 0.0)))
 	_enemy_xp_reward_bonus = mini(3, _enemy_xp_reward_bonus + int(effects.get("enemy_xp_bonus_add", 0)))
 	_mini_boss_reward_bonus = mini(12, _mini_boss_reward_bonus + int(effects.get("mini_boss_reward_bonus_add", 0)))
@@ -16094,7 +16123,7 @@ func _apply_upgrade(upgrade: Dictionary) -> void:
 
 func _upgrade_result_notice_text(upgrade: Dictionary, was_new_run_weapon := false) -> String:
 	if was_new_run_weapon:
-		return "NEW RUN WEAPON // FRACTAL SHARD STARTS FIRING NOW // RUN ONLY"
+		return "NEW WEAPON REQUIRES EQUIPMENT SLOT"
 	if _upgrade_choice_affects_run_bonus_weapon(upgrade):
 		return "RUN WEAPON BUFF // FRACTAL SHARD // RUN ONLY"
 	return "RUN UPGRADE APPLIED // %s // %s" % [str(upgrade.get("title", "UPGRADE")).to_upper(), str(upgrade.get("description", "CURRENT RUN IMPROVED")).to_upper()]
