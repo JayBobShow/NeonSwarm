@@ -40,6 +40,16 @@ const PLAYER_CORE_VISUAL_SCALE := PLAYER_CORE_BASE_VISUAL_SCALE * PLAYER_CORE_VI
 const PLAYER_CORE_VISUAL_PITCH_DEGREES := 25.0
 const PLAYER_CORE_AIM_FACING_EXPERIMENT_ENABLED := true
 const PLAYER_CORE_AIM_FACING_YAW_RESPONSE := 14.0
+const PLAYER_APPROVED_FALLBACK_CORE_PATH := "res://art/player/exported/3d/player_core.glb"
+const PLAYER_SHOOTING_ANIMATED_CORE_EXPERIMENT_ENABLED := true
+const PLAYER_SHOOTING_ANIMATED_CORE_PATH := "res://art/player/exported/3d/player_core_user_replacement_pre_orientation_hotfix_shooting_animated.glb"
+const PLAYER_SHOOTING_ANIMATED_CORE_SCALE := PLAYER_CORE_VISUAL_SCALE
+const PLAYER_SHOOTING_ANIMATED_CORE_YAW_DEGREES := 0.0
+const PLAYER_SHOOTING_ANIMATED_CORE_PITCH_DEGREES := PLAYER_CORE_VISUAL_PITCH_DEGREES
+const PLAYER_SHOOTING_ANIMATED_CORE_ROLL_DEGREES := 0.0
+const PLAYER_SHOOTING_ANIMATED_CORE_Y_OFFSET := 0.05
+const PLAYER_SHOOTING_ANIMATED_CORE_Z_OFFSET := 0.0
+const PLAYER_SHOOTING_ANIMATED_CORE_MIN_PLAY_SECONDS := 0.35
 const SCREEN_SHAKE_MAX := 0.32
 const SFX_PLAYER_CAP := 12
 const MUSIC_MIX_RATE := 22050
@@ -568,6 +578,12 @@ var _shake_strength := 0.0
 var _player_area: Area3D
 var _player_visual: Node3D
 var _player_core_visual: Node3D
+var _player_core_animation_player: AnimationPlayer
+var _player_core_animation_names: Array[String] = []
+var _player_core_idle_animation_name := ""
+var _player_core_shooting_animation_name := ""
+var _player_core_shooting_animation_length := 0.0
+var _player_core_shooting_fire_hold_timer := 0.0
 var _player_core_aim_facing_direction := Vector3.ZERO
 var _player_core_has_aim_facing_direction := false
 var _player_velocity := Vector3.ZERO
@@ -1350,6 +1366,7 @@ func _process(delta: float) -> void:
 	_update_wave_director(delta)
 	_update_run_event_director(delta)
 	_update_weapons(delta)
+	_update_player_core_animation(delta)
 	_update_player_core_aim_facing_visual(delta)
 	_update_enemies(delta)
 	_update_boss_telegraphs(delta)
@@ -3636,7 +3653,7 @@ func _asset_scale_vector(scale_value) -> Vector3:
 	return Vector3.ONE
 
 
-func _add_blender_asset_instance(parent: Node3D, node_name: String, path: String, scale_value = 1.0, local_position := Vector3.ZERO, yaw := 0.0, hide_existing := true, pitch_degrees := 0.0):
+func _add_blender_asset_instance(parent: Node3D, node_name: String, path: String, scale_value = 1.0, local_position := Vector3.ZERO, yaw := 0.0, hide_existing := true, pitch_degrees := 0.0, roll_degrees := 0.0):
 	if hide_existing:
 		_hide_existing_visual_children(parent)
 	var instance := _load_blender_asset_scene(path) as Node3D
@@ -3646,13 +3663,179 @@ func _add_blender_asset_instance(parent: Node3D, node_name: String, path: String
 	instance.position = local_position
 	instance.rotation.y = yaw
 	instance.rotation.x = deg_to_rad(pitch_degrees)
+	instance.rotation.z = deg_to_rad(roll_degrees)
 	instance.scale = _asset_scale_vector(scale_value)
 	parent.add_child(instance)
 	return instance
 
 
+func _player_core_uses_shooting_animation_experiment() -> bool:
+	return PLAYER_SHOOTING_ANIMATED_CORE_EXPERIMENT_ENABLED
+
+
+func _player_core_asset_path() -> String:
+	if _player_core_uses_shooting_animation_experiment():
+		return PLAYER_SHOOTING_ANIMATED_CORE_PATH
+	return PLAYER_APPROVED_FALLBACK_CORE_PATH
+
+
+func _player_core_local_position() -> Vector3:
+	if _player_core_uses_shooting_animation_experiment():
+		return Vector3(0.0, PLAYER_SHOOTING_ANIMATED_CORE_Y_OFFSET, PLAYER_SHOOTING_ANIMATED_CORE_Z_OFFSET)
+	return Vector3(0.0, 0.05, 0.0)
+
+
+func _player_core_visual_scale() -> float:
+	if _player_core_uses_shooting_animation_experiment():
+		return PLAYER_SHOOTING_ANIMATED_CORE_SCALE
+	return PLAYER_CORE_VISUAL_SCALE
+
+
+func _player_core_base_yaw() -> float:
+	if _player_core_uses_shooting_animation_experiment():
+		return deg_to_rad(PLAYER_SHOOTING_ANIMATED_CORE_YAW_DEGREES)
+	return 0.0
+
+
+func _player_core_pitch_degrees() -> float:
+	if _player_core_uses_shooting_animation_experiment():
+		return PLAYER_SHOOTING_ANIMATED_CORE_PITCH_DEGREES
+	return PLAYER_CORE_VISUAL_PITCH_DEGREES
+
+
+func _player_core_roll_degrees() -> float:
+	if _player_core_uses_shooting_animation_experiment():
+		return PLAYER_SHOOTING_ANIMATED_CORE_ROLL_DEGREES
+	return 0.0
+
+
+func _reset_player_core_animation_state() -> void:
+	_player_core_animation_player = null
+	_player_core_animation_names.clear()
+	_player_core_idle_animation_name = ""
+	_player_core_shooting_animation_name = ""
+	_player_core_shooting_animation_length = 0.0
+	_player_core_shooting_fire_hold_timer = 0.0
+
+
 func _apply_player_blender_model(root: Node3D) -> void:
-	_player_core_visual = _add_blender_asset_instance(root, "Blender3DPlayerCoreModel", "res://art/player/exported/3d/player_core.glb", PLAYER_CORE_VISUAL_SCALE, Vector3(0.0, 0.05, 0.0), 0.0, true, PLAYER_CORE_VISUAL_PITCH_DEGREES)
+	_reset_player_core_animation_state()
+	var node_name := "Blender3DPlayerShootingAnimatedCoreExperiment" if _player_core_uses_shooting_animation_experiment() else "Blender3DPlayerCoreModel"
+	_player_core_visual = _add_blender_asset_instance(
+		root,
+		node_name,
+		_player_core_asset_path(),
+		_player_core_visual_scale(),
+		_player_core_local_position(),
+		_player_core_base_yaw(),
+		true,
+		_player_core_pitch_degrees(),
+		_player_core_roll_degrees()
+	)
+	if _player_core_uses_shooting_animation_experiment():
+		_configure_player_core_animation()
+
+
+func _configure_player_core_animation() -> void:
+	if not is_instance_valid(_player_core_visual):
+		return
+	_player_core_animation_player = _find_first_animation_player(_player_core_visual)
+	if not is_instance_valid(_player_core_animation_player):
+		return
+	for animation_name in _player_core_animation_player.get_animation_list():
+		_player_core_animation_names.append(str(animation_name))
+	_player_core_shooting_animation_name = _select_player_core_animation(["shoot", "fire", "firing", "attack", "weapon"], true, [])
+	_player_core_idle_animation_name = _select_player_core_animation(["idle", "default", "rest"], false, ["shoot", "fire", "firing", "attack", "weapon"])
+	if _player_core_shooting_animation_name != "":
+		var shooting_animation := _player_core_animation_player.get_animation(_player_core_shooting_animation_name)
+		_player_core_shooting_animation_length = shooting_animation.length if shooting_animation != null else 0.0
+	if _player_core_idle_animation_name != "":
+		_player_core_animation_player.play(_player_core_idle_animation_name)
+	elif _player_core_shooting_animation_name != "":
+		_player_core_animation_player.play(_player_core_shooting_animation_name)
+		_player_core_animation_player.seek(0.0, true)
+		_player_core_animation_player.stop()
+
+
+func _find_first_animation_player(root: Node) -> AnimationPlayer:
+	if root is AnimationPlayer:
+		return root as AnimationPlayer
+	for child in root.get_children():
+		var player := _find_first_animation_player(child)
+		if player != null:
+			return player
+	return null
+
+
+func _animation_has_usable_tracks(animation: Animation) -> bool:
+	if animation == null:
+		return false
+	for track_index in range(animation.get_track_count()):
+		if animation.track_get_key_count(track_index) > 1:
+			return true
+	return false
+
+
+func _animation_name_has_keyword(animation_name: String, keywords: Array) -> bool:
+	var lower_name := animation_name.to_lower()
+	for keyword in keywords:
+		if lower_name.find(str(keyword).to_lower()) >= 0:
+			return true
+	return false
+
+
+func _select_player_core_animation(keywords: Array, allow_fallback: bool, exclude_keywords: Array) -> String:
+	if not is_instance_valid(_player_core_animation_player):
+		return ""
+	for animation_name in _player_core_animation_names:
+		var animation := _player_core_animation_player.get_animation(animation_name)
+		if _animation_has_usable_tracks(animation) and _animation_name_has_keyword(animation_name, keywords) and not _animation_name_has_keyword(animation_name, exclude_keywords):
+			return animation_name
+	if not allow_fallback:
+		return ""
+	for animation_name in _player_core_animation_names:
+		var animation := _player_core_animation_player.get_animation(animation_name)
+		if _animation_has_usable_tracks(animation) and not _animation_name_has_keyword(animation_name, exclude_keywords):
+			return animation_name
+	return ""
+
+
+func _trigger_player_shooting_core_animation() -> void:
+	if not _player_core_uses_shooting_animation_experiment():
+		return
+	if not is_instance_valid(_player_core_animation_player) or _player_core_shooting_animation_name == "":
+		return
+	var play_seconds := maxf(PLAYER_SHOOTING_ANIMATED_CORE_MIN_PLAY_SECONDS, _player_core_shooting_animation_length)
+	_player_core_shooting_fire_hold_timer = maxf(_player_core_shooting_fire_hold_timer, play_seconds)
+	if _player_core_animation_player.current_animation == _player_core_shooting_animation_name and _player_core_animation_player.is_playing():
+		return
+	_player_core_animation_player.play(_player_core_shooting_animation_name)
+
+
+func _return_player_core_to_idle_animation() -> void:
+	if not is_instance_valid(_player_core_animation_player):
+		return
+	if _player_core_idle_animation_name != "":
+		if _player_core_animation_player.current_animation != _player_core_idle_animation_name or not _player_core_animation_player.is_playing():
+			_player_core_animation_player.play(_player_core_idle_animation_name)
+		return
+	if _player_core_shooting_animation_name != "":
+		if _player_core_animation_player.current_animation != _player_core_shooting_animation_name:
+			_player_core_animation_player.play(_player_core_shooting_animation_name)
+		_player_core_animation_player.seek(0.0, true)
+	_player_core_animation_player.stop()
+
+
+func _update_player_core_animation(delta: float) -> void:
+	if not _player_core_uses_shooting_animation_experiment():
+		return
+	if not is_instance_valid(_player_core_animation_player):
+		return
+	if _player_core_shooting_fire_hold_timer <= 0.0:
+		return
+	_player_core_shooting_fire_hold_timer = maxf(0.0, _player_core_shooting_fire_hold_timer - delta)
+	if _player_core_shooting_fire_hold_timer <= 0.0:
+		_return_player_core_to_idle_animation()
 
 
 func _apply_xp_blender_model(root: Node3D) -> void:
@@ -10497,9 +10680,11 @@ func _update_player_core_aim_facing_visual(delta: float) -> void:
 		return
 	if not is_instance_valid(_player_core_visual) or not _player_core_has_aim_facing_direction:
 		return
-	_player_core_visual.rotation.x = deg_to_rad(PLAYER_CORE_VISUAL_PITCH_DEGREES)
-	_player_core_visual.scale = Vector3.ONE * PLAYER_CORE_VISUAL_SCALE
-	var target_yaw := _player_core_local_yaw_for_world_direction(_player_core_aim_facing_direction)
+	_player_core_visual.position = _player_core_local_position()
+	_player_core_visual.rotation.x = deg_to_rad(_player_core_pitch_degrees())
+	_player_core_visual.rotation.z = deg_to_rad(_player_core_roll_degrees())
+	_player_core_visual.scale = Vector3.ONE * _player_core_visual_scale()
+	var target_yaw := wrapf(_player_core_local_yaw_for_world_direction(_player_core_aim_facing_direction) + _player_core_base_yaw(), -PI, PI)
 	var response := clampf(delta * PLAYER_CORE_AIM_FACING_YAW_RESPONSE, 0.0, 1.0)
 	_player_core_visual.rotation.y = lerp_angle(_player_core_visual.rotation.y, target_yaw, response)
 
@@ -12047,6 +12232,7 @@ func _update_orbit_spark(delta: float) -> void:
 		node.rotation.y += delta * 2.4
 		node.rotation.x = sin(_survival_time * 1.6 + float(i)) * 0.20
 	if float(state["timer"]) <= 0.0:
+		var orbit_hit := false
 		for enemy_index in range(_enemies.size() - 1, -1, -1):
 			var enemy := _enemies[enemy_index]
 			var enemy_node: Area3D = enemy["node"]
@@ -12054,6 +12240,9 @@ func _update_orbit_spark(delta: float) -> void:
 				continue
 			if absf(_xz_distance(_player_area.position, enemy_node.position) - orbit_radius) <= float(enemy["radius"]) + 0.58:
 				_damage_enemy_at(enemy_index, _scaled_damage(ORBIT_DAMAGE) * _weapon_damage_multiplier("orbit_spark"), "burst_cyan")
+				orbit_hit = true
+		if orbit_hit:
+			_trigger_player_shooting_core_animation()
 		state["timer"] = float(state["cooldown"]) * _weapon_cooldown_multiplier("orbit_spark") / _weapon_rate_multiplier("orbit_spark")
 	_weapon_state["orbit_spark"] = state
 
@@ -12074,6 +12263,7 @@ func _update_nova_burst(delta: float) -> void:
 		if _xz_distance(_player_area.position, enemy_node.position) <= NOVA_RADIUS * _weapon_range_multiplier("nova_burst") + float(enemy["radius"]):
 			_damage_enemy_at(enemy_index, _scaled_damage(NOVA_DAMAGE) * _weapon_damage_multiplier("nova_burst"), _burst_key_for_enemy(enemy["type"]))
 	_spawn_nova_effect(_player_area.position)
+	_trigger_player_shooting_core_animation()
 	state["timer"] = float(state["cooldown"]) * _nova_cooldown_multiplier * _weapon_cooldown_multiplier("nova_burst")
 	_weapon_state["nova_burst"] = state
 
@@ -12098,6 +12288,8 @@ func _update_arc_beam(delta: float) -> void:
 		_spawn_beam_effect(previous_position, enemy_node.position, 0.18 + _beam_duration_bonus)
 		_damage_enemy_at(enemy_index, _scaled_damage(ARC_BEAM_DAMAGE) * _weapon_damage_multiplier("arc_beam"), _burst_key_for_enemy(enemy["type"]))
 		previous_position = enemy_node.position
+	if not target_indices.is_empty():
+		_trigger_player_shooting_core_animation()
 	state["timer"] = float(state["cooldown"]) * _weapon_cooldown_multiplier("arc_beam") / (_fire_rate_multiplier * _weapon_rate_multiplier("arc_beam"))
 	_weapon_state["arc_beam"] = state
 
@@ -12109,6 +12301,7 @@ func _update_gravity_mine(delta: float) -> void:
 	state["timer"] = float(state["timer"]) - delta
 	if float(state["timer"]) <= 0.0 and _mines.size() < MINE_CAP:
 		_spawn_gravity_mine(_player_area.position)
+		_trigger_player_shooting_core_animation()
 		state["timer"] = float(state["cooldown"]) * _weapon_cooldown_multiplier("gravity_mine")
 	_weapon_state["gravity_mine"] = state
 
@@ -12150,6 +12343,7 @@ func _update_ring_saw(delta: float) -> void:
 		var scale := radius / RING_SAW_RADIUS
 		_ring_saw_root.scale = Vector3.ONE * scale
 	if float(state["timer"]) <= 0.0:
+		var saw_hit := false
 		for enemy_index in range(_enemies.size() - 1, -1, -1):
 			var enemy := _enemies[enemy_index]
 			var enemy_node: Area3D = enemy["node"]
@@ -12158,6 +12352,9 @@ func _update_ring_saw(delta: float) -> void:
 			var distance := _xz_distance(_player_area.position, enemy_node.position)
 			if absf(distance - radius) <= float(enemy["radius"]) + RING_SAW_WIDTH:
 				_damage_enemy_at(enemy_index, _scaled_damage(RING_SAW_DAMAGE) * _weapon_damage_multiplier("ring_saw"), "burst_cyan")
+				saw_hit = true
+		if saw_hit:
+			_trigger_player_shooting_core_animation()
 		state["timer"] = float(state["cooldown"]) * _weapon_cooldown_multiplier("ring_saw") / ((1.0 + _ring_saw_spin_bonus) * _weapon_rate_multiplier("ring_saw"))
 	_weapon_state["ring_saw"] = state
 
@@ -12232,6 +12429,7 @@ func _update_orbital_saw_array(delta: float) -> void:
 		var angle := float(state["angle"]) + TAU * float(i) / float(count)
 		var saw_position := _player_area.position + Vector3(cos(angle) * radius, 0.0, sin(angle) * radius)
 		_spawn_burst(saw_position, 0.38, "orbital_saw_array")
+	_trigger_player_shooting_core_animation()
 	for enemy_index in range(_enemies.size() - 1, -1, -1):
 		var enemy := _enemies[enemy_index]
 		var enemy_node: Area3D = enemy["node"]
@@ -12263,6 +12461,8 @@ func _update_prism_chain(delta: float) -> void:
 		_spawn_colored_beam_effect(previous_position, enemy_node.position, 0.16, "prism_chain")
 		_damage_enemy_at(enemy_index, _scaled_damage(PRISM_CHAIN_DAMAGE) * _weapon_damage_multiplier("prism_chain"), "prism_chain")
 		previous_position = enemy_node.position
+	if not target_indices.is_empty():
+		_trigger_player_shooting_core_animation()
 	state["timer"] = float(state["cooldown"]) * _weapon_cooldown_multiplier("prism_chain") / (_fire_rate_multiplier * _weapon_rate_multiplier("prism_chain"))
 	_weapon_state["prism_chain"] = state
 
@@ -12274,6 +12474,7 @@ func _update_gravity_well(delta: float) -> void:
 	state["timer"] = float(state["timer"]) - delta
 	if float(state["timer"]) <= 0.0 and _mines.size() < MINE_CAP:
 		_spawn_weapon_gravity_well(_player_area.position)
+		_trigger_player_shooting_core_animation()
 		state["timer"] = float(state["cooldown"]) * _weapon_cooldown_multiplier("gravity_well")
 	_weapon_state["gravity_well"] = state
 
@@ -12350,6 +12551,7 @@ func _update_star_pulse(delta: float) -> void:
 		if _xz_distance(_player_area.position, enemy_node.position) <= radius + float(enemy["radius"]):
 			_damage_enemy_at(enemy_index, _scaled_damage(STAR_PULSE_DAMAGE) * _weapon_damage_multiplier("star_pulse"), "star_pulse")
 	_spawn_star_pulse_effect(_player_area.position, radius)
+	_trigger_player_shooting_core_animation()
 	state["timer"] = float(state["cooldown"]) * _weapon_cooldown_multiplier("star_pulse") / _weapon_rate_multiplier("star_pulse")
 	_weapon_state["star_pulse"] = state
 
@@ -12414,6 +12616,7 @@ func _spawn_player_projectile(position: Vector3, direction: Vector3) -> void:
 		"pierce": 1,
 		"speed": PULSE_SPEED * _weapon_speed_multiplier("pulse_blaster")
 	})
+	_trigger_player_shooting_core_animation()
 	_play_sfx("shoot", 0.055)
 
 
@@ -12446,6 +12649,7 @@ func _spawn_hex_shatter_projectile(position: Vector3, direction: Vector3) -> voi
 		"kind": "hex_shatter",
 		"split_count": 5 + _hex_shatter_split_bonus + _weapon_int_stat_bonus("hex_shatter", "split_count_bonus", 2)
 	})
+	_trigger_player_shooting_core_animation()
 	_play_sfx("lance", 0.075)
 
 
@@ -12520,6 +12724,7 @@ func _spawn_fractal_shard_projectile(position: Vector3, direction: Vector3) -> v
 		"kind": "fractal_shard",
 		"split_count": 5 + _fractal_shard_split_bonus + _weapon_int_stat_bonus("fractal_shard", "split_count_bonus", 2)
 	})
+	_trigger_player_shooting_core_animation()
 	_play_sfx("lance", 0.16)
 
 
@@ -12591,6 +12796,7 @@ func _spawn_prism_lance_projectile(position: Vector3, direction: Vector3) -> voi
 		"radius": 0.42,
 		"burst_key": "burst_violet"
 	})
+	_trigger_player_shooting_core_animation()
 	_play_sfx("lance", 0.12)
 
 
@@ -12624,6 +12830,8 @@ func _spawn_weapon_projectile(definition_id: String, position: Vector3, directio
 	for key in extra.keys():
 		projectile_data[key] = extra[key]
 	_player_projectiles.append(projectile_data)
+	if not str(kind).ends_with("_child") and not str(kind).ends_with("_shard"):
+		_trigger_player_shooting_core_animation()
 	_play_sfx("shoot", 0.052)
 
 
