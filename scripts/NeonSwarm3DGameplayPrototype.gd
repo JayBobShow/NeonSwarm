@@ -108,6 +108,9 @@ const CAMPAIGN_SUBSECTOR_CLEAR_TIME_SECONDS := 18.0
 const CAMPAIGN_BOSS_WARNING_DELAY_SECONDS := 6.0
 const CAMPAIGN_BOSS_SPAWN_DELAY_SECONDS := 13.0
 const CAMPAIGN_SUBSECTOR_CARD_DURATION := 3.9
+const SECTOR_3_EMBER_CIRCUIT_FOUNDATION_ENABLED := true
+const SECTOR_3_EMBER_CIRCUIT_FOUNDATION_STATUS := "runtime_foundation_only"
+const SECTOR_3_EMBER_CIRCUIT_DEBUG_INDEX := 2
 const SECTOR_STORY_DATA := [
 	{
 		"title": "NEON GRID",
@@ -1242,6 +1245,10 @@ func _handle_run_event_test_input(event: InputEvent) -> bool:
 			if not _run_event_test_enabled or not _run_event_test_input_allowed():
 				return false
 			_force_advance_campaign_node_test()
+		KEY_F12:
+			if not _run_event_test_enabled or not _run_event_test_input_allowed():
+				return false
+			_jump_to_sector3_foundation_test_state()
 		_:
 			return false
 	get_viewport().set_input_as_handled()
@@ -1292,7 +1299,15 @@ func _clear_run_event_test_spawn() -> void:
 	_update_run_event_test_hud()
 
 
+func _jump_to_sector3_foundation_test_state() -> void:
+	_jump_to_sector_test_state(SECTOR_3_EMBER_CIRCUIT_DEBUG_INDEX, "SECTOR 3 EMBER CIRCUIT FOUNDATION", _sector_color_for_index(SECTOR_3_EMBER_CIRCUIT_DEBUG_INDEX))
+
+
 func _jump_to_sector4_test_state() -> void:
+	_jump_to_sector_test_state(SECTOR_COUNT - 1, "SECTOR 4 HYPER GRID", Color(0.72, 0.96, 1.0))
+
+
+func _jump_to_sector_test_state(target_sector_index: int, notice_label: String, notice_color: Color) -> void:
 	_clear_transition_combat_state()
 	for i in range(_enemies.size() - 1, -1, -1):
 		var enemy := _enemies[i]
@@ -1300,7 +1315,7 @@ func _jump_to_sector4_test_state() -> void:
 		if is_instance_valid(node):
 			node.queue_free()
 		_enemies.remove_at(i)
-	_sector_index = SECTOR_COUNT - 1
+	_sector_index = clampi(target_sector_index, 0, SECTOR_COUNT - 1)
 	_sector_elapsed = 0.0
 	_reset_campaign_for_sector()
 	_sector_boss_spawned = false
@@ -1323,7 +1338,7 @@ func _jump_to_sector4_test_state() -> void:
 	_spawn_sector_opening_wave()
 	_update_hud()
 	_set_music_state("gameplay")
-	_show_combat_notice("EVENT TEST MODE // SECTOR 4 HYPER GRID", Color(0.72, 0.96, 1.0), 1.50)
+	_show_combat_notice("EVENT TEST MODE // %s" % notice_label, notice_color, 1.50)
 	_show_current_subsector_title()
 	_update_run_event_test_hud()
 
@@ -1344,7 +1359,7 @@ func _update_run_event_test_hud() -> void:
 	var active_text := "NONE"
 	if _run_event_active:
 		active_text = "%s // %s // %.0fs" % [_run_event_display_name(_run_event_type).to_upper(), _run_event_stage.to_upper(), _run_event_timer]
-	_run_event_test_label.text = "EVENT TEST MODE  //  SELECTED: %s\nF7 CYCLE  |  F8 SPAWN  |  F9 CLEAR  |  F10 S4  |  F11 CAMPAIGN  //  ACTIVE: %s" % [
+	_run_event_test_label.text = "EVENT TEST MODE  //  SELECTED: %s\nF7 CYCLE  |  F8 SPAWN  |  F9 CLEAR  |  F10 S4  |  F11 CAMPAIGN  |  F12 S3  //  ACTIVE: %s" % [
 		_run_event_display_name(_run_event_test_selected_type()).to_upper(),
 		active_text
 	]
@@ -3393,7 +3408,7 @@ func _sector_color_for_index(index: int) -> Color:
 		1:
 			return Color(0.0, 0.96, 1.0)
 		2:
-			return Color(0.88, 0.55, 1.0)
+			return Color(1.0, 0.54, 0.10)
 		_:
 			return Color(0.68, 0.92, 1.0)
 
@@ -3568,22 +3583,22 @@ func _create_materials() -> void:
 	_materials["sector2_floor_core"] = Kit.make_emissive_material(Color(0.80, 1.0, 1.0, 0.76), 3.25, true)
 	_materials["sector2_floor_edge"] = Kit.make_emissive_material(Color(0.88, 0.0, 1.0, 0.48), 1.48, true)
 	_materials["sector2_floor_atmosphere"] = Kit.make_emissive_material(Color(0.42, 0.0, 0.70, 0.042), 0.22, true)
-	_materials["sector3_grid_minor"] = Kit.make_emissive_material(Color(0.08, 0.02, 0.18, 0.18), 0.34, true)
-	_materials["sector3_grid_major"] = Kit.make_emissive_material(Color(0.0, 0.64, 1.0, 0.24), 0.82, true)
-	_materials["sector3_grid_axis"] = Kit.make_emissive_material(Color(0.74, 0.02, 1.0, 0.30), 0.96, true)
-	_materials["sector3_border"] = Kit.make_emissive_material(Color(0.0, 0.90, 1.0, 0.52), 2.30, true)
-	_materials["sector3_shape"] = Kit.make_emissive_material(Color(0.82, 0.04, 1.0, 0.58), 2.92, true)
-	_materials["sector3_shape_core"] = Kit.make_emissive_material(Color(0.82, 1.0, 1.0, 0.84), 5.9, true)
-	_materials["sector3_dust"] = Kit.make_emissive_material(Color(0.50, 0.08, 1.0, 0.13), 0.46, true)
-	_materials["sector3_floor_haze"] = Kit.make_emissive_material(Color(0.10, 0.015, 0.24, 0.070), 0.28, true)
-	_materials["sector3_far_structure"] = Kit.make_emissive_material(Color(0.52, 0.04, 1.0, 0.28), 1.04, true)
-	_materials["sector3_dark_glass"] = Kit.make_neon_body_material(Color(0.006, 0.004, 0.022, 1.0), 0.26)
-	_materials["sector3_floor_grid"] = Kit.make_emissive_material(Color(0.42, 0.04, 1.0, 0.24), 0.70, true)
-	_materials["sector3_floor_secondary"] = Kit.make_emissive_material(Color(0.0, 0.66, 1.0, 0.18), 0.54, true)
-	_materials["sector3_floor_path"] = Kit.make_emissive_material(Color(0.68, 0.08, 1.0, 0.42), 1.12, true)
-	_materials["sector3_floor_core"] = Kit.make_emissive_material(Color(0.74, 1.0, 1.0, 0.62), 2.65, true)
-	_materials["sector3_floor_edge"] = Kit.make_emissive_material(Color(0.20, 0.76, 1.0, 0.34), 1.00, true)
-	_materials["sector3_floor_atmosphere"] = Kit.make_emissive_material(Color(0.035, 0.0, 0.11, 0.060), 0.18, true)
+	_materials["sector3_grid_minor"] = Kit.make_emissive_material(Color(0.24, 0.055, 0.012, 0.20), 0.42, true)
+	_materials["sector3_grid_major"] = Kit.make_emissive_material(Color(1.0, 0.26, 0.030, 0.30), 0.94, true)
+	_materials["sector3_grid_axis"] = Kit.make_emissive_material(Color(1.0, 0.72, 0.060, 0.36), 1.08, true)
+	_materials["sector3_border"] = Kit.make_emissive_material(Color(1.0, 0.42, 0.045, 0.60), 2.42, true)
+	_materials["sector3_shape"] = Kit.make_emissive_material(Color(1.0, 0.34, 0.035, 0.64), 3.05, true)
+	_materials["sector3_shape_core"] = Kit.make_emissive_material(Color(1.0, 0.88, 0.20, 0.88), 6.1, true)
+	_materials["sector3_dust"] = Kit.make_emissive_material(Color(1.0, 0.24, 0.04, 0.16), 0.54, true)
+	_materials["sector3_floor_haze"] = Kit.make_emissive_material(Color(0.30, 0.045, 0.010, 0.080), 0.34, true)
+	_materials["sector3_far_structure"] = Kit.make_emissive_material(Color(1.0, 0.30, 0.040, 0.34), 1.20, true)
+	_materials["sector3_dark_glass"] = Kit.make_neon_body_material(Color(0.052, 0.024, 0.012, 1.0), 0.36)
+	_materials["sector3_floor_grid"] = Kit.make_emissive_material(Color(0.95, 0.18, 0.035, 0.28), 0.84, true)
+	_materials["sector3_floor_secondary"] = Kit.make_emissive_material(Color(1.0, 0.58, 0.055, 0.24), 0.72, true)
+	_materials["sector3_floor_path"] = Kit.make_emissive_material(Color(1.0, 0.34, 0.035, 0.54), 1.60, true)
+	_materials["sector3_floor_core"] = Kit.make_emissive_material(Color(1.0, 0.92, 0.38, 0.78), 3.55, true)
+	_materials["sector3_floor_edge"] = Kit.make_emissive_material(Color(1.0, 0.46, 0.055, 0.50), 1.58, true)
+	_materials["sector3_floor_atmosphere"] = Kit.make_emissive_material(Color(0.18, 0.020, 0.004, 0.048), 0.24, true)
 	_materials["sector4_grid_minor"] = Kit.make_emissive_material(Color(0.03, 0.16, 0.36, 0.16), 0.42, true)
 	_materials["sector4_grid_major"] = Kit.make_emissive_material(Color(0.0, 0.90, 1.0, 0.30), 0.96, true)
 	_materials["sector4_grid_axis"] = Kit.make_emissive_material(Color(0.72, 0.96, 1.0, 0.36), 1.08, true)
@@ -3818,6 +3833,8 @@ func _rebuild_sector_geometry_identity() -> void:
 		_create_sector1_neon_grid_3d_architecture()
 	elif _sector_index == 1:
 		_create_sector2_prism_rift_3d_architecture()
+	elif _sector_index == 2 and SECTOR_3_EMBER_CIRCUIT_FOUNDATION_ENABLED:
+		_create_sector3_ember_circuit_foundation_geometry()
 
 
 func _apply_sector_environment_tone() -> void:
@@ -3833,9 +3850,9 @@ func _apply_sector_environment_tone() -> void:
 			_world_environment_data.ambient_light_color = Color(0.190, 0.045, 0.235, 1.0)
 			_world_environment_data.ambient_light_energy = 0.56
 		2:
-			_world_environment_data.background_color = Color(0.0, 0.0, 0.010, 1.0)
-			_world_environment_data.ambient_light_color = Color(0.018, 0.008, 0.038, 1.0)
-			_world_environment_data.ambient_light_energy = 0.16
+			_world_environment_data.background_color = Color(0.030, 0.006, 0.0, 1.0)
+			_world_environment_data.ambient_light_color = Color(0.260, 0.085, 0.026, 1.0)
+			_world_environment_data.ambient_light_energy = 0.42
 		_:
 			_world_environment_data.background_color = Color(0.0, 0.006, 0.020, 1.0)
 			_world_environment_data.ambient_light_color = Color(0.030, 0.052, 0.085, 1.0)
@@ -3860,7 +3877,7 @@ func _rebuild_sector_background_identity() -> void:
 		1:
 			_create_prism_rift_background_depth()
 		2:
-			_create_null_zone_background_depth()
+			_create_ember_circuit_background_depth()
 		_:
 			_create_hyper_grid_background_depth()
 
@@ -3875,8 +3892,10 @@ func _create_prism_rift_background_depth() -> void:
 	pass
 
 
-func _create_null_zone_background_depth() -> void:
-	_build_hd_sector_background(2)
+func _create_ember_circuit_background_depth() -> void:
+	_sector_background_root.set_meta("sector_3_foundation_status", SECTOR_3_EMBER_CIRCUIT_FOUNDATION_STATUS)
+	_build_hd_sector_background(SECTOR_3_EMBER_CIRCUIT_DEBUG_INDEX)
+	_build_sector_arena_floor(_sector_floor_design(SECTOR_3_EMBER_CIRCUIT_DEBUG_INDEX))
 
 
 func _create_hyper_grid_background_depth() -> void:
@@ -3930,15 +3949,15 @@ func _sector_hd_background_design(index: int) -> Dictionary:
 		2:
 			base.merge({
 				"texture": "res://art/sectors/exported/sector_3_null_zone_hd.png",
-				"name": "Null Zone",
-				"primary_shape": "octagon",
-				"secondary_shape": "hexagon",
-				"composition": "HD black-glass octagon/hex void floor",
+				"name": "Ember Circuit Foundation",
+				"primary_shape": "circuit_board",
+				"secondary_shape": "heat_channel",
+				"composition": "foundation hot-metal circuit board plate with procedural Ember busways",
 				"runners": [
-					{"name": "NullZoneHDOctagonNorth", "center": Vector3(0.0, 0.146, -14.0), "direction": Vector3(1.0, 0.0, 0.0), "length": 5.4, "speed": 1.55, "wrap": 20.0, "radius": 0.018, "phase": 1.0},
-					{"name": "NullZoneHDOctagonEast", "center": Vector3(14.0, 0.146, 0.0), "direction": Vector3(0.0, 0.0, 1.0), "length": 5.4, "speed": 1.35, "wrap": 20.0, "radius": 0.018, "phase": 6.0},
-					{"name": "NullZoneHDOctagonSouth", "center": Vector3(0.0, 0.146, 14.0), "direction": Vector3(-1.0, 0.0, 0.0), "length": 5.4, "speed": 1.55, "wrap": 20.0, "radius": 0.018, "phase": 11.0},
-					{"name": "NullZoneHDOctagonWest", "center": Vector3(-14.0, 0.146, 0.0), "direction": Vector3(0.0, 0.0, -1.0), "length": 5.4, "speed": 1.35, "wrap": 20.0, "radius": 0.018, "phase": 16.0}
+					{"name": "EmberCircuitHDNorthFoundryBus", "center": Vector3(0.0, 0.146, -14.0), "direction": Vector3(1.0, 0.0, 0.0), "length": 8.4, "speed": 3.4, "wrap": 32.0, "radius": 0.022, "phase": 1.0},
+					{"name": "EmberCircuitHDEastHeatReturn", "center": Vector3(14.0, 0.146, 0.0), "direction": Vector3(0.0, 0.0, 1.0), "length": 7.2, "speed": 2.9, "wrap": 30.0, "radius": 0.020, "phase": 6.0},
+					{"name": "EmberCircuitHDSouthFoundryBus", "center": Vector3(0.0, 0.146, 14.0), "direction": Vector3(-1.0, 0.0, 0.0), "length": 8.4, "speed": 3.4, "wrap": 32.0, "radius": 0.022, "phase": 11.0},
+					{"name": "EmberCircuitHDWestHeatReturn", "center": Vector3(-14.0, 0.146, 0.0), "direction": Vector3(0.0, 0.0, -1.0), "length": 7.2, "speed": 2.9, "wrap": 30.0, "radius": 0.020, "phase": 16.0}
 				]
 			}, true)
 		_:
@@ -5235,14 +5254,14 @@ func _sector_floor_design(index: int) -> Dictionary:
 			}, true)
 		2:
 			base.merge({
-				"name": "Null Zone",
-				"primary_shape": "octagon",
-				"secondary_shape": "hexagon",
-				"grid_pattern": "null_polygon_cells",
-				"grid_spacing": 10.0,
-				"runner_speed": 1.45,
-				"depth_scroll_speed": 0.72,
-				"pulse_speed": 0.58
+				"name": "Ember Circuit",
+				"primary_shape": "circuit_board",
+				"secondary_shape": "heat_channel",
+				"grid_pattern": "ember_circuit_busways",
+				"grid_spacing": 7.0,
+				"runner_speed": 3.8,
+				"depth_scroll_speed": 1.55,
+				"pulse_speed": 0.92
 			}, true)
 		_:
 			base.merge({
@@ -5265,6 +5284,8 @@ func _build_sector_arena_floor(design: Dictionary) -> void:
 			_build_neon_grid_floor(design)
 		"prism_diamond_lattice":
 			_build_prism_rift_floor(design)
+		"ember_circuit_busways":
+			_build_ember_circuit_floor(design)
 		"null_polygon_cells":
 			_build_null_zone_floor(design)
 		"hyper_rail_lattice":
@@ -5347,6 +5368,55 @@ func _build_prism_rift_floor(design: Dictionary) -> void:
 		_add_dynamic_flow_line("PrismRiftDepthLatticeRow%d" % row, Vector3(-24.0, 0.086, z), Vector3(24.0, 0.086, z), Vector3(0.0, 0.0, -1.0), float(design["depth_scroll_speed"]), 44.0, 0.009, secondary_material, core_material, float(row) * 5.2, 0.52, 0.05)
 
 
+func _build_ember_circuit_floor(design: Dictionary) -> void:
+	var line_material := str(design["line_material"])
+	var secondary_material := str(design["secondary_material"])
+	var path_material := str(design["path_material"])
+	var core_material := str(design["core_material"])
+	var y := float(design["grid_y"])
+	var spacing := float(design["grid_spacing"])
+	var steps := int((ARENA_HALF_SIZE * 2.0) / spacing)
+	for i in range(steps + 1):
+		var offset := -ARENA_HALF_SIZE + float(i) * spacing
+		var radius := 0.013 if i % 2 == 0 else 0.009
+		_add_sector_grid_segment("EmberCircuitPanelTraceRow%d" % i, Vector3(-ARENA_HALF_SIZE, y, offset), Vector3(ARENA_HALF_SIZE, y, offset), line_material, radius)
+		_add_sector_grid_segment("EmberCircuitPanelTraceColumn%d" % i, Vector3(offset, y, -ARENA_HALF_SIZE), Vector3(offset, y, ARENA_HALF_SIZE), line_material, radius)
+	_add_floor_lane_fill("EmberCircuitCentralFoundrySpinePlate", Vector3(0.0, -0.040, -22.0), Vector3(0.0, -0.040, 22.0), 3.2, "sector3_floor_haze")
+	_add_floor_lane_fill("EmberCircuitCentralHeatBusPlate", Vector3(-22.0, -0.039, 0.0), Vector3(22.0, -0.039, 0.0), 2.7, "sector3_floor_haze")
+	_add_sector_grid_segment("EmberCircuitCentralFoundryBus", Vector3(0.0, y + 0.020, -23.0), Vector3(0.0, y + 0.020, 23.0), path_material, 0.026, core_material)
+	_add_sector_grid_segment("EmberCircuitCentralHeatCrossBus", Vector3(-23.0, y + 0.024, 0.0), Vector3(23.0, y + 0.024, 0.0), path_material, 0.024, core_material)
+	_add_sector_grid_segment("EmberCircuitNorthForgeBypass", Vector3(-18.0, y + 0.018, -13.0), Vector3(18.0, y + 0.018, -13.0), secondary_material, 0.017, core_material)
+	_add_sector_grid_segment("EmberCircuitSouthForgeBypass", Vector3(-18.0, y + 0.018, 13.0), Vector3(18.0, y + 0.018, 13.0), secondary_material, 0.017, core_material)
+	_add_sector_grid_segment("EmberCircuitWestReturnChannel", Vector3(-13.0, y + 0.018, -18.0), Vector3(-13.0, y + 0.018, 18.0), secondary_material, 0.017, core_material)
+	_add_sector_grid_segment("EmberCircuitEastReturnChannel", Vector3(13.0, y + 0.018, -18.0), Vector3(13.0, y + 0.018, 18.0), secondary_material, 0.017, core_material)
+	for cell in [
+		["EmberCircuitNorthwestForgeCell", Vector3(-15.5, y + 0.014, -15.5)],
+		["EmberCircuitNortheastForgeCell", Vector3(15.5, y + 0.014, -15.5)],
+		["EmberCircuitSouthwestForgeCell", Vector3(-15.5, y + 0.014, 15.5)],
+		["EmberCircuitSoutheastForgeCell", Vector3(15.5, y + 0.014, 15.5)]
+	]:
+		_add_sector_grid_rect_loop(str(cell[0]), Vector3(cell[1]), Vector2(3.2, 2.4), secondary_material, 0.013, core_material)
+	for i in range(6):
+		var z := -18.0 + float(i) * 7.2
+		_add_dynamic_flow_line("EmberCircuitDepthHeatTrace%d" % i, Vector3(-24.0, 0.086, z), Vector3(24.0, 0.086, z + 2.2), Vector3(0.0, 0.0, -1.0), float(design["depth_scroll_speed"]), 44.0, 0.009, secondary_material, core_material, float(i) * 4.4, 0.55, 0.05)
+	var runner_centers: Array[Vector3] = [
+		Vector3(0.0, float(design["runner_y"]), -13.0),
+		Vector3(13.0, float(design["runner_y"]) + 0.004, 0.0),
+		Vector3(0.0, float(design["runner_y"]), 13.0),
+		Vector3(-13.0, float(design["runner_y"]) + 0.004, 0.0)
+	]
+	var runner_directions: Array[Vector3] = [
+		Vector3(1.0, 0.0, 0.0),
+		Vector3(0.0, 0.0, 1.0),
+		Vector3(-1.0, 0.0, 0.0),
+		Vector3(0.0, 0.0, -1.0)
+	]
+	for i in range(runner_centers.size()):
+		var center: Vector3 = runner_centers[i]
+		var direction: Vector3 = runner_directions[i]
+		_add_sector_grid_light_runner("EmberCircuitHeatRunner%d" % i, center, direction, 7.0, float(design["runner_speed"]), 32.0, 0.023, path_material, core_material, float(i) * 5.0, float(design["pulse_speed"]), 0.08)
+
+
 func _build_null_zone_floor(design: Dictionary) -> void:
 	var line_material := str(design["line_material"])
 	var secondary_material := str(design["secondary_material"])
@@ -5420,6 +5490,13 @@ func _build_sector_floor_edge_system(design: Dictionary) -> void:
 	_add_sector_grid_light_runner("%sEastEdgeRunner" % str(design["name"]).replace(" ", ""), Vector3(inset, 0.124, 0.0), Vector3(0.0, 0.0, 1.0), 7.8, runner_speed, inset * 2.0, 0.020, edge_material, core_material, 12.0, float(design["pulse_speed"]), 0.06)
 
 
+func _create_sector3_ember_circuit_foundation_geometry() -> void:
+	if not is_instance_valid(_sector_geometry_root):
+		return
+	_sector_geometry_root.set_meta("sector_3_foundation_status", SECTOR_3_EMBER_CIRCUIT_FOUNDATION_STATUS)
+	_create_ember_circuit_sector_marks()
+
+
 func _create_neon_grid_sector_marks() -> void:
 	_add_floor_polygon_marker("NeonGridNorthTriangle", 3, 2.4, Vector3(0.0, 0.0, -18.0), -PI * 0.5, "sector1_shape")
 	_add_floor_polygon_marker("NeonGridSouthTriangle", 3, 2.4, Vector3(0.0, 0.0, 18.0), PI * 0.5, "sector1_shape")
@@ -5435,12 +5512,18 @@ func _create_prism_rift_sector_marks() -> void:
 	_add_floor_fracture("PrismRiftSplitShardB", Vector3(6.0, 0.08, -12.0), Vector3(22.0, 0.08, 3.0), "sector2_shape")
 
 
-func _create_null_zone_sector_marks() -> void:
-	_add_floor_polygon_marker("NullZoneCenterOctagon", 8, 4.7, Vector3.ZERO, PI / 8.0, "sector3_shape")
-	_add_floor_polygon_marker("NullZoneNorthVoid", 8, 2.5, Vector3(13.0, 0.0, -15.0), PI / 8.0, "sector3_shape")
-	_add_floor_polygon_marker("NullZoneSouthVoid", 8, 2.5, Vector3(-13.0, 0.0, 15.0), PI / 8.0, "sector3_shape")
-	_add_floor_fracture("NullZoneDarkRailA", Vector3(-22.0, 0.08, 11.0), Vector3(22.0, 0.08, -11.0), "sector3_shape")
-	_add_floor_fracture("NullZoneDarkRailB", Vector3(-17.0, 0.08, -18.0), Vector3(17.0, 0.08, 18.0), "sector3_shape")
+func _create_ember_circuit_sector_marks() -> void:
+	_add_floor_rect_marker("EmberCircuitCentralForgeCore", Vector2(8.2, 2.7), Vector3.ZERO, 0.0, "sector3_shape")
+	_add_floor_rect_marker("EmberCircuitNorthHeatManifold", Vector2(7.6, 1.5), Vector3(0.0, 0.0, -13.0), 0.0, "sector3_shape")
+	_add_floor_rect_marker("EmberCircuitSouthHeatManifold", Vector2(7.6, 1.5), Vector3(0.0, 0.0, 13.0), 0.0, "sector3_shape")
+	_add_floor_rect_marker("EmberCircuitWestReturnManifold", Vector2(1.5, 7.6), Vector3(-13.0, 0.0, 0.0), 0.0, "sector3_shape")
+	_add_floor_rect_marker("EmberCircuitEastReturnManifold", Vector2(1.5, 7.6), Vector3(13.0, 0.0, 0.0), 0.0, "sector3_shape")
+	_add_floor_polygon_marker("EmberCircuitNorthwestFoundryNode", 6, 2.3, Vector3(-15.5, 0.0, -15.5), PI / 6.0, "sector3_shape")
+	_add_floor_polygon_marker("EmberCircuitNortheastFoundryNode", 6, 2.3, Vector3(15.5, 0.0, -15.5), PI / 6.0, "sector3_shape")
+	_add_floor_polygon_marker("EmberCircuitSouthwestFoundryNode", 6, 2.3, Vector3(-15.5, 0.0, 15.5), PI / 6.0, "sector3_shape")
+	_add_floor_polygon_marker("EmberCircuitSoutheastFoundryNode", 6, 2.3, Vector3(15.5, 0.0, 15.5), PI / 6.0, "sector3_shape")
+	_add_floor_fracture("EmberCircuitMoltenServiceRailA", Vector3(-22.0, 0.08, 11.0), Vector3(22.0, 0.08, -11.0), "sector3_shape")
+	_add_floor_fracture("EmberCircuitMoltenServiceRailB", Vector3(-17.0, 0.08, -18.0), Vector3(17.0, 0.08, 18.0), "sector3_shape")
 
 
 func _create_hyper_grid_sector_marks() -> void:
