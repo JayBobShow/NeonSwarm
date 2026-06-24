@@ -400,10 +400,16 @@ const SECTOR1_SUBSECTOR_ARENA_SCENE_PATHS := {
 	"rail_approach": "res://art/arenas/sector_1/exported/sector_1_rail_approach.glb"
 }
 const SECTOR1_ARENA_VISUAL_LIGHT_LAYER_MASK := 1 << 19
-const SECTOR1_ARENA_KEY_LIGHT_ENERGY := 0.30
-const SECTOR1_ARENA_KEY_LIGHT_SPECULAR := 0.42
-const SECTOR1_ARENA_KEY_LIGHT_COLOR := Color(0.62, 0.78, 1.0, 1.0)
+const SECTOR1_ARENA_KEY_LIGHT_ENERGY := 0.62
+const SECTOR1_ARENA_KEY_LIGHT_SPECULAR := 0.48
+const SECTOR1_ARENA_KEY_LIGHT_COLOR := Color(0.74, 0.88, 1.0, 1.0)
 const SECTOR1_ARENA_KEY_LIGHT_ROTATION := Vector3(-54.0, -28.0, 0.0)
+const SECTOR1_ARENA_FILL_LIGHT_ENERGY := 0.26
+const SECTOR1_ARENA_FILL_LIGHT_SPECULAR := 0.18
+const SECTOR1_ARENA_FILL_LIGHT_COLOR := Color(0.58, 0.74, 0.88, 1.0)
+const SECTOR1_ARENA_FILL_LIGHT_ROTATION := Vector3(-88.0, 0.0, 0.0)
+const SECTOR1_ARENA_READABILITY_ALBEDO_SCALE := 1.18
+const SECTOR1_ARENA_READABILITY_ALBEDO_FLOOR := 0.038
 const SECTOR2_BLENDER_ARENA_SCENE_PATH := "res://art/arenas/sector_2/exported/sector_2_prism_rift_arena.glb"
 const SECTOR2_SUBSECTOR_ARENA_SCENE_PATHS := {
 	"mirror_flats": "res://art/arenas/sector_2/exported/sector_2_mirror_flats.glb",
@@ -412,10 +418,16 @@ const SECTOR2_SUBSECTOR_ARENA_SCENE_PATHS := {
 	"rift_lens": "res://art/arenas/sector_2/exported/sector_2_rift_lens.glb"
 }
 const SECTOR2_ARENA_VISUAL_LIGHT_LAYER_MASK := 1 << 18
-const SECTOR2_ARENA_KEY_LIGHT_ENERGY := 0.46
-const SECTOR2_ARENA_KEY_LIGHT_SPECULAR := 0.54
-const SECTOR2_ARENA_KEY_LIGHT_COLOR := Color(0.98, 0.70, 1.0, 1.0)
+const SECTOR2_ARENA_KEY_LIGHT_ENERGY := 0.72
+const SECTOR2_ARENA_KEY_LIGHT_SPECULAR := 0.58
+const SECTOR2_ARENA_KEY_LIGHT_COLOR := Color(1.0, 0.78, 1.0, 1.0)
 const SECTOR2_ARENA_KEY_LIGHT_ROTATION := Vector3(-58.0, -18.0, 0.0)
+const SECTOR2_ARENA_FILL_LIGHT_ENERGY := 0.30
+const SECTOR2_ARENA_FILL_LIGHT_SPECULAR := 0.20
+const SECTOR2_ARENA_FILL_LIGHT_COLOR := Color(0.76, 0.56, 0.94, 1.0)
+const SECTOR2_ARENA_FILL_LIGHT_ROTATION := Vector3(-86.0, 12.0, 0.0)
+const SECTOR2_ARENA_READABILITY_ALBEDO_SCALE := 1.14
+const SECTOR2_ARENA_READABILITY_ALBEDO_FLOOR := 0.040
 
 const PULSE_COOLDOWN := 0.30
 const PULSE_DAMAGE := 27.0
@@ -3494,17 +3506,17 @@ func _create_materials() -> void:
 	_materials["sector1_dust"] = Kit.make_emissive_material(Color(0.12, 0.52, 1.0, 0.18), 0.52, true)
 	_materials["sector1_floor_haze"] = Kit.make_emissive_material(Color(0.0, 0.46, 1.0, 0.055), 0.32, true)
 	_materials["sector1_far_structure"] = Kit.make_emissive_material(Color(0.0, 0.70, 1.0, 0.30), 1.10, true)
-	_materials["sector1_dark_glass"] = Kit.make_neon_body_material(Color(0.012, 0.040, 0.085, 1.0), 0.34)
+	_materials["sector1_dark_glass"] = Kit.make_neon_body_material(Color(0.052, 0.088, 0.126, 1.0), 0.42)
 	_materials["sector1_floor_grid"] = Kit.make_emissive_material(Color(0.0, 0.54, 1.0, 0.26), 0.78, true)
 	_materials["sector1_floor_path"] = Kit.make_emissive_material(Color(0.0, 0.88, 1.0, 0.46), 1.36, true)
 	_materials["sector1_floor_core"] = Kit.make_emissive_material(Color(0.86, 1.0, 1.0, 0.72), 3.2, true)
 	_materials["sector1_floor_edge"] = Kit.make_emissive_material(Color(0.0, 0.76, 1.0, 0.42), 1.42, true)
 	_materials["sector1_floor_atmosphere"] = Kit.make_emissive_material(Color(0.0, 0.24, 0.62, 0.038), 0.22, true)
-	_materials["sector1_arena_panel_dark"] = _make_sector1_aluminum_material("Sector1DarkBrushedAluminumPanel", Color(0.115, 0.125, 0.135, 1.0), 0.78, 0.47, Color(0.06, 0.20, 0.26, 1.0), 0.055)
-	_materials["sector1_arena_panel_lift"] = _make_sector1_aluminum_material("Sector1RaisedGunmetalPanel", Color(0.155, 0.170, 0.178, 1.0), 0.82, 0.42, Color(0.08, 0.26, 0.32, 1.0), 0.075)
-	_materials["sector1_arena_wall_body"] = _make_sector1_aluminum_material("Sector1GunmetalBorderWall", Color(0.080, 0.096, 0.112, 1.0), 0.72, 0.54, Color(0.04, 0.15, 0.20, 1.0), 0.050)
-	_materials["sector1_arena_depth_body"] = _make_sector1_aluminum_material("Sector1DarkAluminumDepthPlate", Color(0.044, 0.056, 0.074, 1.0), 0.48, 0.72, Color(0.02, 0.10, 0.15, 1.0), 0.035)
-	_materials["sector1_arena_sheen"] = Kit.make_emissive_material(Color(0.58, 0.90, 1.0, 0.115), 0.46, true)
+	_materials["sector1_arena_panel_dark"] = _make_sector1_aluminum_material("Sector1DarkBrushedAluminumPanel", Color(0.165, 0.178, 0.190, 1.0), 0.70, 0.50, Color(0.07, 0.22, 0.28, 1.0), 0.070)
+	_materials["sector1_arena_panel_lift"] = _make_sector1_aluminum_material("Sector1RaisedGunmetalPanel", Color(0.205, 0.220, 0.230, 1.0), 0.74, 0.45, Color(0.09, 0.28, 0.34, 1.0), 0.090)
+	_materials["sector1_arena_wall_body"] = _make_sector1_aluminum_material("Sector1GunmetalBorderWall", Color(0.132, 0.150, 0.168, 1.0), 0.66, 0.56, Color(0.052, 0.170, 0.218, 1.0), 0.068)
+	_materials["sector1_arena_depth_body"] = _make_sector1_aluminum_material("Sector1DarkAluminumDepthPlate", Color(0.092, 0.106, 0.126, 1.0), 0.46, 0.72, Color(0.032, 0.120, 0.168, 1.0), 0.048)
+	_materials["sector1_arena_sheen"] = Kit.make_emissive_material(Color(0.64, 0.94, 1.0, 0.140), 0.48, true)
 	_materials["sector2_grid_minor"] = Kit.make_emissive_material(Color(0.20, 0.06, 0.44, 0.16), 0.42, true)
 	_materials["sector2_grid_major"] = Kit.make_emissive_material(Color(1.0, 0.05, 0.86, 0.28), 0.90, true)
 	_materials["sector2_grid_axis"] = Kit.make_emissive_material(Color(0.0, 0.92, 1.0, 0.34), 1.00, true)
@@ -3514,7 +3526,7 @@ func _create_materials() -> void:
 	_materials["sector2_dust"] = Kit.make_emissive_material(Color(1.0, 0.10, 0.86, 0.15), 0.50, true)
 	_materials["sector2_floor_haze"] = Kit.make_emissive_material(Color(0.82, 0.04, 1.0, 0.060), 0.34, true)
 	_materials["sector2_far_structure"] = Kit.make_emissive_material(Color(1.0, 0.08, 0.86, 0.32), 1.16, true)
-	_materials["sector2_dark_glass"] = Kit.make_neon_body_material(Color(0.050, 0.014, 0.080, 1.0), 0.38)
+	_materials["sector2_dark_glass"] = Kit.make_neon_body_material(Color(0.098, 0.046, 0.128, 1.0), 0.44)
 	_materials["sector2_floor_grid"] = Kit.make_emissive_material(Color(0.86, 0.06, 1.0, 0.25), 0.78, true)
 	_materials["sector2_floor_secondary"] = Kit.make_emissive_material(Color(0.0, 0.78, 1.0, 0.20), 0.62, true)
 	_materials["sector2_floor_path"] = Kit.make_emissive_material(Color(1.0, 0.08, 0.86, 0.45), 1.38, true)
@@ -3645,15 +3657,15 @@ func _setup_world_environment() -> void:
 	environment.background_mode = Environment.BG_COLOR
 	environment.background_color = Color(0.0, 0.001, 0.008, 1.0)
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	environment.ambient_light_color = Color(0.018, 0.026, 0.060, 1.0)
-	environment.ambient_light_energy = 0.20
+	environment.ambient_light_color = Color(0.040, 0.052, 0.092, 1.0)
+	environment.ambient_light_energy = 0.30
 	environment.glow_enabled = true
-	environment.glow_intensity = 0.74
-	environment.glow_strength = 1.02
-	environment.glow_bloom = 0.16
-	environment.glow_hdr_threshold = 0.31
+	environment.glow_intensity = 0.68
+	environment.glow_strength = 0.94
+	environment.glow_bloom = 0.13
+	environment.glow_hdr_threshold = 0.36
 	environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	environment.tonemap_exposure = 0.96
+	environment.tonemap_exposure = 1.05
 	world_environment.environment = environment
 	_world_environment = world_environment
 	_world_environment_data = environment
@@ -3778,13 +3790,13 @@ func _apply_sector_environment_tone() -> void:
 		return
 	match _sector_index:
 		0:
-			_world_environment_data.background_color = Color(0.0, 0.006, 0.022, 1.0)
-			_world_environment_data.ambient_light_color = Color(0.045, 0.060, 0.090, 1.0)
-			_world_environment_data.ambient_light_energy = 0.34
+			_world_environment_data.background_color = Color(0.0, 0.010, 0.030, 1.0)
+			_world_environment_data.ambient_light_color = Color(0.085, 0.104, 0.138, 1.0)
+			_world_environment_data.ambient_light_energy = 0.52
 		1:
-			_world_environment_data.background_color = Color(0.010, 0.000, 0.024, 1.0)
-			_world_environment_data.ambient_light_color = Color(0.118, 0.054, 0.148, 1.0)
-			_world_environment_data.ambient_light_energy = 0.40
+			_world_environment_data.background_color = Color(0.016, 0.002, 0.034, 1.0)
+			_world_environment_data.ambient_light_color = Color(0.160, 0.082, 0.190, 1.0)
+			_world_environment_data.ambient_light_energy = 0.56
 		2:
 			_world_environment_data.background_color = Color(0.0, 0.0, 0.010, 1.0)
 			_world_environment_data.ambient_light_color = Color(0.018, 0.008, 0.038, 1.0)
@@ -4558,6 +4570,18 @@ func _create_sector1_arena_readability_key_light(parent: Node3D) -> void:
 	light.shadow_enabled = false
 	light.rotation_degrees = SECTOR1_ARENA_KEY_LIGHT_ROTATION
 	parent.add_child(light)
+	var fill := DirectionalLight3D.new()
+	fill.name = "Sector1ArenaTopDownReadabilityFillLight"
+	fill.light_color = SECTOR1_ARENA_FILL_LIGHT_COLOR
+	fill.light_energy = SECTOR1_ARENA_FILL_LIGHT_ENERGY
+	fill.light_specular = SECTOR1_ARENA_FILL_LIGHT_SPECULAR
+	fill.light_cull_mask = SECTOR1_ARENA_VISUAL_LIGHT_LAYER_MASK
+	fill.light_bake_mode = Light3D.BAKE_DISABLED
+	fill.light_indirect_energy = 0.0
+	fill.light_volumetric_fog_energy = 0.0
+	fill.shadow_enabled = false
+	fill.rotation_degrees = SECTOR1_ARENA_FILL_LIGHT_ROTATION
+	parent.add_child(fill)
 
 
 func _sector1_base_arena_scene_path() -> String:
@@ -4741,8 +4765,20 @@ func _apply_sector1_arena_material_visibility(material: StandardMaterial3D, mate
 		_set_sector1_visible_arena_material(material, Color(0.025, 0.460, 0.580, 1.0), 0.0, 0.30, Color(0.000, 0.720, 0.900, 1.0), 0.86)
 
 
+func _lift_arena_readability_color(color: Color, scale: float, floor_value: float) -> Color:
+	return Color(
+		clampf(color.r * scale + floor_value, 0.0, 1.0),
+		clampf(color.g * scale + floor_value, 0.0, 1.0),
+		clampf(color.b * scale + floor_value, 0.0, 1.0),
+		color.a
+	)
+
+
 func _set_sector1_visible_arena_material(material: StandardMaterial3D, albedo: Color, metallic: float, roughness: float, emission: Color, emission_energy: float) -> void:
-	material.albedo_color = albedo
+	var readable_albedo := albedo
+	if metallic > 0.09 or emission_energy <= 0.18:
+		readable_albedo = _lift_arena_readability_color(albedo, SECTOR1_ARENA_READABILITY_ALBEDO_SCALE, SECTOR1_ARENA_READABILITY_ALBEDO_FLOOR)
+	material.albedo_color = readable_albedo
 	material.metallic = metallic
 	material.roughness = roughness
 	material.metallic_specular = 0.62
@@ -4780,6 +4816,18 @@ func _create_sector2_arena_readability_key_light(parent: Node3D) -> void:
 	light.shadow_enabled = false
 	light.rotation_degrees = SECTOR2_ARENA_KEY_LIGHT_ROTATION
 	parent.add_child(light)
+	var fill := DirectionalLight3D.new()
+	fill.name = "Sector2ArenaTopDownReadabilityFillLight"
+	fill.light_color = SECTOR2_ARENA_FILL_LIGHT_COLOR
+	fill.light_energy = SECTOR2_ARENA_FILL_LIGHT_ENERGY
+	fill.light_specular = SECTOR2_ARENA_FILL_LIGHT_SPECULAR
+	fill.light_cull_mask = SECTOR2_ARENA_VISUAL_LIGHT_LAYER_MASK
+	fill.light_bake_mode = Light3D.BAKE_DISABLED
+	fill.light_indirect_energy = 0.0
+	fill.light_volumetric_fog_energy = 0.0
+	fill.shadow_enabled = false
+	fill.rotation_degrees = SECTOR2_ARENA_FILL_LIGHT_ROTATION
+	parent.add_child(fill)
 
 
 func _create_sector2_blender_arena_kit(parent: Node3D) -> Node3D:
@@ -4949,7 +4997,10 @@ func _apply_sector2_arena_material_visibility(material: StandardMaterial3D, mate
 
 
 func _set_sector2_visible_arena_material(material: StandardMaterial3D, albedo: Color, metallic: float, roughness: float, emission: Color, emission_energy: float, glass := false) -> void:
-	material.albedo_color = albedo
+	var readable_albedo := albedo
+	if metallic > 0.09 or emission_energy <= 0.18 or glass:
+		readable_albedo = _lift_arena_readability_color(albedo, SECTOR2_ARENA_READABILITY_ALBEDO_SCALE, SECTOR2_ARENA_READABILITY_ALBEDO_FLOOR)
+	material.albedo_color = readable_albedo
 	material.metallic = metallic
 	material.roughness = roughness
 	material.metallic_specular = 0.68
