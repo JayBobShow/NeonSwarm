@@ -402,14 +402,15 @@ const SECTOR1_SUBSECTOR_ARENA_SCENE_PATHS := {
 const SECTOR1_ARENA_VISUAL_LIGHT_LAYER_MASK := 1 << 19
 const SECTOR1_ARENA_KEY_LIGHT_ENERGY := 0.62
 const SECTOR1_ARENA_KEY_LIGHT_SPECULAR := 0.48
-const SECTOR1_ARENA_KEY_LIGHT_COLOR := Color(0.74, 0.88, 1.0, 1.0)
+const SECTOR1_ARENA_KEY_LIGHT_COLOR := Color(0.58, 0.86, 1.0, 1.0)
 const SECTOR1_ARENA_KEY_LIGHT_ROTATION := Vector3(-54.0, -28.0, 0.0)
-const SECTOR1_ARENA_FILL_LIGHT_ENERGY := 0.26
+const SECTOR1_ARENA_FILL_LIGHT_ENERGY := 0.24
 const SECTOR1_ARENA_FILL_LIGHT_SPECULAR := 0.18
-const SECTOR1_ARENA_FILL_LIGHT_COLOR := Color(0.58, 0.74, 0.88, 1.0)
+const SECTOR1_ARENA_FILL_LIGHT_COLOR := Color(0.18, 0.52, 0.82, 1.0)
 const SECTOR1_ARENA_FILL_LIGHT_ROTATION := Vector3(-88.0, 0.0, 0.0)
-const SECTOR1_ARENA_READABILITY_ALBEDO_SCALE := 1.18
-const SECTOR1_ARENA_READABILITY_ALBEDO_FLOOR := 0.038
+const SECTOR1_ARENA_READABILITY_ALBEDO_SCALE := 1.14
+const SECTOR1_ARENA_READABILITY_ALBEDO_FLOOR := 0.030
+const SECTOR1_ARENA_READABILITY_ALBEDO_TINT := Color(0.30, 0.76, 1.0, 1.0)
 const SECTOR2_BLENDER_ARENA_SCENE_PATH := "res://art/arenas/sector_2/exported/sector_2_prism_rift_arena.glb"
 const SECTOR2_SUBSECTOR_ARENA_SCENE_PATHS := {
 	"mirror_flats": "res://art/arenas/sector_2/exported/sector_2_mirror_flats.glb",
@@ -420,14 +421,15 @@ const SECTOR2_SUBSECTOR_ARENA_SCENE_PATHS := {
 const SECTOR2_ARENA_VISUAL_LIGHT_LAYER_MASK := 1 << 18
 const SECTOR2_ARENA_KEY_LIGHT_ENERGY := 0.72
 const SECTOR2_ARENA_KEY_LIGHT_SPECULAR := 0.58
-const SECTOR2_ARENA_KEY_LIGHT_COLOR := Color(1.0, 0.78, 1.0, 1.0)
+const SECTOR2_ARENA_KEY_LIGHT_COLOR := Color(1.0, 0.58, 0.98, 1.0)
 const SECTOR2_ARENA_KEY_LIGHT_ROTATION := Vector3(-58.0, -18.0, 0.0)
-const SECTOR2_ARENA_FILL_LIGHT_ENERGY := 0.30
+const SECTOR2_ARENA_FILL_LIGHT_ENERGY := 0.28
 const SECTOR2_ARENA_FILL_LIGHT_SPECULAR := 0.20
-const SECTOR2_ARENA_FILL_LIGHT_COLOR := Color(0.76, 0.56, 0.94, 1.0)
+const SECTOR2_ARENA_FILL_LIGHT_COLOR := Color(0.72, 0.26, 0.98, 1.0)
 const SECTOR2_ARENA_FILL_LIGHT_ROTATION := Vector3(-86.0, 12.0, 0.0)
-const SECTOR2_ARENA_READABILITY_ALBEDO_SCALE := 1.14
-const SECTOR2_ARENA_READABILITY_ALBEDO_FLOOR := 0.040
+const SECTOR2_ARENA_READABILITY_ALBEDO_SCALE := 1.12
+const SECTOR2_ARENA_READABILITY_ALBEDO_FLOOR := 0.034
+const SECTOR2_ARENA_READABILITY_ALBEDO_TINT := Color(0.90, 0.36, 1.0, 1.0)
 
 const PULSE_COOLDOWN := 0.30
 const PULSE_DAMAGE := 27.0
@@ -3506,16 +3508,16 @@ func _create_materials() -> void:
 	_materials["sector1_dust"] = Kit.make_emissive_material(Color(0.12, 0.52, 1.0, 0.18), 0.52, true)
 	_materials["sector1_floor_haze"] = Kit.make_emissive_material(Color(0.0, 0.46, 1.0, 0.055), 0.32, true)
 	_materials["sector1_far_structure"] = Kit.make_emissive_material(Color(0.0, 0.70, 1.0, 0.30), 1.10, true)
-	_materials["sector1_dark_glass"] = Kit.make_neon_body_material(Color(0.052, 0.088, 0.126, 1.0), 0.42)
-	_materials["sector1_floor_grid"] = Kit.make_emissive_material(Color(0.0, 0.54, 1.0, 0.26), 0.78, true)
-	_materials["sector1_floor_path"] = Kit.make_emissive_material(Color(0.0, 0.88, 1.0, 0.46), 1.36, true)
-	_materials["sector1_floor_core"] = Kit.make_emissive_material(Color(0.86, 1.0, 1.0, 0.72), 3.2, true)
-	_materials["sector1_floor_edge"] = Kit.make_emissive_material(Color(0.0, 0.76, 1.0, 0.42), 1.42, true)
+	_materials["sector1_dark_glass"] = Kit.make_neon_body_material(Color(0.028, 0.076, 0.126, 1.0), 0.46)
+	_materials["sector1_floor_grid"] = Kit.make_emissive_material(Color(0.0, 0.66, 1.0, 0.30), 0.86, true)
+	_materials["sector1_floor_path"] = Kit.make_emissive_material(Color(0.0, 0.94, 1.0, 0.52), 1.50, true)
+	_materials["sector1_floor_core"] = Kit.make_emissive_material(Color(0.64, 1.0, 1.0, 0.78), 3.35, true)
+	_materials["sector1_floor_edge"] = Kit.make_emissive_material(Color(0.0, 0.86, 1.0, 0.48), 1.54, true)
 	_materials["sector1_floor_atmosphere"] = Kit.make_emissive_material(Color(0.0, 0.24, 0.62, 0.038), 0.22, true)
-	_materials["sector1_arena_panel_dark"] = _make_sector1_aluminum_material("Sector1DarkBrushedAluminumPanel", Color(0.165, 0.178, 0.190, 1.0), 0.70, 0.50, Color(0.07, 0.22, 0.28, 1.0), 0.070)
-	_materials["sector1_arena_panel_lift"] = _make_sector1_aluminum_material("Sector1RaisedGunmetalPanel", Color(0.205, 0.220, 0.230, 1.0), 0.74, 0.45, Color(0.09, 0.28, 0.34, 1.0), 0.090)
-	_materials["sector1_arena_wall_body"] = _make_sector1_aluminum_material("Sector1GunmetalBorderWall", Color(0.132, 0.150, 0.168, 1.0), 0.66, 0.56, Color(0.052, 0.170, 0.218, 1.0), 0.068)
-	_materials["sector1_arena_depth_body"] = _make_sector1_aluminum_material("Sector1DarkAluminumDepthPlate", Color(0.092, 0.106, 0.126, 1.0), 0.46, 0.72, Color(0.032, 0.120, 0.168, 1.0), 0.048)
+	_materials["sector1_arena_panel_dark"] = _make_sector1_aluminum_material("Sector1DarkBrushedAluminumPanel", Color(0.135, 0.174, 0.202, 1.0), 0.70, 0.50, Color(0.04, 0.24, 0.32, 1.0), 0.080)
+	_materials["sector1_arena_panel_lift"] = _make_sector1_aluminum_material("Sector1RaisedGunmetalPanel", Color(0.174, 0.220, 0.245, 1.0), 0.74, 0.45, Color(0.05, 0.32, 0.40, 1.0), 0.100)
+	_materials["sector1_arena_wall_body"] = _make_sector1_aluminum_material("Sector1GunmetalBorderWall", Color(0.102, 0.150, 0.186, 1.0), 0.66, 0.56, Color(0.035, 0.196, 0.250, 1.0), 0.076)
+	_materials["sector1_arena_depth_body"] = _make_sector1_aluminum_material("Sector1DarkAluminumDepthPlate", Color(0.066, 0.104, 0.136, 1.0), 0.46, 0.72, Color(0.020, 0.140, 0.190, 1.0), 0.054)
 	_materials["sector1_arena_sheen"] = Kit.make_emissive_material(Color(0.64, 0.94, 1.0, 0.140), 0.48, true)
 	_materials["sector2_grid_minor"] = Kit.make_emissive_material(Color(0.20, 0.06, 0.44, 0.16), 0.42, true)
 	_materials["sector2_grid_major"] = Kit.make_emissive_material(Color(1.0, 0.05, 0.86, 0.28), 0.90, true)
@@ -3526,12 +3528,12 @@ func _create_materials() -> void:
 	_materials["sector2_dust"] = Kit.make_emissive_material(Color(1.0, 0.10, 0.86, 0.15), 0.50, true)
 	_materials["sector2_floor_haze"] = Kit.make_emissive_material(Color(0.82, 0.04, 1.0, 0.060), 0.34, true)
 	_materials["sector2_far_structure"] = Kit.make_emissive_material(Color(1.0, 0.08, 0.86, 0.32), 1.16, true)
-	_materials["sector2_dark_glass"] = Kit.make_neon_body_material(Color(0.098, 0.046, 0.128, 1.0), 0.44)
-	_materials["sector2_floor_grid"] = Kit.make_emissive_material(Color(0.86, 0.06, 1.0, 0.25), 0.78, true)
-	_materials["sector2_floor_secondary"] = Kit.make_emissive_material(Color(0.0, 0.78, 1.0, 0.20), 0.62, true)
-	_materials["sector2_floor_path"] = Kit.make_emissive_material(Color(1.0, 0.08, 0.86, 0.45), 1.38, true)
-	_materials["sector2_floor_core"] = Kit.make_emissive_material(Color(0.86, 1.0, 1.0, 0.72), 3.15, true)
-	_materials["sector2_floor_edge"] = Kit.make_emissive_material(Color(0.78, 0.08, 1.0, 0.40), 1.34, true)
+	_materials["sector2_dark_glass"] = Kit.make_neon_body_material(Color(0.110, 0.030, 0.155, 1.0), 0.48)
+	_materials["sector2_floor_grid"] = Kit.make_emissive_material(Color(0.96, 0.0, 1.0, 0.30), 0.88, true)
+	_materials["sector2_floor_secondary"] = Kit.make_emissive_material(Color(0.0, 0.84, 1.0, 0.23), 0.68, true)
+	_materials["sector2_floor_path"] = Kit.make_emissive_material(Color(1.0, 0.0, 0.90, 0.52), 1.52, true)
+	_materials["sector2_floor_core"] = Kit.make_emissive_material(Color(0.80, 1.0, 1.0, 0.76), 3.25, true)
+	_materials["sector2_floor_edge"] = Kit.make_emissive_material(Color(0.88, 0.0, 1.0, 0.48), 1.48, true)
 	_materials["sector2_floor_atmosphere"] = Kit.make_emissive_material(Color(0.42, 0.0, 0.70, 0.042), 0.22, true)
 	_materials["sector3_grid_minor"] = Kit.make_emissive_material(Color(0.08, 0.02, 0.18, 0.18), 0.34, true)
 	_materials["sector3_grid_major"] = Kit.make_emissive_material(Color(0.0, 0.64, 1.0, 0.24), 0.82, true)
@@ -3657,15 +3659,15 @@ func _setup_world_environment() -> void:
 	environment.background_mode = Environment.BG_COLOR
 	environment.background_color = Color(0.0, 0.001, 0.008, 1.0)
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	environment.ambient_light_color = Color(0.040, 0.052, 0.092, 1.0)
+	environment.ambient_light_color = Color(0.025, 0.056, 0.104, 1.0)
 	environment.ambient_light_energy = 0.30
 	environment.glow_enabled = true
-	environment.glow_intensity = 0.68
-	environment.glow_strength = 0.94
-	environment.glow_bloom = 0.13
-	environment.glow_hdr_threshold = 0.36
+	environment.glow_intensity = 0.80
+	environment.glow_strength = 1.06
+	environment.glow_bloom = 0.145
+	environment.glow_hdr_threshold = 0.38
 	environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	environment.tonemap_exposure = 1.05
+	environment.tonemap_exposure = 1.02
 	world_environment.environment = environment
 	_world_environment = world_environment
 	_world_environment_data = environment
@@ -3790,12 +3792,12 @@ func _apply_sector_environment_tone() -> void:
 		return
 	match _sector_index:
 		0:
-			_world_environment_data.background_color = Color(0.0, 0.010, 0.030, 1.0)
-			_world_environment_data.ambient_light_color = Color(0.085, 0.104, 0.138, 1.0)
+			_world_environment_data.background_color = Color(0.0, 0.010, 0.032, 1.0)
+			_world_environment_data.ambient_light_color = Color(0.035, 0.112, 0.170, 1.0)
 			_world_environment_data.ambient_light_energy = 0.52
 		1:
-			_world_environment_data.background_color = Color(0.016, 0.002, 0.034, 1.0)
-			_world_environment_data.ambient_light_color = Color(0.160, 0.082, 0.190, 1.0)
+			_world_environment_data.background_color = Color(0.020, 0.0, 0.040, 1.0)
+			_world_environment_data.ambient_light_color = Color(0.190, 0.045, 0.235, 1.0)
 			_world_environment_data.ambient_light_energy = 0.56
 		2:
 			_world_environment_data.background_color = Color(0.0, 0.0, 0.010, 1.0)
@@ -4708,19 +4710,19 @@ func _boost_sector1_imported_arena_materials(mesh_instance: MeshInstance3D, mate
 func _apply_sector1_arena_material_visibility(material: StandardMaterial3D, material_name: String) -> void:
 	var lower_name := material_name.to_lower()
 	if lower_name.find("mat_floor_dark_brushed_metal") >= 0:
-		_set_sector1_visible_arena_material(material, Color(0.098, 0.116, 0.130, 1.0), 0.68, 0.47, Color(0.010, 0.046, 0.058, 1.0), 0.052)
+		_set_sector1_visible_arena_material(material, Color(0.080, 0.116, 0.142, 1.0), 0.68, 0.47, Color(0.000, 0.060, 0.082, 1.0), 0.064)
 	elif lower_name.find("mat_floor_panel_variant") >= 0:
-		_set_sector1_visible_arena_material(material, Color(0.130, 0.150, 0.164, 1.0), 0.64, 0.42, Color(0.012, 0.048, 0.060, 1.0), 0.050)
+		_set_sector1_visible_arena_material(material, Color(0.106, 0.150, 0.178, 1.0), 0.64, 0.42, Color(0.000, 0.064, 0.086, 1.0), 0.062)
 	elif lower_name.find("mat_outer_wall_dark_metal") >= 0:
-		_set_sector1_visible_arena_material(material, Color(0.070, 0.082, 0.096, 1.0), 0.72, 0.48, Color(0.008, 0.034, 0.046, 1.0), 0.036)
+		_set_sector1_visible_arena_material(material, Color(0.058, 0.088, 0.112, 1.0), 0.72, 0.48, Color(0.000, 0.050, 0.070, 1.0), 0.046)
 	elif lower_name.find("mat_door_dark_metal") >= 0:
-		_set_sector1_visible_arena_material(material, Color(0.112, 0.124, 0.138, 1.0), 0.74, 0.40, Color(0.014, 0.040, 0.048, 1.0), 0.045)
+		_set_sector1_visible_arena_material(material, Color(0.092, 0.122, 0.150, 1.0), 0.74, 0.40, Color(0.000, 0.058, 0.074, 1.0), 0.054)
 	elif lower_name.find("mat_pillar_dark_metal") >= 0:
-		_set_sector1_visible_arena_material(material, Color(0.150, 0.166, 0.180, 1.0), 0.70, 0.38, Color(0.014, 0.050, 0.060, 1.0), 0.055)
+		_set_sector1_visible_arena_material(material, Color(0.120, 0.166, 0.192, 1.0), 0.70, 0.38, Color(0.000, 0.066, 0.084, 1.0), 0.064)
 	elif lower_name.find("mat_cover_dark_metal") >= 0:
-		_set_sector1_visible_arena_material(material, Color(0.135, 0.150, 0.164, 1.0), 0.68, 0.42, Color(0.014, 0.046, 0.056, 1.0), 0.048)
+		_set_sector1_visible_arena_material(material, Color(0.106, 0.150, 0.178, 1.0), 0.68, 0.42, Color(0.000, 0.062, 0.080, 1.0), 0.058)
 	elif lower_name.find("mat_edge_trim_metal") >= 0:
-		_set_sector1_visible_arena_material(material, Color(0.245, 0.286, 0.306, 1.0), 0.60, 0.34, Color(0.020, 0.076, 0.090, 1.0), 0.075)
+		_set_sector1_visible_arena_material(material, Color(0.196, 0.286, 0.332, 1.0), 0.60, 0.34, Color(0.000, 0.112, 0.135, 1.0), 0.088)
 	elif lower_name.find("mat_white_energy_emissive") >= 0:
 		_set_sector1_visible_arena_material(material, Color(0.820, 0.960, 1.000, 1.0), 0.0, 0.16, Color(0.720, 0.960, 1.000, 1.0), 1.720)
 	elif lower_name.find("mat_floor_bright_worn_scratches") >= 0:
@@ -4730,9 +4732,9 @@ func _apply_sector1_arena_material_visibility(material: StandardMaterial3D, mate
 	elif lower_name.find("mat_dark_metal_wall") >= 0:
 		_set_sector1_visible_arena_material(material, Color(0.070, 0.084, 0.100, 1.0), 0.62, 0.55, Color(0.008, 0.035, 0.050, 1.0), 0.035)
 	elif lower_name.find("mat_cyan_neon") >= 0:
-		_set_sector1_visible_arena_material(material, Color(0.000, 0.680, 0.850, 1.0), 0.0, 0.24, Color(0.000, 0.900, 1.000, 1.0), 1.450)
+		_set_sector1_visible_arena_material(material, Color(0.000, 0.800, 1.000, 1.0), 0.0, 0.22, Color(0.000, 1.000, 1.000, 1.0), 1.620)
 	elif lower_name.find("mat_yellow_accent") >= 0:
-		_set_sector1_visible_arena_material(material, Color(0.960, 0.880, 0.140, 1.0), 0.0, 0.28, Color(1.000, 0.900, 0.120, 1.0), 1.200)
+		_set_sector1_visible_arena_material(material, Color(1.000, 0.860, 0.040, 1.0), 0.0, 0.26, Color(1.000, 0.840, 0.000, 1.0), 1.420)
 	elif lower_name.find("mat_pillar_metal") >= 0:
 		_set_sector1_visible_arena_material(material, Color(0.155, 0.172, 0.184, 1.0), 0.66, 0.43, Color(0.015, 0.050, 0.060, 1.0), 0.055)
 	elif lower_name.find("mat_door_metal") >= 0:
@@ -4760,16 +4762,16 @@ func _apply_sector1_arena_material_visibility(material: StandardMaterial3D, mate
 	elif lower_name.find("blackened_service_trim") >= 0:
 		_set_sector1_visible_arena_material(material, Color(0.030, 0.038, 0.052, 1.0), 0.32, 0.84, Color(0.006, 0.026, 0.040, 1.0), 0.020)
 	elif lower_name.find("dim_cyan_embedded_channel") >= 0:
-		_set_sector1_visible_arena_material(material, Color(0.000, 0.340, 0.470, 1.0), 0.0, 0.34, Color(0.000, 0.620, 0.780, 1.0), 0.68)
+		_set_sector1_visible_arena_material(material, Color(0.000, 0.460, 0.620, 1.0), 0.0, 0.32, Color(0.000, 0.820, 1.000, 1.0), 0.78)
 	elif lower_name.find("restrained_cyan_rail_core") >= 0:
-		_set_sector1_visible_arena_material(material, Color(0.025, 0.460, 0.580, 1.0), 0.0, 0.30, Color(0.000, 0.720, 0.900, 1.0), 0.86)
+		_set_sector1_visible_arena_material(material, Color(0.000, 0.560, 0.720, 1.0), 0.0, 0.28, Color(0.000, 0.900, 1.000, 1.0), 0.98)
 
 
-func _lift_arena_readability_color(color: Color, scale: float, floor_value: float) -> Color:
+func _lift_arena_readability_color(color: Color, scale: float, floor_value: float, floor_tint: Color) -> Color:
 	return Color(
-		clampf(color.r * scale + floor_value, 0.0, 1.0),
-		clampf(color.g * scale + floor_value, 0.0, 1.0),
-		clampf(color.b * scale + floor_value, 0.0, 1.0),
+		clampf(color.r * scale + floor_value * floor_tint.r, 0.0, 1.0),
+		clampf(color.g * scale + floor_value * floor_tint.g, 0.0, 1.0),
+		clampf(color.b * scale + floor_value * floor_tint.b, 0.0, 1.0),
 		color.a
 	)
 
@@ -4777,7 +4779,7 @@ func _lift_arena_readability_color(color: Color, scale: float, floor_value: floa
 func _set_sector1_visible_arena_material(material: StandardMaterial3D, albedo: Color, metallic: float, roughness: float, emission: Color, emission_energy: float) -> void:
 	var readable_albedo := albedo
 	if metallic > 0.09 or emission_energy <= 0.18:
-		readable_albedo = _lift_arena_readability_color(albedo, SECTOR1_ARENA_READABILITY_ALBEDO_SCALE, SECTOR1_ARENA_READABILITY_ALBEDO_FLOOR)
+		readable_albedo = _lift_arena_readability_color(albedo, SECTOR1_ARENA_READABILITY_ALBEDO_SCALE, SECTOR1_ARENA_READABILITY_ALBEDO_FLOOR, SECTOR1_ARENA_READABILITY_ALBEDO_TINT)
 	material.albedo_color = readable_albedo
 	material.metallic = metallic
 	material.roughness = roughness
@@ -4931,33 +4933,33 @@ func _boost_sector2_imported_arena_materials(mesh_instance: MeshInstance3D, mate
 func _apply_sector2_arena_material_visibility(material: StandardMaterial3D, material_name: String) -> void:
 	var lower_name := material_name.to_lower()
 	if lower_name.find("hr3_dark_rift_backplane") >= 0:
-		_set_sector2_visible_arena_material(material, Color(0.066, 0.042, 0.100, 1.0), 0.24, 0.78, Color(0.026, 0.006, 0.056, 1.0), 0.024)
+		_set_sector2_visible_arena_material(material, Color(0.074, 0.026, 0.118, 1.0), 0.24, 0.78, Color(0.042, 0.000, 0.084, 1.0), 0.034)
 	elif lower_name.find("hr3_black_gunmetal_frame") >= 0:
-		_set_sector2_visible_arena_material(material, Color(0.144, 0.118, 0.186, 1.0), 0.74, 0.36, Color(0.056, 0.018, 0.100, 1.0), 0.066)
+		_set_sector2_visible_arena_material(material, Color(0.156, 0.088, 0.214, 1.0), 0.74, 0.36, Color(0.080, 0.006, 0.140, 1.0), 0.082)
 	elif lower_name.find("hr3_beveled_graphite_panel") >= 0:
-		_set_sector2_visible_arena_material(material, Color(0.226, 0.188, 0.286, 1.0), 0.62, 0.42, Color(0.078, 0.030, 0.138, 1.0), 0.086)
+		_set_sector2_visible_arena_material(material, Color(0.238, 0.140, 0.334, 1.0), 0.62, 0.42, Color(0.105, 0.012, 0.190, 1.0), 0.104)
 	elif lower_name.find("hr3_recessed_black_groove") >= 0:
-		_set_sector2_visible_arena_material(material, Color(0.030, 0.022, 0.046, 1.0), 0.44, 0.86, Color(0.010, 0.002, 0.026, 1.0), 0.010)
+		_set_sector2_visible_arena_material(material, Color(0.036, 0.012, 0.060, 1.0), 0.44, 0.86, Color(0.018, 0.000, 0.040, 1.0), 0.016)
 	elif lower_name.find("hr3_amethyst_prism_glass") >= 0:
-		_set_sector2_visible_arena_material(material, Color(0.500, 0.225, 0.735, 0.88), 0.04, 0.16, Color(0.185, 0.052, 0.360, 1.0), 0.150, true)
+		_set_sector2_visible_arena_material(material, Color(0.560, 0.140, 0.820, 0.88), 0.04, 0.16, Color(0.260, 0.020, 0.520, 1.0), 0.190, true)
 	elif lower_name.find("hr3_deep_violet_glass") >= 0:
-		_set_sector2_visible_arena_material(material, Color(0.315, 0.142, 0.500, 0.92), 0.06, 0.24, Color(0.108, 0.028, 0.235, 1.0), 0.100, true)
+		_set_sector2_visible_arena_material(material, Color(0.365, 0.082, 0.610, 0.92), 0.06, 0.24, Color(0.160, 0.012, 0.340, 1.0), 0.130, true)
 	elif lower_name.find("hr3_magenta_glass_rim") >= 0:
-		_set_sector2_visible_arena_material(material, Color(0.850, 0.095, 0.780, 1.0), 0.04, 0.24, Color(0.980, 0.080, 0.850, 1.0), 0.360)
+		_set_sector2_visible_arena_material(material, Color(1.000, 0.020, 0.900, 1.0), 0.04, 0.24, Color(1.000, 0.000, 0.980, 1.0), 0.460)
 	elif lower_name.find("hr3_pink_fracture_core") >= 0:
-		_set_sector2_visible_arena_material(material, Color(1.000, 0.270, 0.930, 1.0), 0.00, 0.30, Color(1.000, 0.170, 0.920, 1.0), 0.520)
+		_set_sector2_visible_arena_material(material, Color(1.000, 0.080, 0.940, 1.0), 0.00, 0.30, Color(1.000, 0.000, 0.980, 1.0), 0.600)
 	elif lower_name.find("hr3_violet_glass_sheen") >= 0:
 		_set_sector2_visible_arena_material(material, Color(0.635, 0.350, 0.880, 0.82), 0.04, 0.18, Color(0.220, 0.075, 0.410, 1.0), 0.145, true)
 	elif lower_name.find("hr3_cyan_micro_accent") >= 0:
 		_set_sector2_visible_arena_material(material, Color(0.070, 0.540, 0.730, 1.0), 0.02, 0.32, Color(0.060, 0.760, 0.960, 1.0), 0.230)
 	elif lower_name.find("hr2_deep_amethyst_void") >= 0:
-		_set_sector2_visible_arena_material(material, Color(0.074, 0.034, 0.116, 1.0), 0.30, 0.78, Color(0.035, 0.010, 0.070, 1.0), 0.020)
+		_set_sector2_visible_arena_material(material, Color(0.086, 0.020, 0.138, 1.0), 0.30, 0.78, Color(0.052, 0.000, 0.098, 1.0), 0.030)
 	elif lower_name.find("hr2_gunmetal_support") >= 0:
-		_set_sector2_visible_arena_material(material, Color(0.292, 0.224, 0.352, 1.0), 0.66, 0.38, Color(0.090, 0.035, 0.145, 1.0), 0.060)
+		_set_sector2_visible_arena_material(material, Color(0.300, 0.166, 0.410, 1.0), 0.66, 0.38, Color(0.126, 0.012, 0.220, 1.0), 0.080)
 	elif lower_name.find("hr2_dark_violet_subframe") >= 0:
-		_set_sector2_visible_arena_material(material, Color(0.178, 0.108, 0.248, 1.0), 0.58, 0.50, Color(0.060, 0.020, 0.110, 1.0), 0.045)
+		_set_sector2_visible_arena_material(material, Color(0.196, 0.070, 0.305, 1.0), 0.58, 0.50, Color(0.086, 0.004, 0.168, 1.0), 0.062)
 	elif lower_name.find("hr2_dark_recessed_seam") >= 0:
-		_set_sector2_visible_arena_material(material, Color(0.050, 0.026, 0.076, 1.0), 0.36, 0.84, Color(0.018, 0.004, 0.042, 1.0), 0.012)
+		_set_sector2_visible_arena_material(material, Color(0.060, 0.014, 0.095, 1.0), 0.36, 0.84, Color(0.028, 0.000, 0.064, 1.0), 0.018)
 	elif lower_name.find("hr2_violet_prism_glass") >= 0:
 		_set_sector2_visible_arena_material(material, Color(0.440, 0.290, 0.630, 0.90), 0.05, 0.18, Color(0.145, 0.060, 0.270, 1.0), 0.105, true)
 	elif lower_name.find("hr2_frosted_amethyst_glass") >= 0:
@@ -4965,7 +4967,7 @@ func _apply_sector2_arena_material_visibility(material: StandardMaterial3D, mate
 	elif lower_name.find("hr2_beveled_edge_tint") >= 0:
 		_set_sector2_visible_arena_material(material, Color(0.650, 0.430, 0.930, 1.0), 0.12, 0.24, Color(0.210, 0.080, 0.390, 1.0), 0.145)
 	elif lower_name.find("hr2_embedded_magenta_channel") >= 0:
-		_set_sector2_visible_arena_material(material, Color(0.650, 0.070, 0.520, 1.0), 0.02, 0.34, Color(0.900, 0.080, 0.720, 1.0), 0.300)
+		_set_sector2_visible_arena_material(material, Color(0.880, 0.000, 0.700, 1.0), 0.02, 0.32, Color(1.000, 0.000, 0.900, 1.0), 0.390)
 	elif lower_name.find("hr2_cyan_prism_core") >= 0:
 		_set_sector2_visible_arena_material(material, Color(0.070, 0.500, 0.680, 1.0), 0.02, 0.32, Color(0.070, 0.760, 0.940, 1.0), 0.240)
 	elif lower_name.find("hr2_boundary_rail") >= 0:
@@ -4973,33 +4975,33 @@ func _apply_sector2_arena_material_visibility(material: StandardMaterial3D, mate
 	elif lower_name.find("hr2_soft_prism_sheen") >= 0:
 		_set_sector2_visible_arena_material(material, Color(0.575, 0.385, 0.795, 1.0), 0.10, 0.20, Color(0.190, 0.070, 0.360, 1.0), 0.120)
 	elif lower_name.find("deep_rift_void") >= 0:
-		_set_sector2_visible_arena_material(material, Color(0.058, 0.022, 0.090, 1.0), 0.28, 0.78, Color(0.038, 0.010, 0.080, 1.0), 0.030)
+		_set_sector2_visible_arena_material(material, Color(0.070, 0.014, 0.112, 1.0), 0.28, 0.78, Color(0.055, 0.000, 0.112, 1.0), 0.040)
 	elif lower_name.find("dark_violet_metal") >= 0:
-		_set_sector2_visible_arena_material(material, Color(0.250, 0.140, 0.335, 1.0), 0.50, 0.50, Color(0.090, 0.026, 0.155, 1.0), 0.090)
+		_set_sector2_visible_arena_material(material, Color(0.275, 0.092, 0.390, 1.0), 0.50, 0.50, Color(0.122, 0.010, 0.230, 1.0), 0.110)
 	elif lower_name.find("rift_gunmetal") >= 0:
-		_set_sector2_visible_arena_material(material, Color(0.312, 0.202, 0.390, 1.0), 0.58, 0.40, Color(0.115, 0.040, 0.190, 1.0), 0.110)
+		_set_sector2_visible_arena_material(material, Color(0.330, 0.145, 0.465, 1.0), 0.58, 0.40, Color(0.150, 0.015, 0.280, 1.0), 0.130)
 	elif lower_name.find("black_glass_trim") >= 0:
-		_set_sector2_visible_arena_material(material, Color(0.080, 0.036, 0.118, 1.0), 0.22, 0.64, Color(0.032, 0.008, 0.066, 1.0), 0.045)
+		_set_sector2_visible_arena_material(material, Color(0.094, 0.018, 0.150, 1.0), 0.22, 0.64, Color(0.052, 0.000, 0.110, 1.0), 0.058)
 	elif lower_name.find("readable_prism_floor_face") >= 0:
-		_set_sector2_visible_arena_material(material, Color(0.390, 0.240, 0.510, 1.0), 0.28, 0.34, Color(0.135, 0.050, 0.250, 1.0), 0.120)
+		_set_sector2_visible_arena_material(material, Color(0.420, 0.170, 0.610, 1.0), 0.28, 0.34, Color(0.180, 0.018, 0.350, 1.0), 0.150)
 	elif lower_name.find("amethyst_glass_floor_face") >= 0:
 		_set_sector2_visible_arena_material(material, Color(0.460, 0.275, 0.640, 0.84), 0.12, 0.22, Color(0.160, 0.070, 0.310, 1.0), 0.145, true)
 	elif lower_name.find("magenta_embedded_channel") >= 0:
-		_set_sector2_visible_arena_material(material, Color(0.540, 0.050, 0.470, 1.0), 0.0, 0.32, Color(0.800, 0.060, 0.690, 1.0), 0.42)
+		_set_sector2_visible_arena_material(material, Color(0.860, 0.000, 0.740, 1.0), 0.0, 0.30, Color(1.000, 0.000, 0.940, 1.0), 0.540)
 	elif lower_name.find("violet_prism_glass") >= 0:
-		_set_sector2_visible_arena_material(material, Color(0.410, 0.185, 0.700, 0.72), 0.08, 0.18, Color(0.190, 0.070, 0.430, 1.0), 0.24, true)
+		_set_sector2_visible_arena_material(material, Color(0.500, 0.110, 0.820, 0.72), 0.08, 0.18, Color(0.270, 0.024, 0.610, 1.0), 0.310, true)
 	elif lower_name.find("cyan_refraction_core") >= 0:
 		_set_sector2_visible_arena_material(material, Color(0.050, 0.470, 0.650, 1.0), 0.0, 0.26, Color(0.060, 0.700, 0.900, 1.0), 0.36)
 	elif lower_name.find("rift_sheen") >= 0:
-		_set_sector2_visible_arena_material(material, Color(0.500, 0.300, 0.760, 1.0), 0.20, 0.24, Color(0.200, 0.070, 0.360, 1.0), 0.180)
+		_set_sector2_visible_arena_material(material, Color(0.570, 0.210, 0.900, 1.0), 0.20, 0.24, Color(0.280, 0.030, 0.540, 1.0), 0.230)
 	elif lower_name.find("outer_rift_rail") >= 0:
-		_set_sector2_visible_arena_material(material, Color(0.210, 0.118, 0.260, 1.0), 0.68, 0.44, Color(0.130, 0.044, 0.220, 1.0), 0.115)
+		_set_sector2_visible_arena_material(material, Color(0.230, 0.074, 0.330, 1.0), 0.68, 0.44, Color(0.170, 0.016, 0.320, 1.0), 0.140)
 
 
 func _set_sector2_visible_arena_material(material: StandardMaterial3D, albedo: Color, metallic: float, roughness: float, emission: Color, emission_energy: float, glass := false) -> void:
 	var readable_albedo := albedo
 	if metallic > 0.09 or emission_energy <= 0.18 or glass:
-		readable_albedo = _lift_arena_readability_color(albedo, SECTOR2_ARENA_READABILITY_ALBEDO_SCALE, SECTOR2_ARENA_READABILITY_ALBEDO_FLOOR)
+		readable_albedo = _lift_arena_readability_color(albedo, SECTOR2_ARENA_READABILITY_ALBEDO_SCALE, SECTOR2_ARENA_READABILITY_ALBEDO_FLOOR, SECTOR2_ARENA_READABILITY_ALBEDO_TINT)
 	material.albedo_color = readable_albedo
 	material.metallic = metallic
 	material.roughness = roughness
