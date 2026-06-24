@@ -13,6 +13,8 @@ const NeonSelectionCursor := preload("res://scripts/ui/NeonSelectionCursor.gd")
 const NeonTitleVignette := preload("res://scripts/ui/NeonTitleVignette.gd")
 const NeonWeaponIcon := preload("res://scripts/ui/NeonWeaponIcon.gd")
 const COVER_ART := preload("res://art/branding/neonswarm_cover.png")
+const CUSTOM_MOUSE_CURSOR_PATH := "res://art/ui/cursor/neon_swarm_cursor.png"
+const CUSTOM_MOUSE_CURSOR_HOTSPOT := Vector2(24.0, 24.0)
 
 const PLAYER_SCENE := preload("res://scenes/visuals/Player3D.tscn")
 const CHASER_SCENE := preload("res://scenes/visuals/Chaser3D.tscn")
@@ -703,6 +705,7 @@ var _orbit_nodes: Array[Node3D] = []
 var _ring_saw_root: Node3D
 var _dust_batch: MultiMeshInstance3D
 var _dust_data: Array[Dictionary] = []
+var _custom_mouse_cursor_texture: Texture2D
 var _player_presentation_root: Node3D
 var _player_ripple_root: Node3D
 var _player_propulsion_ripple: MeshInstance3D
@@ -1073,6 +1076,7 @@ func _ready() -> void:
 	name = "Official3DNeonSwarmBuild"
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	InputMapConfig.ensure_actions()
+	_apply_custom_mouse_cursor()
 	_upgrade_rng.randomize()
 	_weapon_loot_rng.randomize()
 	_run_event_rng.randomize()
@@ -1101,6 +1105,7 @@ func _ready() -> void:
 
 
 func _exit_tree() -> void:
+	_clear_custom_mouse_cursor()
 	for player in _sfx_players.duplicate():
 		if is_instance_valid(player):
 			player.stop()
@@ -1124,6 +1129,34 @@ func _exit_tree() -> void:
 	if bus_index >= 0:
 		AudioServer.set_bus_mute(bus_index, false)
 		AudioServer.set_bus_volume_db(bus_index, 0.0)
+
+
+func _custom_mouse_cursor_shapes() -> Array:
+	return [
+		Input.CURSOR_ARROW,
+		Input.CURSOR_POINTING_HAND,
+		Input.CURSOR_CROSS,
+		Input.CURSOR_DRAG,
+		Input.CURSOR_CAN_DROP,
+		Input.CURSOR_FORBIDDEN
+	]
+
+
+func _apply_custom_mouse_cursor() -> void:
+	var cursor_image := Image.new()
+	var error := cursor_image.load(CUSTOM_MOUSE_CURSOR_PATH)
+	if error != OK:
+		push_warning("Failed to load Neon Swarm custom mouse cursor: %s error=%d" % [CUSTOM_MOUSE_CURSOR_PATH, error])
+		return
+	_custom_mouse_cursor_texture = ImageTexture.create_from_image(cursor_image)
+	for shape in _custom_mouse_cursor_shapes():
+		Input.set_custom_mouse_cursor(_custom_mouse_cursor_texture, int(shape), CUSTOM_MOUSE_CURSOR_HOTSPOT)
+
+
+func _clear_custom_mouse_cursor() -> void:
+	for shape in _custom_mouse_cursor_shapes():
+		Input.set_custom_mouse_cursor(null, int(shape), Vector2.ZERO)
+	_custom_mouse_cursor_texture = null
 
 
 func _input(event: InputEvent) -> void:

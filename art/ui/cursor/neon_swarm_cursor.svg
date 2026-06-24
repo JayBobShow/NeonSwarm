@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48" version="1.1">
+  <title>Neon Swarm High Contrast Aim Cursor</title>
+  <defs>
+    <filter id="softGlow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="1.25" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <style>
+      .shadow { fill: none; stroke: #020712; stroke-width: 5.8; stroke-linecap: round; stroke-linejoin: round; opacity: 0.96; }
+      .cyan { fill: none; stroke: #00f0ff; stroke-width: 2.15; stroke-linecap: round; stroke-linejoin: round; }
+      .white { fill: none; stroke: #f2feff; stroke-width: 0.82; stroke-linecap: round; stroke-linejoin: round; }
+      .magenta { fill: none; stroke: #ff2eff; stroke-width: 1.35; stroke-linecap: round; stroke-linejoin: round; }
+      .yellow { fill: #ffe86a; stroke: #040812; stroke-width: 1.2; stroke-linejoin: round; }
+    </style>
+  </defs>
+
+  <!-- Contrast shell. Transparent canvas, centered hotspot at 24,24. -->
+  <g id="cursor_shadow_shell">
+    <path class="shadow" d="M24 3.5v9.2M24 35.3v9.2M3.5 24h9.2M35.3 24h9.2"/>
+    <path class="shadow" d="M15.6 15.6l-3.8-3.8M32.4 15.6l3.8-3.8M15.6 32.4l-3.8 3.8M32.4 32.4l3.8 3.8"/>
+    <circle class="shadow" cx="24" cy="24" r="7.35"/>
+    <circle class="shadow" cx="24" cy="24" r="2.25"/>
+  </g>
+
+  <!-- Neon Swarm reticle body. -->
+  <g id="cursor_neon_body" filter="url(#softGlow)">
+    <path class="cyan" d="M24 4.5v8.2M24 35.3v8.2M4.5 24h8.2M35.3 24h8.2"/>
+    <path class="white" d="M24 5.2v6.4M24 36.4v6.4M5.2 24h6.4M36.4 24h6.4"/>
+    <circle class="cyan" cx="24" cy="24" r="6.4"/>
+    <circle class="white" cx="24" cy="24" r="4.15"/>
+    <path class="magenta" d="M14.6 14.6l-2.7-2.7M33.4 14.6l2.7-2.7M14.6 33.4l-2.7 2.7M33.4 33.4l2.7 2.7"/>
+    <circle cx="24" cy="24" r="1.55" fill="#f8ffff" stroke="#07101a" stroke-width="0.85"/>
+    <circle cx="24" cy="24" r="0.58" fill="#ff2eff"/>
+  </g>
+
+  <!-- Small yellow orientation chips for readability over cyan/purple/white flashes. -->
+  <g id="cursor_yellow_accent_chips">
+    <path class="yellow" d="M22.35 16.6h3.3l-1.65-2.25z"/>
+    <path class="yellow" d="M22.35 31.4h3.3l-1.65 2.25z"/>
+    <path class="yellow" d="M16.6 22.35v3.3l-2.25-1.65z"/>
+    <path class="yellow" d="M31.4 22.35v3.3l2.25-1.65z"/>
+    <circle cx="18.1" cy="18.1" r="1.45" fill="#ffe86a" stroke="#040812" stroke-width="0.95"/>
+    <circle cx="29.9" cy="18.1" r="1.45" fill="#ffe86a" stroke="#040812" stroke-width="0.95"/>
+    <circle cx="18.1" cy="29.9" r="1.45" fill="#ffe86a" stroke="#040812" stroke-width="0.95"/>
+    <circle cx="29.9" cy="29.9" r="1.45" fill="#ffe86a" stroke="#040812" stroke-width="0.95"/>
+  </g>
+</svg>
