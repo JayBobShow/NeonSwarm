@@ -390,6 +390,8 @@ const SECTOR1_ARENA_PANEL_BASE_Y := -0.096
 const SECTOR1_ARENA_GRID_Y := 0.044
 const SECTOR1_ARENA_RAIL_HALF_SIZE := ARENA_HALF_SIZE
 const SECTOR1_ARENA_DEPTH_HALF_SIZE := ARENA_HALF_SIZE + 3.0
+const SECTOR_1_HD_MOCKUP_ARENA_ENABLED := true
+const SECTOR1_HD_MOCKUP_ARENA_SCENE_PATH := "res://art/arenas/sector_1/exported/sector_1_hd_mockup_arena.glb"
 const SECTOR1_BLENDER_ARENA_SCENE_PATH := "res://art/arenas/sector_1/exported/sector_1_neon_grid_arena.glb"
 const SECTOR1_SUBSECTOR_ARENA_SCENE_PATHS := {
 	"relay_yard": "res://art/arenas/sector_1/exported/sector_1_relay_yard.glb",
@@ -4558,17 +4560,39 @@ func _create_sector1_arena_readability_key_light(parent: Node3D) -> void:
 	parent.add_child(light)
 
 
+func _sector1_base_arena_scene_path() -> String:
+	if SECTOR_1_HD_MOCKUP_ARENA_ENABLED:
+		return SECTOR1_HD_MOCKUP_ARENA_SCENE_PATH
+	return SECTOR1_BLENDER_ARENA_SCENE_PATH
+
+
 func _create_sector1_blender_arena_kit(parent: Node3D) -> Node3D:
+	var scene_path := _sector1_base_arena_scene_path()
+	var loaded_scene_path := scene_path
 	var instance := _add_blender_asset_instance(
 		parent,
 		"Blender3DSector1NeonGridArenaModel",
-		SECTOR1_BLENDER_ARENA_SCENE_PATH,
+		scene_path,
 		1.0,
 		Vector3.ZERO,
 		0.0,
 		false
 	) as Node3D
+	if instance == null and scene_path != SECTOR1_BLENDER_ARENA_SCENE_PATH:
+		loaded_scene_path = SECTOR1_BLENDER_ARENA_SCENE_PATH
+		instance = _add_blender_asset_instance(
+			parent,
+			"Blender3DSector1NeonGridArenaFallbackModel",
+			SECTOR1_BLENDER_ARENA_SCENE_PATH,
+			1.0,
+			Vector3.ZERO,
+			0.0,
+			false
+		) as Node3D
 	if instance != null:
+		instance.set_meta("sector_1_base_arena_path", loaded_scene_path)
+		instance.set_meta("sector_1_requested_base_arena_path", scene_path)
+		instance.set_meta("sector_1_hd_mockup_arena_enabled", SECTOR_1_HD_MOCKUP_ARENA_ENABLED)
 		var material_visibility_cache: Dictionary = {}
 		_configure_sector1_blender_arena_visuals(instance, material_visibility_cache)
 	return instance
@@ -4644,7 +4668,8 @@ func _boost_sector1_imported_arena_materials(mesh_instance: MeshInstance3D, mate
 			var material_name := arena_material.resource_name
 			if material_name == "":
 				material_name = str(arena_material)
-			if not material_name.begins_with("NS_S1_"):
+			var lower_name := material_name.to_lower()
+			if not material_name.begins_with("NS_S1_") and not lower_name.begins_with("mat_"):
 				continue
 			var material_id := arena_material.get_instance_id()
 			if material_visibility_cache.has(material_id):
@@ -4658,7 +4683,29 @@ func _boost_sector1_imported_arena_materials(mesh_instance: MeshInstance3D, mate
 
 func _apply_sector1_arena_material_visibility(material: StandardMaterial3D, material_name: String) -> void:
 	var lower_name := material_name.to_lower()
-	if lower_name.find("dark_brushed_aluminum") >= 0:
+	if lower_name.find("mat_dark_metal_floor") >= 0:
+		_set_sector1_visible_arena_material(material, Color(0.118, 0.137, 0.154, 1.0), 0.58, 0.50, Color(0.010, 0.045, 0.058, 1.0), 0.050)
+	elif lower_name.find("mat_dark_metal_wall") >= 0:
+		_set_sector1_visible_arena_material(material, Color(0.070, 0.084, 0.100, 1.0), 0.62, 0.55, Color(0.008, 0.035, 0.050, 1.0), 0.035)
+	elif lower_name.find("mat_cyan_neon") >= 0:
+		_set_sector1_visible_arena_material(material, Color(0.000, 0.680, 0.850, 1.0), 0.0, 0.24, Color(0.000, 0.900, 1.000, 1.0), 1.450)
+	elif lower_name.find("mat_yellow_accent") >= 0:
+		_set_sector1_visible_arena_material(material, Color(0.960, 0.880, 0.140, 1.0), 0.0, 0.28, Color(1.000, 0.900, 0.120, 1.0), 1.200)
+	elif lower_name.find("mat_pillar_metal") >= 0:
+		_set_sector1_visible_arena_material(material, Color(0.155, 0.172, 0.184, 1.0), 0.66, 0.43, Color(0.015, 0.050, 0.060, 1.0), 0.055)
+	elif lower_name.find("mat_door_metal") >= 0:
+		_set_sector1_visible_arena_material(material, Color(0.105, 0.116, 0.130, 1.0), 0.70, 0.44, Color(0.014, 0.040, 0.046, 1.0), 0.045)
+	elif lower_name.find("mat_cover_metal") >= 0:
+		_set_sector1_visible_arena_material(material, Color(0.128, 0.142, 0.156, 1.0), 0.64, 0.48, Color(0.014, 0.046, 0.054, 1.0), 0.045)
+	elif lower_name.find("mat_black_recess") >= 0:
+		_set_sector1_visible_arena_material(material, Color(0.014, 0.020, 0.030, 1.0), 0.35, 0.82, Color(0.000, 0.018, 0.026, 1.0), 0.015)
+	elif lower_name.find("mat_cool_worn_edge_metal") >= 0:
+		_set_sector1_visible_arena_material(material, Color(0.250, 0.290, 0.310, 1.0), 0.54, 0.36, Color(0.020, 0.078, 0.092, 1.0), 0.070)
+	elif lower_name.find("mat_cool_white_neon_core") >= 0:
+		_set_sector1_visible_arena_material(material, Color(0.780, 0.950, 1.000, 1.0), 0.0, 0.18, Color(0.680, 0.960, 1.000, 1.0), 1.850)
+	elif lower_name.find("mat_smoked_glass_plastic_accent") >= 0:
+		_set_sector1_visible_arena_material(material, Color(0.060, 0.110, 0.135, 0.74), 0.0, 0.18, Color(0.000, 0.150, 0.220, 1.0), 0.120)
+	elif lower_name.find("dark_brushed_aluminum") >= 0:
 		_set_sector1_visible_arena_material(material, Color(0.205, 0.218, 0.232, 1.0), 0.62, 0.54, Color(0.025, 0.074, 0.088, 1.0), 0.120)
 	elif lower_name.find("raised_gunmetal") >= 0:
 		_set_sector1_visible_arena_material(material, Color(0.245, 0.262, 0.274, 1.0), 0.66, 0.48, Color(0.030, 0.086, 0.100, 1.0), 0.145)
