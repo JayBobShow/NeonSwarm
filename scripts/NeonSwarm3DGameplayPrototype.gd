@@ -13844,21 +13844,9 @@ func _get_primary_fire_direction() -> Vector3:
 	if direction.length_squared() >= 0.01:
 		_set_player_core_aim_facing_direction(direction)
 		return direction
-	if _manual_weapon_fire_enabled():
-		if _player_core_has_aim_facing_direction and _player_core_aim_facing_direction.length_squared() >= 0.01:
-			return _player_core_aim_facing_direction.normalized()
-		return Vector3.ZERO
-	var target := _nearest_enemy()
-	if target.is_empty():
-		return Vector3.ZERO
-	direction = (target["node"].position - _player_area.position)
-	direction.y = 0.0
-	if direction.length_squared() < 0.01:
-		return Vector3.ZERO
-	direction = direction.normalized()
-	if PLAYER_VISUAL_ENEMY_AUTO_FACE_ENABLED:
-		_set_player_core_aim_facing_direction(direction)
-	return direction
+	if _player_core_has_aim_facing_direction and _player_core_aim_facing_direction.length_squared() >= 0.01:
+		return _player_core_aim_facing_direction.normalized()
+	return Vector3.ZERO
 
 
 func _get_aim_direction() -> Vector3:
