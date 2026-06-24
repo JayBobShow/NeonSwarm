@@ -2,7 +2,7 @@
 
 ## Scope
 
-Built a real Blender-modeled Sector 1 arena from the user reference and integrated it as the Sector 1 / 1.0 Awakening Grid base visual.
+Rejected the prior simplified HD arena pass and rebuilt the Sector 1 base arena as a denser Blender-made 3D asset based on the user mockup.
 
 No Sector 3 work was started. Weapon mechanics, equipment mechanics, player movement, HUD layout, story content, and `scenes/Main.tscn` were not replaced.
 
@@ -12,21 +12,22 @@ Primary reference:
 
 - `art/reference/sector_1_neon_grid/sector_1_neon_grid_hd_mockup.png`
 
-The image was used as the blueprint for:
+The reference was used as a top-down Blender blueprint and style target for:
 
-- Square hard-surface arena frame.
-- Four perimeter enemy-entry doors.
-- Four tall obelisk-like interior pillars.
-- Four low rectangular interior cover blocks.
-- Central vertical routing lane.
-- Cyan neon grid/routing channels with yellow accent lights.
-- Dark metal floor panels and high-tech seams.
+- Square hard-surface arena composition.
+- Four large perimeter enemy doors.
+- Four tall angled/obelisk interior pillars.
+- Four low rectangular interior wall/cover blocks.
+- Central white/cyan H-style routing lanes.
+- Cyan perimeter and side routing channels.
+- Dark sci-fi metal floor panels, seams, vents, scratches, and service trenches.
+- Cyan/yellow emissive accents and dark dramatic contrast.
 
 The reference image is not used as a final floor texture.
 
 ## Blender Assets
 
-Created:
+Created or rebuilt:
 
 - `art/arenas/sector_1/source/blender/build_sector_1_hd_mockup_arena.py`
 - `art/arenas/sector_1/source/blender/sector_1_hd_mockup_arena.blend`
@@ -34,12 +35,34 @@ Created:
 - `art/arenas/sector_1/exported/sector_1_hd_mockup_arena.glb`
 - `art/arenas/sector_1/exported/sector_1_hd_mockup_arena_topdown.png`
 - `art/arenas/sector_1/exported/sector_1_hd_mockup_arena_godot_gameplay.png`
+- `art/arenas/sector_1/review/sector_1_hd_mockup_blender_proof.png`
 
-The `.blend` contains the mockup as a temporary reference plane named `ReferenceOnly_sector_1_neon_grid_hd_mockup_blueprint_hidden_from_export`. It is hidden from render and excluded from GLB export.
+The `.blend` contains a hidden reference-only plane named `ReferenceOnly_sector_1_neon_grid_hd_mockup_blueprint_hidden_from_export`. It is hidden from render, excluded from the selected export hierarchy, and not present in the GLB.
+
+## Match Checklist
+
+Reference match checklist:
+
+- Outer frame shape: PASS
+- Top/bottom/left/right doors: PASS
+- Door material/detail: PASS
+- Pillar positions: PASS
+- Pillar shape/material: PASS
+- Wall/cover positions: PASS
+- Wall/cover shape/material: PASS
+- Central white/cyan lane pattern: PASS
+- Cyan floor grid/perimeter routes: PASS
+- Floor panel texture/detail: PASS
+- Yellow accent lighting: PASS
+- Shadows/depth: PASS
+- Top-down composition: PASS
+- Gameplay readability: PASS
+
+The rebuild is not a pixel-perfect copy of the reference image, but the proof render now follows the same major composition, object placement, central routing, dark metal material language, cyan/yellow accent scheme, and raised/shadowed 3D forms much more closely than the rejected pass.
 
 ## Layout Mapping
 
-Doors:
+Door objects:
 
 - `enemy_door_top`: top perimeter center.
 - `enemy_door_bottom`: bottom perimeter center.
@@ -69,102 +92,121 @@ Cover blocks:
 
 Floor/routing:
 
-- Modeled 7x7 beveled metal panel base with service hatches, seams, lips, dark recesses, and material variation.
-- Modeled outer/inner cyan route loops and left/right lane routes.
-- Modeled a bright central vertical corridor with stepped center connections to match the mockup's main routing lane.
+- Built 8x8 layered metal floor panels with bevels, lips, seams, vents, hatches, scratch marks, dark service stamps, and central/side cable trenches.
+- Built recessed/raised cyan neon channels for the outer square, inner square, left/right lane routes, and perimeter routes.
+- Built white central double-lane energy channels with stepped bridge segments matching the reference's main H-shaped route.
 
 ## Materials
 
-Required materials created in Blender and recognized by the Godot Sector 1 arena material visibility pass:
+Required material names in the Blender asset and GLB:
 
-- `mat_dark_metal_floor`
-- `mat_dark_metal_wall`
-- `mat_cyan_neon`
-- `mat_yellow_accent`
-- `mat_pillar_metal`
-- `mat_door_metal`
-- `mat_cover_metal`
+- `mat_floor_dark_brushed_metal`
+- `mat_floor_panel_variant`
+- `mat_outer_wall_dark_metal`
+- `mat_door_dark_metal`
+- `mat_pillar_dark_metal`
+- `mat_cover_dark_metal`
+- `mat_cyan_neon_emissive`
+- `mat_white_energy_emissive`
+- `mat_yellow_accent_emissive`
+- `mat_black_recess_shadow`
+- `mat_edge_trim_metal`
+- `mat_floor_bright_worn_scratches`
 
-Supporting materials:
+The Blender materials use Principled BSDF settings with tuned metallic/roughness values. The floor/wall/door materials include procedural noise and bump for proof-render depth; neon, white energy, and yellow accents use emissive materials. Godot's Sector 1 material visibility pass now recognizes these new material names.
 
-- `mat_black_recess`
-- `mat_cool_worn_edge_metal`
-- `mat_cool_white_neon_core`
-- `mat_smoked_glass_plastic_accent`
+## Lighting And Proof Render
 
-## Lighting And Readability
+Proof render:
 
-The GLB relies on emissive cyan/yellow material accents plus the existing Sector 1 runtime arena readability light. The Godot material visibility pass now supports the new `mat_*` material names.
+- `art/arenas/sector_1/review/sector_1_hd_mockup_blender_proof.png`
 
-Visual comparison artifacts:
+Lighting approach:
 
-- Blender top-down render: `art/arenas/sector_1/exported/sector_1_hd_mockup_arena_topdown.png`
-- Godot gameplay-view screenshot: `art/arenas/sector_1/exported/sector_1_hd_mockup_arena_godot_gameplay.png`
+- Orthographic proof camera at 2048x2048.
+- Slightly offset top-down camera to show height and shadows while preserving the square reference composition.
+- Eevee/Filmic render with ambient occlusion, restrained bloom, dark world color, large soft key light, cyan ambience, and yellow/cyan accent lights.
 
-The gameplay-view screenshot confirms the player, enemies, projectiles, HUD, doors, cover blocks, neon routing, and floor remain readable. Pillars are visible as dark diagonal/obelisk structures with cyan/yellow accents near the interior corner lanes.
+Gameplay-view screenshot:
+
+- `art/arenas/sector_1/exported/sector_1_hd_mockup_arena_godot_gameplay.png`
+
+The gameplay screenshot confirms player, enemies, XP, bullets, weapon effects, HUD, doors, pillars, cover blocks, floor routes, and central lanes remain readable.
 
 ## Collision
 
-This pass is visual-only.
+Collision behavior:
 
-No collision was added to the doors, pillars, or cover blocks. This avoids unfair invisible collision, avoids player/enemy spawn conflicts, and avoids projectile/pathing behavior changes. A later pass can add simple explicit collision after obstacle gameplay rules are approved.
+- Visual-only for this pass.
+- No collision was added to doors, pillars, or cover blocks.
+- This avoids unfair invisible collision, spawn conflicts, projectile inconsistencies, and enemy pathing regressions.
+- Player spawn remains clear at the center.
+- Enemy door spawn marker positions remain clear.
+
+A later pass can add simple explicit collision once obstacle gameplay rules and pathing behavior are approved.
 
 ## Godot Integration
 
-Changed `scripts/NeonSwarm3DGameplayPrototype.gd` only.
+Integration method:
 
-Added:
+- `scripts/NeonSwarm3DGameplayPrototype.gd` uses `SECTOR_1_HD_MOCKUP_ARENA_ENABLED := true`.
+- Sector 1 base arena path is `res://art/arenas/sector_1/exported/sector_1_hd_mockup_arena.glb`.
+- Fallback remains `res://art/arenas/sector_1/exported/sector_1_neon_grid_arena.glb` if the HD GLB fails to load.
+- The new arena is used for Sector 1 / 1.0 Awakening Grid.
 
-- `SECTOR_1_HD_MOCKUP_ARENA_ENABLED = true`
-- `SECTOR1_HD_MOCKUP_ARENA_SCENE_PATH = "res://art/arenas/sector_1/exported/sector_1_hd_mockup_arena.glb"`
+Subsector and Sector 2 safety:
 
-Sector 1 base arena load now uses the HD mockup GLB when the flag is true and falls back to `sector_1_neon_grid_arena.glb` if the new asset fails to load.
-
-Subsector overlays remain unchanged:
-
-- 1A Relay Yard
-- 1B Data Trench
-- 1C Capacitor Field
-- 1D Rail Approach
-
-Sector 2 loading remains unchanged and was validated with the runtime harness.
+- 1A Relay Yard unchanged.
+- 1B Data Trench unchanged.
+- 1C Capacitor Field unchanged.
+- 1D Rail Approach unchanged.
+- Sector 2 Prism Rift still loads in the focused runtime harness.
 
 ## Validation
 
 Reference and asset checks:
 
-- Reference exists: PASS.
-- Blender source exists: PASS.
-- GLB exists: PASS.
-- Top-down Blender render generated: PASS.
-- Godot gameplay-view screenshot generated: PASS.
+- Reference image exists: PASS.
+- Blender source file exists: PASS.
+- Blender proof render exists: PASS.
+- Exported GLB exists: PASS.
 - GLB object inventory: PASS.
-- Required door objects: PASS.
-- Required spawn marker empties: PASS.
-- Pillars: PASS.
-- Walls/cover: PASS.
-- Required materials: PASS.
+- Four door objects with required names: PASS.
+- Four spawn marker empties with required names: PASS.
+- Four pillar objects: PASS.
+- Four wall/cover objects: PASS.
+- Required material names: PASS.
 - Reference plane excluded from GLB: PASS.
 
-Runtime validation:
+Command validation:
 
+- `python3 -m py_compile art/arenas/sector_1/source/blender/build_sector_1_hd_mockup_arena.py`: PASS.
+- `blender --background --python art/arenas/sector_1/source/blender/build_sector_1_hd_mockup_arena.py`: PASS.
+- `blender --background --python /tmp/check_sector1_hd_mockup_glb.py`: PASS.
 - `godot --headless --path . --quit-after 3`: PASS.
 - `godot --headless --path . scenes/Main.tscn --quit-after 3`: PASS.
-- Temporary runtime harness loaded Sector 1 base arena path `res://art/arenas/sector_1/exported/sector_1_hd_mockup_arena.glb`: PASS.
-- Player spawned at arena center: PASS.
+- `timeout 25s godot --path . --script /tmp/neon_swarm_sector1_hd_mockup_validation.gd`: PASS.
+
+Focused runtime harness results:
+
+- Sector 1 base arena path loaded as `res://art/arenas/sector_1/exported/sector_1_hd_mockup_arena.glb`: PASS.
+- Player spawned safely near arena center: PASS.
 - Enemies spawned and continued running: PASS (`enemies_before=9`, `enemies_after=10`).
-- Weapons fired under held fire input: PASS (`projectiles=9`).
+- Weapons fired under held fire input: PASS (`projectiles=10`).
 - Equipment system accessible: PASS (`equipped_count=2`).
-- Sector 2 Prism Rift arena still loaded in-memory: PASS.
-- No Sector 3 files or content were added.
-- No push was performed.
-
-Git validation:
-
-- `git diff --check`: PASS.
+- Godot gameplay screenshot saved: PASS.
+- Sector 2 Prism Rift arena loaded after sector switch: PASS.
+- Harness failures: `[]`.
 
 ## Remaining Improvements
 
-- Add simple explicit collision for visual cover/pillars only after gameplay obstacle rules are approved.
+- Add simple explicit collision for visible cover/pillars/door housings only after gameplay obstacle rules are approved.
 - Add future door open/close animation using the separate `enemy_door_*` objects.
-- Tune pillar contrast if later gameplay feedback says the obelisk bodies need to read brighter under the live camera.
+- Add baked texture maps or hand-authored grunge masks if the next art pass needs even closer AAA material breakup.
+
+## Status
+
+- No Sector 3 work started.
+- No push performed.
+- Commit hash: recorded after commit in the final response.
+- Final git status: recorded after commit in the final response.

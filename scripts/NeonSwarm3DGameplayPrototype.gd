@@ -4683,7 +4683,25 @@ func _boost_sector1_imported_arena_materials(mesh_instance: MeshInstance3D, mate
 
 func _apply_sector1_arena_material_visibility(material: StandardMaterial3D, material_name: String) -> void:
 	var lower_name := material_name.to_lower()
-	if lower_name.find("mat_dark_metal_floor") >= 0:
+	if lower_name.find("mat_floor_dark_brushed_metal") >= 0:
+		_set_sector1_visible_arena_material(material, Color(0.098, 0.116, 0.130, 1.0), 0.68, 0.47, Color(0.010, 0.046, 0.058, 1.0), 0.052)
+	elif lower_name.find("mat_floor_panel_variant") >= 0:
+		_set_sector1_visible_arena_material(material, Color(0.130, 0.150, 0.164, 1.0), 0.64, 0.42, Color(0.012, 0.048, 0.060, 1.0), 0.050)
+	elif lower_name.find("mat_outer_wall_dark_metal") >= 0:
+		_set_sector1_visible_arena_material(material, Color(0.070, 0.082, 0.096, 1.0), 0.72, 0.48, Color(0.008, 0.034, 0.046, 1.0), 0.036)
+	elif lower_name.find("mat_door_dark_metal") >= 0:
+		_set_sector1_visible_arena_material(material, Color(0.112, 0.124, 0.138, 1.0), 0.74, 0.40, Color(0.014, 0.040, 0.048, 1.0), 0.045)
+	elif lower_name.find("mat_pillar_dark_metal") >= 0:
+		_set_sector1_visible_arena_material(material, Color(0.150, 0.166, 0.180, 1.0), 0.70, 0.38, Color(0.014, 0.050, 0.060, 1.0), 0.055)
+	elif lower_name.find("mat_cover_dark_metal") >= 0:
+		_set_sector1_visible_arena_material(material, Color(0.135, 0.150, 0.164, 1.0), 0.68, 0.42, Color(0.014, 0.046, 0.056, 1.0), 0.048)
+	elif lower_name.find("mat_edge_trim_metal") >= 0:
+		_set_sector1_visible_arena_material(material, Color(0.245, 0.286, 0.306, 1.0), 0.60, 0.34, Color(0.020, 0.076, 0.090, 1.0), 0.075)
+	elif lower_name.find("mat_white_energy_emissive") >= 0:
+		_set_sector1_visible_arena_material(material, Color(0.820, 0.960, 1.000, 1.0), 0.0, 0.16, Color(0.720, 0.960, 1.000, 1.0), 1.720)
+	elif lower_name.find("mat_floor_bright_worn_scratches") >= 0:
+		_set_sector1_visible_arena_material(material, Color(0.360, 0.420, 0.430, 1.0), 0.30, 0.56, Color(0.025, 0.055, 0.060, 1.0), 0.020)
+	elif lower_name.find("mat_dark_metal_floor") >= 0:
 		_set_sector1_visible_arena_material(material, Color(0.118, 0.137, 0.154, 1.0), 0.58, 0.50, Color(0.010, 0.045, 0.058, 1.0), 0.050)
 	elif lower_name.find("mat_dark_metal_wall") >= 0:
 		_set_sector1_visible_arena_material(material, Color(0.070, 0.084, 0.100, 1.0), 0.62, 0.55, Color(0.008, 0.035, 0.050, 1.0), 0.035)
