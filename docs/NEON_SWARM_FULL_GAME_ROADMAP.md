@@ -1,5 +1,28 @@
 # Neon Swarm Full Game Roadmap
 
+## Phase 56E Current Status Lock
+
+This roadmap now reflects the latest approved project state after the Sector 3
+Phase 54 closeout, Sector 4 Phase 55 closeout, and Phase 56D four-sector
+regression QA.
+
+Locked current state:
+
+- The official scene remains `scenes/Main.tscn`.
+- `SECTOR_COUNT` remains `4`.
+- `ContentCatalog.sector_count()` remains `4`.
+- The active campaign remains Sectors 1-4.
+- Sector 3 Phase 54 is closed for now.
+- Sector 4 Phase 55 is closed for now.
+- Sector 5 exists only as inactive/future-locked scaffold data and is not
+  playable.
+- Hollow Warden still ends the current run.
+- Hollow Warden is a prototype placeholder, not production-complete.
+- The 4A Routing Spine `54/54` enemy-headroom caveat remains active.
+- Sector 5 runtime, Crown Shard runtime, Null King runtime, Prism Shards V/VI
+  unlocks, new hazards, new weapons, boss production, large systems, alternate
+  scenes, and Sector 3/4 visual presentation changes are not approved.
+
 ## 1. Current Development Status
 
 Neon Swarm is an active-development neon arena survival RPG / roguelite, not a finished build.
@@ -29,21 +52,26 @@ Current approved baseline:
 - Phase 47 adds the first runtime campaign progression foundation for the four active sectors: subsector tracking, timed subsector advancement, boss gates after final approach subsectors, HUD/title-card support, and F11 test-mode advancement, without adding custom arena art, Sector 5, a final boss, or an ending.
 - Phase 48 adds the first Sector 1 subsector arena content pass: visual-only full arena-layout GLBs for 1A Relay Yard, 1B Data Trench, 1C Capacitor Field, and 1D Rail Approach integrated into the Phase 47 campaign runtime without adding Sector 2 subsector art, Sector 5 runtime, a final boss, or an ending.
 - Phase 49 adds the Sector 2 subsector arena content pass: visual-only full arena-layout GLBs for 2A Mirror Flats, 2B Fracture Hall, 2C Violet Glassway, and 2D Rift Lens integrated into the Phase 47 campaign runtime without adding Sector 3 subsector art, Sector 5 runtime, a final boss, or an ending.
+- Phase 53 completes the Sector 3 Ember Circuit / Foundry Gate arena foundation and readability lock.
+- Phase 54 closes Sector 3 for now after enemy-mix pacing, hazard planning, and manual QA. The molten busway hazard is delayed and not approved.
+- Phase 55 closes Sector 4 for now after Hyper Grid readability polish, pressure-headroom tuning, and boss-gate / Hollow Warden review. The 4A `54/54` enemy-headroom caveat remains active.
+- Phase 56 adds only Sector 5 planning/inactive scaffold work and confirms through regression QA that Sector 5 does not leak into runtime.
 
 Major development still needed:
 
-- Sector 3 and Sector 4 subsector arena variants beyond the current placeholder/current arena visuals.
-- More sectors beyond the current prototype foundation, including future Sector 5 only after an approved phase.
+- Optional Sector 3 and Sector 4 production polish only through separately approved focused passes; both sectors are closed for now.
+- Future Sector 5 runtime only after a separate planning/review/implementation approval. The current scaffold is inactive data only.
 - More enemy families and behavior variety.
-- More bosses and boss patterns.
-- More weapons and upgrade synergies.
-- Weapon loot, random stats, rarity, comparison, equipped loadouts, and stash systems.
+- More boss production work, including Hollow Warden production planning, only after separate approval.
+- More weapons and upgrade synergies only after separate planning/approval.
+- Hardening and polish for weapon loot, random stats, rarity, comparison,
+  equipped loadouts, and stash systems.
 - RPG-style progression and stronger long-term player goals.
 - Stronger progression and replayability.
 - Better long-term run structure.
 - Continued sector background depth and authored art polish beyond the Phase 26 procedural upgrade.
 - Updated player, enemy, and boss graphics.
-- Story implementation beyond the Phase 45 Memory Shard foundation, including future Lore Codex work, Sector 5 / Black Crown work, Null King stage work, ending work, and deeper cinematic presentation.
+- Story implementation beyond the Phase 45 Memory Shard foundation, including future Lore Codex work, Sector 5 / Black Crown runtime work, Null King stage work, ending work, and deeper cinematic presentation.
 - Professional audio/music direction beyond placeholder procedural foundations.
 - More polish, balancing, accessibility, and content depth.
 
@@ -88,9 +116,9 @@ Current and planned sectors:
 | --- | --- | --- | --- | --- |
 | 1 | Neon Grid | Implemented with Phase 38 visual-only Blender-built 3D aluminum arena kit; Phase 45 adds Prism Shard I reward | Opening sector, teaches movement, XP, rewards, and boss clear flow. | Blender-authored 7x7 aluminum/gunmetal floor panel kit with bevels, inset plates, cyan neon seams, raised border walls aligned to the gameplay boundary, top rails, corner pylons, and subtle depth buttresses. |
 | 2 | Prism Rift | Phase 39 approved arena identity preserved; Phase 45 adds Prism Shard II reward; Phase 49 adds 2A-2D visual-only subsector arena variants | First memory of Mira, prism fracture pressure, Veyraxis reveal. | Purple/magenta fractured prism/glass arena. 2.0 uses the approved Prism Gate base; 2A-2D add Mirror Flats, Fracture Hall, Violet Glassway, and Rift Lens modeled GLB layouts. |
-| 3 | Ember Circuit | Planned story identity; Phase 45 adds Prism Shard III reward while current runtime assets remain prototype-level | The war begins, old weapon factory, Lord Cobalt Hex reveal. | Red/orange molten neon factory, cobalt machine authority, weapon-memory furnaces. |
-| 4 | Hyper Grid | Phase 35 active content pass implemented; Phase 45 adds Prism Shard IV reward | Truth of the seal, high-speed Grid storm, Mira lock reveal. | High-speed cyan/pink digital storm with rails, lock glyphs, and overclocked Grid machinery. |
-| 5 | The Black Crown | Future content only; Phase 43 locks data-only intro text, Phase 44 locks future boss identity notes, and Phase 45 locks future shard notes, but no Sector 5 gameplay or Null King stage exists yet | Crown Shard gatekeeper, Null King final boss, Mira rescue conflict. | Black void, white cracks, dead neon stars, crown fragments, silent geometry. |
+| 3 | Ember Circuit | Active; Phase 54 closed for now after Phase 53 arena/readability work, Phase 54B enemy-mix pacing, Phase 54C hazard gate, and Phase 54D manual QA. | The war begins, old weapon factory, Lord Cobalt Hex reveal. | Red/orange molten neon factory, cobalt machine authority, weapon-memory furnaces. |
+| 4 | Hyper Grid | Active; Phase 55 closed for now after readability polish, pressure-headroom tune, and boss-gate / Hollow Warden review. 4A enemy-headroom caveat remains active. | Truth of the seal, high-speed Grid storm, Mira lock reveal. | High-speed cyan/pink digital storm with rails, lock glyphs, and overclocked Grid machinery. |
+| 5 | The Black Crown | Inactive/future-locked scaffold data only after Phase 56C/56D. Not playable; no title card, entry, debug jump, gameplay, Crown Shard runtime, Null King runtime, or Prism Shard V/VI unlock exists. | Crown Shard gatekeeper, Null King final boss, Mira rescue conflict. | Black void, white cracks, dead neon stars, crown fragments, silent geometry. |
 
 Sector design rule: each sector should change pacing, enemy mix, boss placement, and geometry identity without requiring alternate playable scenes unless a future phase explicitly approves new level work.
 
@@ -102,7 +130,7 @@ Phase 46 campaign expansion lock:
 | 2 - Prism Rift | 2.0 Prism Gate -> 2A Mirror Flats -> 2B Fracture Hall -> 2C Violet Glassway -> 2D Rift Lens -> Veyraxis | Structure locked; current runtime progression unchanged. |
 | 3 - Ember Circuit | 3.0 Foundry Gate -> 3A Molten Busway -> 3B Furnace Grid -> 3C Weapon Memory Forge -> 3D Cobalt Assembly Line -> Lord Cobalt Hex | Structure locked; current runtime progression unchanged. |
 | 4 - Hyper Grid | 4.0 Storm Entry -> 4A Routing Spine -> 4B Overclock Field -> 4C Signal Cyclone -> 4D Lockbreaker Gate -> The Hollow Warden | Structure locked; current runtime progression unchanged. |
-| 5 - The Black Crown | 5.0 Dead Grid -> 5A Crown Wound -> 5B Silent Starfield -> 5C Null Cathedral -> 5D Mira's Prison -> The Crown Shard -> The Null King | Future story-locked only; not active runtime content. |
+| 5 - The Black Crown | 5.0 Dead Grid -> 5A Crown Wound -> 5B Silent Starfield -> 5C Null Cathedral -> 5D Mira's Prison -> The Crown Shard -> The Null King | Inactive/future-locked scaffold data only; not active runtime content. |
 
 Future pacing rule: each sector should eventually feel like entry arena,
 escalation arena, pressure arena, identity arena, boss approach arena, and boss
@@ -187,6 +215,17 @@ Phase 44 boss identity status:
   boss-card lookup.
 - No boss attack, health, reward, model, or balance changes are included.
 
+Phase 55D boss-gate / Hollow Warden review status:
+
+- Boss warning, arrival, boss bar, HUD, run-complete flow, and Memory Shard IV
+  flow passed review.
+- Boss pressure/caps passed review.
+- The Hollow Warden can remain as the current prototype placeholder for now.
+- The Hollow Warden is not production-complete.
+- Production Hollow Warden work requires separate planning and approval.
+- Do not add new boss pressure while the 4A enemy-headroom caveat remains
+  active.
+
 Phase 45 Memory Shard status:
 
 - Four active runtime Memory Shards now unlock from the four current boss /
@@ -197,6 +236,15 @@ Phase 45 Memory Shard status:
   the current runtime.
 - No Lore Codex menu, persistent collection schema, Sector 5, Null King stage,
   ending sequence, or gameplay balance change is included.
+
+Phase 56D Sector 5 regression status:
+
+- `SECTOR_COUNT` remains `4`.
+- `ContentCatalog.sector_count()` remains `4`.
+- Active campaign remains Sectors 1-4.
+- Hollow Warden still ends the run.
+- No Sector 5 title card, entry, debug jump, gameplay, Crown Shard runtime, Null
+  King runtime, or Prism Shard V/VI unlock leaked into runtime.
 
 Phase 46 campaign structure status:
 
@@ -354,8 +402,12 @@ Phase 26 sector background / arena visual upgrade status:
 - Godot loads the PNGs directly through `Image.load_from_file()` and renders them as sector background plates.
 - Sector 1 now uses an HD square/rectangle cyan-blue arena plate with connected circuit paths.
 - Sector 2 currently uses the Phase 39 Hard Repair 2 Blender-authored Prism Rift 3D arena candidate instead of the old flat HD prism plate; it has been rebuilt from the rejected neon-strip version and still requires user gameplay-camera visual approval.
-- Sector 3 now uses an HD octagon/hex black-glass plate with slow polygon edge lighting.
-- Sector 4 now uses an HD rail/stretched-diamond hyperlane plate with fast lane runners.
+- Sector 3 now uses the Phase 53 Ember Circuit / Foundry Gate arena foundation
+  with Phase 53 readability and projectile-readability polish locked unless new
+  evidence proves a failure.
+- Sector 4 now uses the Phase 55B Hyper Grid readability polish, with persistent
+  lane/runner intensity reduced enough for gameplay readability while preserving
+  Hyper Grid identity.
 - Adds sparse sector-authored `HDLightRunner_*` animation over the plates.
 - Adds background opacity caps tied to VFX intensity.
 - The rejected procedural grid/floor fragments, loose marker overlays, random diagonal scratches, rings, glyph spam, floating stickers, monoliths, pylons, gates, and warp effects are disabled from the active background path.
@@ -596,11 +648,15 @@ Likely future phases:
 | Phase 46 | Sector/Subsector Campaign Structure Expansion Plan | Locks the official 1.0-1D, 2.0-2D, 3.0-3D, 4.0-4D, and future 5.0-5D campaign route, pacing rules, story purpose, and future implementation order. Documentation-only; no runtime progression, new arenas, Sector 5, ending, Lore Codex menu, or Phase 47 work is built. |
 | Phase 47 | Campaign Progression Runtime Foundation | Implements active four-sector subsector runtime progression using placeholder/current arena visuals: five subsectors plus boss gate per active sector, timed normal-node advancement, boss warning/spawn only at boss gates, HUD/title-card support, and F11 test-mode advancement. No custom subsector art, Sector 5, ending, Lore Codex menu, or Phase 48 work is built. |
 | Phase 48 | Sector 1 Subsector Arena Content Pass | Implements visual-only Sector 1 1A-1D full arena-layout variants for Relay Yard, Data Trench, Capacitor Field, and Rail Approach through the existing Phase 47 runtime. No Sector 2 subsector art, Sector 5, ending, or gameplay balance changes are built. |
-| Phase 49 | Sector 2 Subsector Arena Content Pass | Future: build playable 2A-2D variants using Prism Rift art direction and user reference workflow. Do not start without explicit approval. |
-| Phase 50 | Sector 3 Subsector Arena Content Pass | Future: build playable Ember Circuit subsector variants. Do not start without explicit approval. |
-| Phase 51 | Sector 4 Subsector Arena Content Pass | Future: build playable Hyper Grid subsector variants. Do not start without explicit approval. |
-| Future approved phase | Sector 5 / Black Crown Foundation | Future-only until approved: build Sector 5 runtime content and Crown Shard path without accidentally activating Null King / ending work early. |
-| Future approved phase | Final Boss / Ending Sequence | Future-only until approved: build Null King final flow and ending after Sector 5 exists. |
+| Phase 49 | Sector 2 Subsector Arena Content Pass | Implements visual-only Sector 2 2A-2D full arena-layout variants for Mirror Flats, Fracture Hall, Violet Glassway, and Rift Lens through the existing Phase 47 runtime. No Sector 3 subsector art, Sector 5, ending, or gameplay balance changes are built. |
+| Phase 52 | Full-Game Buildout Roadmap / Sector 3 Runtime Foundation | Audits the buildout path and starts safe Sector 3 Ember Circuit foundation work without Sector 4/5 expansion. |
+| Phase 53 | Sector 3 Ember Circuit Readability Foundation | Completes Sector 3 Ember Circuit / Foundry Gate arena foundation, arena readability polish, dense combat review, and enemy projectile readability polish. |
+| Phase 54 | Sector 3 Enemy Mix / Hazard Gate / Closeout | Accepts Sector 3 existing-enemy mix pacing, creates a planning-only molten busway hazard gate, passes manual QA, and closes Sector 3 for now. No new hazard is approved. |
+| Phase 55 | Sector 4 Hyper Grid Closeout | Completes Sector 4 readability polish, pressure-headroom tune, and boss-gate / Hollow Warden review. Sector 4 is closed for now with the 4A `54/54` caveat active. |
+| Phase 56 | Sector 5 Planning Gate / Inactive Scaffold / Regression QA | Adds Sector 5 planning and inactive/future-locked scaffold data only. `SECTOR_COUNT` and `ContentCatalog.sector_count()` stay `4`; no Sector 5 runtime leaks into the active four-sector run. |
+| Future approved phase | Sector 5 / Black Crown Runtime Foundation | Future-only until separately approved: build Sector 5 runtime content without accidentally activating Crown Shard, Null King, Prism Shards V/VI, or ending work early. |
+| Future approved phase | Hollow Warden Production Planning | Future-only until separately approved: plan production Hollow Warden work. Do not add new boss pressure while the 4A caveat remains active. |
+| Future approved phase | Final Boss / Ending Sequence | Future-only until separately approved: build Null King final flow and ending after Sector 5 runtime exists. |
 | Future approved phase | Lore Codex Menu | Future-only until approved: add persistent lore collection and Memory Shard review. |
 | Later approved phase | Real Audio Replacement Pass | Original authored music/SFX replacement direction. Do not start without explicit approval. |
 
@@ -622,7 +678,10 @@ Recommended next production direction:
 - Tune Phase 29 Forge costs/effects and Phase 30 elite spawn rates after real playtesting before adding more progression power or enemy content.
 - Tune Phase 31 boss telegraph timing, attack frequency, and visual intensity through manual playtesting before adding more bosses.
 - Tune Phase 34 event frequency, reward values, and objective readability through manual playtesting before expanding event pools.
-- Tune Phase 35 Sector 4 rail dash timing, Grid Splitter fragment caps, Hyper elite frequency, and event pressure through manual playtesting before adding more late-game sectors or enemies.
+- Preserve the Phase 55 Sector 4 closeout. Review rail dash timing, Grid
+  Splitter fragment caps, Hyper elite frequency, and event pressure again only
+  if new evidence shows a failure, and do not add more late-game pressure while
+  the 4A enemy-headroom caveat remains active.
 - Manually review Phase 36 notice timing/readability during a complete run, especially stacked event/boss/reward moments.
 - Manually validate the Phase 38 Sector 1 3D arena prototype for border clarity, readability under swarm pressure, and Phase 37 ripple visibility before expanding the architecture system to other sectors.
 - Manually validate the Phase 39 Hard Repair 3 Sector 2 Prism Rift arena against `art/reference/user_original_art/sector2_user_original_floor_reference.jpg` before treating the Sector 2 visual direction as approved.
@@ -637,3 +696,7 @@ Recommended next production direction:
 - Keep tuning the four-sector prototype run while architecture work happens.
 - Add stronger boss and graphics variety only through approved focused phases.
 - Keep documentation and content catalogs updated as content grows.
+- Preserve the Phase 54 and Phase 55 closeout gates: do not retune Sector 3/4
+  presentation or pressure unless new evidence shows a failure.
+- Preserve the Phase 56 gates: do not activate Sector 5, Prism Shards V/VI,
+  Crown Shard, or Null King without separate approval.
