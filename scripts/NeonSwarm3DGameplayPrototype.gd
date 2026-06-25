@@ -435,6 +435,19 @@ const SECTOR2_ARENA_FILL_LIGHT_ROTATION := Vector3(-86.0, 12.0, 0.0)
 const SECTOR2_ARENA_READABILITY_ALBEDO_SCALE := 1.12
 const SECTOR2_ARENA_READABILITY_ALBEDO_FLOOR := 0.034
 const SECTOR2_ARENA_READABILITY_ALBEDO_TINT := Color(0.90, 0.36, 1.0, 1.0)
+const SECTOR3_BLENDER_ARENA_SCENE_PATH := "res://art/arenas/sector_3/exported/sector_3_ember_circuit_arena.glb"
+const SECTOR3_ARENA_VISUAL_LIGHT_LAYER_MASK := 1 << 17
+const SECTOR3_ARENA_KEY_LIGHT_ENERGY := 0.52
+const SECTOR3_ARENA_KEY_LIGHT_SPECULAR := 0.42
+const SECTOR3_ARENA_KEY_LIGHT_COLOR := Color(1.0, 0.48, 0.18, 1.0)
+const SECTOR3_ARENA_KEY_LIGHT_ROTATION := Vector3(-56.0, -24.0, 0.0)
+const SECTOR3_ARENA_FILL_LIGHT_ENERGY := 0.18
+const SECTOR3_ARENA_FILL_LIGHT_SPECULAR := 0.14
+const SECTOR3_ARENA_FILL_LIGHT_COLOR := Color(0.82, 0.22, 0.07, 1.0)
+const SECTOR3_ARENA_FILL_LIGHT_ROTATION := Vector3(-84.0, 8.0, 0.0)
+const SECTOR3_ARENA_READABILITY_ALBEDO_SCALE := 1.08
+const SECTOR3_ARENA_READABILITY_ALBEDO_FLOOR := 0.026
+const SECTOR3_ARENA_READABILITY_ALBEDO_TINT := Color(1.0, 0.34, 0.10, 1.0)
 
 const PULSE_COOLDOWN := 0.30
 const PULSE_DAMAGE := 27.0
@@ -3828,7 +3841,7 @@ func _rebuild_sector_geometry_identity() -> void:
 	for child in _sector_geometry_root.get_children():
 		_sector_geometry_root.remove_child(child)
 		child.queue_free()
-	# Blender arena kits own Sector 1 and Sector 2 presentation; legacy floor utilities remain inert.
+	# Blender arena kits own Sector 1, Sector 2, and Sector 3 presentation; legacy floor utilities remain inert.
 	if _sector_index == 0:
 		_create_sector1_neon_grid_3d_architecture()
 	elif _sector_index == 1:
@@ -3894,8 +3907,7 @@ func _create_prism_rift_background_depth() -> void:
 
 func _create_ember_circuit_background_depth() -> void:
 	_sector_background_root.set_meta("sector_3_foundation_status", SECTOR_3_EMBER_CIRCUIT_FOUNDATION_STATUS)
-	_build_hd_sector_background(SECTOR_3_EMBER_CIRCUIT_DEBUG_INDEX)
-	_build_sector_arena_floor(_sector_floor_design(SECTOR_3_EMBER_CIRCUIT_DEBUG_INDEX))
+	_sector_background_root.set_meta("sector_3_authored_base_arena_path", SECTOR3_BLENDER_ARENA_SCENE_PATH)
 
 
 func _create_hyper_grid_background_depth() -> void:
@@ -5071,6 +5083,133 @@ func _set_sector2_visible_arena_material(material: StandardMaterial3D, albedo: C
 	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 
 
+func _create_sector3_arena_readability_key_light(parent: Node3D) -> void:
+	var light := DirectionalLight3D.new()
+	light.name = "Sector3ArenaMaterialReadabilityKeyLight"
+	light.light_color = SECTOR3_ARENA_KEY_LIGHT_COLOR
+	light.light_energy = SECTOR3_ARENA_KEY_LIGHT_ENERGY
+	light.light_specular = SECTOR3_ARENA_KEY_LIGHT_SPECULAR
+	light.light_cull_mask = SECTOR3_ARENA_VISUAL_LIGHT_LAYER_MASK
+	light.light_bake_mode = Light3D.BAKE_DISABLED
+	light.light_indirect_energy = 0.0
+	light.light_volumetric_fog_energy = 0.0
+	light.shadow_enabled = false
+	light.rotation_degrees = SECTOR3_ARENA_KEY_LIGHT_ROTATION
+	parent.add_child(light)
+	var fill := DirectionalLight3D.new()
+	fill.name = "Sector3ArenaTopDownReadabilityFillLight"
+	fill.light_color = SECTOR3_ARENA_FILL_LIGHT_COLOR
+	fill.light_energy = SECTOR3_ARENA_FILL_LIGHT_ENERGY
+	fill.light_specular = SECTOR3_ARENA_FILL_LIGHT_SPECULAR
+	fill.light_cull_mask = SECTOR3_ARENA_VISUAL_LIGHT_LAYER_MASK
+	fill.light_bake_mode = Light3D.BAKE_DISABLED
+	fill.light_indirect_energy = 0.0
+	fill.light_volumetric_fog_energy = 0.0
+	fill.shadow_enabled = false
+	fill.rotation_degrees = SECTOR3_ARENA_FILL_LIGHT_ROTATION
+	parent.add_child(fill)
+
+
+func _create_sector3_blender_arena_kit(parent: Node3D) -> Node3D:
+	var instance := _add_blender_asset_instance(
+		parent,
+		"Blender3DSector3EmberCircuitArenaModel",
+		SECTOR3_BLENDER_ARENA_SCENE_PATH,
+		1.0,
+		Vector3.ZERO,
+		0.0,
+		false
+	) as Node3D
+	if instance != null:
+		instance.set_meta("sector_3_base_arena_path", SECTOR3_BLENDER_ARENA_SCENE_PATH)
+		instance.set_meta("sector_3_foundation_status", SECTOR_3_EMBER_CIRCUIT_FOUNDATION_STATUS)
+		var material_visibility_cache: Dictionary = {}
+		_configure_sector3_blender_arena_visuals(instance, material_visibility_cache)
+	return instance
+
+
+func _configure_sector3_blender_arena_visuals(root: Node, material_visibility_cache: Dictionary) -> void:
+	if root is GeometryInstance3D:
+		var geometry := root as GeometryInstance3D
+		geometry.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		geometry.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
+		geometry.layers = SECTOR3_ARENA_VISUAL_LIGHT_LAYER_MASK
+	if root is MeshInstance3D:
+		_boost_sector3_imported_arena_materials(root as MeshInstance3D, material_visibility_cache)
+	for child in root.get_children():
+		_configure_sector3_blender_arena_visuals(child, material_visibility_cache)
+
+
+func _boost_sector3_imported_arena_materials(mesh_instance: MeshInstance3D, material_visibility_cache: Dictionary) -> void:
+	var mesh := mesh_instance.mesh
+	if mesh == null:
+		return
+	for surface_index in range(mesh.get_surface_count()):
+		var material := mesh_instance.get_surface_override_material(surface_index)
+		if material == null:
+			material = mesh.surface_get_material(surface_index)
+		if material is StandardMaterial3D:
+			var arena_material := material as StandardMaterial3D
+			var material_name := arena_material.resource_name
+			if material_name == "":
+				material_name = str(arena_material)
+			if not material_name.begins_with("NS_S3_"):
+				continue
+			var material_id := arena_material.get_instance_id()
+			if material_visibility_cache.has(material_id):
+				mesh_instance.set_surface_override_material(surface_index, material_visibility_cache[material_id] as Material)
+				continue
+			var visible_material := arena_material.duplicate() as StandardMaterial3D
+			_apply_sector3_arena_material_visibility(visible_material, material_name)
+			material_visibility_cache[material_id] = visible_material
+			mesh_instance.set_surface_override_material(surface_index, visible_material)
+
+
+func _apply_sector3_arena_material_visibility(material: StandardMaterial3D, material_name: String) -> void:
+	var lower_name := material_name.to_lower()
+	if lower_name.find("dark_foundry_floor") >= 0:
+		_set_sector3_visible_arena_material(material, Color(0.104, 0.070, 0.052, 1.0), 0.68, 0.50, Color(0.050, 0.018, 0.004, 1.0), 0.052)
+	elif lower_name.find("raised_gunmetal_panel") >= 0:
+		_set_sector3_visible_arena_material(material, Color(0.138, 0.096, 0.072, 1.0), 0.66, 0.42, Color(0.058, 0.022, 0.004, 1.0), 0.060)
+	elif lower_name.find("recessed_heat_groove") >= 0:
+		_set_sector3_visible_arena_material(material, Color(0.030, 0.016, 0.010, 1.0), 0.42, 0.82, Color(0.030, 0.008, 0.000, 1.0), 0.018)
+	elif lower_name.find("charcoal_border_wall") >= 0:
+		_set_sector3_visible_arena_material(material, Color(0.084, 0.060, 0.050, 1.0), 0.72, 0.46, Color(0.036, 0.012, 0.000, 1.0), 0.040)
+	elif lower_name.find("burnt_service_trim") >= 0:
+		_set_sector3_visible_arena_material(material, Color(0.190, 0.118, 0.078, 1.0), 0.58, 0.36, Color(0.066, 0.024, 0.004, 1.0), 0.070)
+	elif lower_name.find("dark_forge_clamp") >= 0:
+		_set_sector3_visible_arena_material(material, Color(0.122, 0.086, 0.066, 1.0), 0.74, 0.38, Color(0.044, 0.016, 0.003, 1.0), 0.052)
+	elif lower_name.find("ember_neon_channel") >= 0:
+		_set_sector3_visible_arena_material(material, Color(0.920, 0.285, 0.045, 1.0), 0.02, 0.28, Color(1.000, 0.300, 0.035, 1.0), 0.92)
+	elif lower_name.find("yellow_white_molten_core") >= 0:
+		_set_sector3_visible_arena_material(material, Color(1.000, 0.740, 0.170, 1.0), 0.00, 0.22, Color(1.000, 0.800, 0.180, 1.0), 1.18)
+	elif lower_name.find("dim_cobalt_memory_accent") >= 0:
+		_set_sector3_visible_arena_material(material, Color(0.095, 0.350, 0.520, 1.0), 0.04, 0.36, Color(0.048, 0.400, 0.620, 1.0), 0.34)
+	elif lower_name.find("smoked_heat_glass") >= 0:
+		_set_sector3_visible_arena_material(material, Color(0.410, 0.150, 0.055, 0.72), 0.02, 0.30, Color(0.160, 0.038, 0.008, 1.0), 0.125, true)
+
+
+func _set_sector3_visible_arena_material(material: StandardMaterial3D, albedo: Color, metallic: float, roughness: float, emission: Color, emission_energy: float, glass := false) -> void:
+	var readable_albedo := albedo
+	if metallic > 0.09 or emission_energy <= 0.18 or glass:
+		readable_albedo = _lift_arena_readability_color(albedo, SECTOR3_ARENA_READABILITY_ALBEDO_SCALE, SECTOR3_ARENA_READABILITY_ALBEDO_FLOOR, SECTOR3_ARENA_READABILITY_ALBEDO_TINT)
+	material.albedo_color = readable_albedo
+	material.metallic = metallic
+	material.roughness = roughness
+	material.metallic_specular = 0.62
+	material.emission_enabled = emission_energy > 0.0
+	if material.emission_enabled:
+		material.emission = emission
+		material.emission_energy_multiplier = emission_energy
+	if glass or albedo.a < 0.99:
+		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		material.blend_mode = BaseMaterial3D.BLEND_MODE_MIX
+		material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	else:
+		material.transparency = BaseMaterial3D.TRANSPARENCY_DISABLED
+	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+
+
 func _create_sector1_child_root(parent: Node3D, node_name: String) -> Node3D:
 	var root := Node3D.new()
 	root.name = node_name
@@ -5494,7 +5633,14 @@ func _create_sector3_ember_circuit_foundation_geometry() -> void:
 	if not is_instance_valid(_sector_geometry_root):
 		return
 	_sector_geometry_root.set_meta("sector_3_foundation_status", SECTOR_3_EMBER_CIRCUIT_FOUNDATION_STATUS)
-	_create_ember_circuit_sector_marks()
+	_sector_geometry_root.set_meta("sector_3_authored_base_arena_path", SECTOR3_BLENDER_ARENA_SCENE_PATH)
+	var root := Node3D.new()
+	root.name = "Sector3EmberCircuit3DArenaArchitectureRoot"
+	root.set_meta("sector_3_foundation_status", SECTOR_3_EMBER_CIRCUIT_FOUNDATION_STATUS)
+	_sector_geometry_root.add_child(root)
+	_create_sector3_arena_readability_key_light(root)
+	if _create_sector3_blender_arena_kit(root) == null:
+		_create_ember_circuit_sector_marks()
 
 
 func _create_neon_grid_sector_marks() -> void:
