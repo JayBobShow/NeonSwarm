@@ -128,8 +128,8 @@ static func _sector_definitions() -> Array:
 			"clear_condition": "Defeat The Hollow Warden",
 			"boss_trim_keep": 12,
 			"spawn_profile": [0.72, 0.56, 0.51, 0.62, 0.92, 0.53],
-			"spawn_extra_chance": [0.18, 0.48, 0.60, 0.46, 0.14, 0.52],
-			"surge_extra_chance": 0.12,
+			"spawn_extra_chance": [0.18, 0.36, 0.46, 0.34, 0.14, 0.40],
+			"surge_extra_chance": 0.08,
 			"enemy_mixes": _sector_4_enemy_mixes()
 		}
 	]
