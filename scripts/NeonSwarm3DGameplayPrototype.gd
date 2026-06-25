@@ -3631,6 +3631,8 @@ func _create_materials() -> void:
 	_materials["sector_transition_scan"] = Kit.make_emissive_material(Color(0.82, 1.0, 1.0, 0.62), 3.2, true)
 	_materials["enemy_projectile"] = Kit.make_emissive_material(Color(1.0, 0.12, 0.04, 0.90), 6.2, true)
 	_materials["enemy_projectile_core"] = Kit.make_emissive_material(Color(1.0, 0.99, 0.76, 1.0), 8.2, false)
+	_materials["enemy_projectile_sector3"] = Kit.make_emissive_material(Color(1.0, 0.070, 0.022, 0.94), 6.8, true)
+	_materials["enemy_projectile_sector3_core"] = Kit.make_emissive_material(Color(1.0, 1.0, 0.88, 1.0), 9.6, false)
 	_materials["arc_beam"] = Kit.make_emissive_material(Color(0.02, 1.0, 1.0, CHAIN_VFX_ALPHA), CHAIN_VFX_OUTER_EMISSION, true)
 	_materials["arc_beam_core"] = Kit.make_emissive_material(Color(1.0, 1.0, 0.84, CHAIN_VFX_CORE_ALPHA), CHAIN_VFX_CORE_EMISSION, false)
 	_materials["mine_body"] = Kit.make_emissive_material(Color(0.84, 0.04, 1.0, 0.90), 6.5, true)
@@ -14593,8 +14595,13 @@ func _spawn_enemy_projectile(position: Vector3, direction: Vector3) -> void:
 	projectile.collision_mask = 1
 	_gameplay_root.add_child(projectile)
 	_add_sphere_collision(projectile, "EnemyProjectileCollisionSphere", 0.34)
-	var body := Kit.add_mesh(projectile, "EnemyProjectileRedBoltBody", Kit.capsule_mesh(0.13, 0.90, 10, 3), _materials["enemy_projectile"])
-	var core := Kit.add_mesh(projectile, "EnemyProjectileWhiteHotCore", Kit.capsule_mesh(0.052, 0.98, 8, 3), _materials["enemy_projectile_core"])
+	var sector3_bolt := _sector_index == SECTOR_3_EMBER_CIRCUIT_DEBUG_INDEX
+	var body_material: Material = _materials["enemy_projectile_sector3"] if sector3_bolt else _materials["enemy_projectile"]
+	var core_material: Material = _materials["enemy_projectile_sector3_core"] if sector3_bolt else _materials["enemy_projectile_core"]
+	var core_radius := 0.074 if sector3_bolt else 0.052
+	var core_height := 1.06 if sector3_bolt else 0.98
+	var body := Kit.add_mesh(projectile, "EnemyProjectileRedBoltBody", Kit.capsule_mesh(0.13, 0.90, 10, 3), body_material)
+	var core := Kit.add_mesh(projectile, "EnemyProjectileWhiteHotCore", Kit.capsule_mesh(core_radius, core_height, 8, 3), core_material)
 	var basis := Kit.basis_from_y_axis(Vector3(0.0, 0.0, -1.0))
 	body.transform = Transform3D(basis, Vector3.ZERO)
 	core.transform = Transform3D(basis, Vector3.ZERO)
