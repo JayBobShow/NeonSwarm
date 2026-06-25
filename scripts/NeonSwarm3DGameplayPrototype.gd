@@ -342,6 +342,40 @@ const CAMPAIGN_FUTURE_SECTOR_DATA := [
 		"boss_name": "The Crown Shard",
 		"final_boss_name": "The Null King, Crown of the Empty Grid",
 		"memory_shard_ids": ["prism_shard_5_black_crown", "prism_shard_6_last_light"],
+		"inactive_foundation": {
+			"phase": "Phase 56C",
+			"foundation_status": "inactive data-only scaffold",
+			"runtime_activation": "blocked until separate approval",
+			"playable": false,
+			"normal_run_entry_enabled": false,
+			"debug_jump_enabled": false,
+			"run_endpoint_policy": "Current run still completes after The Hollow Warden in Sector 4.",
+			"visual_identity": [
+				"Dead-grid Black Crown direction.",
+				"Dark void-facing geometry with readable edge structure.",
+				"Restrained white cracks, crown fragments, and dead neon star motifs.",
+				"Distinct from Sector 4 Hyper Grid speed/cyan runner language."
+			],
+			"readability_rules": [
+				"Player, enemy danger, enemy projectiles, player shots, XP, pickups, and HUD must stay above arena/background detail.",
+				"Black Crown floor work must not collapse into black-on-black unreadability.",
+				"White cracks and crown fragments must not read as pickups, player shots, or hostile projectiles.",
+				"No Sector 3 or Sector 4 visual retuning is approved by this foundation data."
+			],
+			"cap_rules": [
+				"Do not raise enemy, projectile, XP, hazard, beam, burst, or mine caps without separate review.",
+				"Future Sector 5 pressure must start below current late Sector 4 pressure.",
+				"Preserve the Sector 4 4A enemy headroom caveat before adding any new population pressure.",
+				"Future hazard or boss-add pressure requires separate cap budgeting."
+			],
+			"blocked_content": [
+				"Sector 5 runtime activation.",
+				"Crown Shard runtime behavior.",
+				"Null King runtime behavior.",
+				"Prism Shard V or VI runtime unlocks.",
+				"New weapons, hazards, bosses, large systems, alternate scenes, art, Blender files, or GLB files."
+			]
+		},
 		"subsectors": [
 			{"code": "5.0", "name": "Dead Grid", "purpose": "Entry into dead-space Grid territory."},
 			{"code": "5A", "name": "Crown Wound", "purpose": "The first breach inside the Null King's influence."},
