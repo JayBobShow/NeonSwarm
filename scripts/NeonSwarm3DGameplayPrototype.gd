@@ -3755,9 +3755,14 @@ func _create_materials() -> void:
 	_materials["event_shrine_core"] = Kit.make_emissive_material(Color(0.86, 1.0, 1.0, 0.94), 7.8, true)
 	_materials["boss_telegraph_prism"] = Kit.make_emissive_material(Color(1.0, 0.08, 0.88, 0.42), 4.4, true)
 	_materials["boss_telegraph_null"] = Kit.make_emissive_material(Color(0.0, 0.76, 1.0, 0.40), 4.2, true)
-	_materials["boss_telegraph_prime"] = Kit.make_emissive_material(Color(0.72, 0.96, 1.0, 0.44), 4.7, true)
+	_materials["boss_telegraph_prime"] = Kit.make_emissive_material(Color(0.82, 0.98, 1.0, 0.50), 5.05, true)
+	_materials["boss_telegraph_prime_core"] = Kit.make_emissive_material(Color(1.0, 1.0, 0.92, 0.82), 6.0, true)
 	_materials["boss_telegraph_fractal"] = Kit.make_emissive_material(Color(1.0, 0.34, 0.02, 0.42), 4.5, true)
 	_materials["boss_telegraph_core"] = Kit.make_emissive_material(Color(1.0, 1.0, 0.86, 0.72), 5.4, true)
+	_materials["hollow_warden_lock"] = Kit.make_emissive_material(Color(0.72, 0.96, 1.0, 0.64), 5.25, true)
+	_materials["hollow_warden_lock_core"] = Kit.make_emissive_material(Color(1.0, 1.0, 0.94, 0.92), 7.4, true)
+	_materials["hollow_warden_glyph"] = Kit.make_emissive_material(Color(1.0, 0.16, 0.82, 0.44), 4.25, true)
+	_materials["hollow_warden_body"] = Kit.make_neon_body_material(Color(0.012, 0.026, 0.058, 1.0), 0.50)
 	_materials["mini_boss"] = Kit.make_emissive_material(Color(0.86, 0.06, 1.0, 0.92), 7.0, true)
 	_materials["triad_splitter"] = Kit.make_emissive_material(Color(1.0, 0.18, 0.72, 0.88), 6.8, true)
 	_materials["triad_fragment"] = Kit.make_emissive_material(Color(1.0, 0.58, 0.02, 0.88), 6.6, true)
@@ -4581,6 +4586,36 @@ func _apply_enemy_blender_model(root: Node3D, enemy_type: String) -> void:
 		0.0,
 		true
 	)
+	if enemy_type == "final_null_octagon":
+		_add_hollow_warden_identity_overlay(root)
+
+
+func _add_hollow_warden_identity_overlay(root: Node3D) -> void:
+	var overlay := Node3D.new()
+	overlay.name = "HollowWardenLockGlyphIdentityOverlay"
+	overlay.position = Vector3(0.0, 0.22, 0.0)
+	root.add_child(overlay)
+
+	var lock_body := Kit.add_mesh(overlay, "HollowWardenDarkLockCorePlate", Kit.octagonal_prism_mesh(0.78, 0.18), _materials["hollow_warden_body"], Vector3(0.0, 0.02, 0.0))
+	lock_body.rotation.x = PI * 0.5
+	Kit.add_glowing_edges(overlay, "HollowWardenOctagonalSeal", Kit.octagonal_prism_points(1.18, 0.22), Kit.octagonal_prism_edges(), 0.052, 0.016, _materials["hollow_warden_lock"], _materials["hollow_warden_lock_core"])
+
+	var inner_ring := Kit.add_mesh(overlay, "HollowWardenWhiteHotLivingLockRing", Kit.torus_mesh(0.62, 0.030, 48, 5), _materials["hollow_warden_lock_core"], Vector3(0.0, 0.12, 0.0))
+	inner_ring.rotation.x = PI * 0.5
+	var outer_ring := Kit.add_mesh(overlay, "HollowWardenCyanSealHalo", Kit.torus_mesh(1.36, 0.026, 56, 5), _materials["hollow_warden_lock"], Vector3(0.0, 0.06, 0.0))
+	outer_ring.rotation.x = PI * 0.5
+	var glyph_ring := Kit.add_mesh(overlay, "HollowWardenMagentaSealGlyphHalo", Kit.torus_mesh(1.64, 0.016, 8, 4), _materials["hollow_warden_glyph"], Vector3(0.0, 0.08, 0.0))
+	glyph_ring.rotation.x = PI * 0.5
+	glyph_ring.rotation.z = PI * 0.125
+
+	Kit.add_mesh(overlay, "HollowWardenLivingLockCore", Kit.sphere_mesh(0.24, 12, 6), _materials["hollow_warden_lock_core"], Vector3(0.0, 0.26, 0.0))
+	Kit.tube_between(overlay, "HollowWardenVerticalLockSpine", Vector3(0.0, 0.28, -0.86), Vector3(0.0, 0.28, 0.86), 0.026, _materials["hollow_warden_lock_core"], 6)
+	Kit.tube_between(overlay, "HollowWardenHorizontalLockBar", Vector3(-0.86, 0.30, 0.0), Vector3(0.86, 0.30, 0.0), 0.022, _materials["hollow_warden_lock"], 6)
+	for i in range(4):
+		var angle := TAU * float(i) / 4.0 + PI * 0.25
+		var direction := Vector3(cos(angle), 0.0, sin(angle))
+		Kit.tube_between(overlay, "HollowWardenSealGlyphRay%d" % i, direction * 0.82 + Vector3(0.0, 0.18, 0.0), direction * 1.36 + Vector3(0.0, 0.18, 0.0), 0.016, _materials["hollow_warden_glyph"], 5)
+		Kit.add_mesh(overlay, "HollowWardenLockVertex%d" % i, Kit.sphere_mesh(0.056, 8, 4), _materials["hollow_warden_lock_core"], direction * 1.40 + Vector3(0.0, 0.20, 0.0))
 
 
 func _enemy_visual_scale_for_gameplay(enemy_type: String, base_scale: float) -> float:
@@ -14965,7 +15000,8 @@ func _spawn_boss_attack_telegraph(boss_node: Area3D, boss_type: String, attack_i
 	var boss_position := boss_node.position
 	var material_key := _boss_telegraph_material_key(boss_type)
 	var material: Material = _materials[material_key] if _materials.has(material_key) else _materials["boss_telegraph_prism"]
-	var core_material: Material = _materials["boss_telegraph_core"]
+	var core_material_key := "boss_telegraph_prime_core" if boss_type == "final_null_octagon" else "boss_telegraph_core"
+	var core_material: Material = _materials[core_material_key] if _materials.has(core_material_key) else _materials["boss_telegraph_core"]
 	_build_boss_telegraph_visual(root, boss_position, target_position, attack_id, material, core_material, phase2)
 	_boss_telegraphs.append({
 		"node": root,
