@@ -3612,9 +3612,9 @@ func _create_materials() -> void:
 	_materials["sector3_floor_core"] = Kit.make_emissive_material(Color(1.0, 0.92, 0.38, 0.78), 3.55, true)
 	_materials["sector3_floor_edge"] = Kit.make_emissive_material(Color(1.0, 0.46, 0.055, 0.50), 1.58, true)
 	_materials["sector3_floor_atmosphere"] = Kit.make_emissive_material(Color(0.18, 0.020, 0.004, 0.048), 0.24, true)
-	_materials["sector4_grid_minor"] = Kit.make_emissive_material(Color(0.03, 0.16, 0.36, 0.16), 0.42, true)
-	_materials["sector4_grid_major"] = Kit.make_emissive_material(Color(0.0, 0.90, 1.0, 0.30), 0.96, true)
-	_materials["sector4_grid_axis"] = Kit.make_emissive_material(Color(0.72, 0.96, 1.0, 0.36), 1.08, true)
+	_materials["sector4_grid_minor"] = Kit.make_emissive_material(Color(0.03, 0.16, 0.36, 0.14), 0.34, true)
+	_materials["sector4_grid_major"] = Kit.make_emissive_material(Color(0.0, 0.90, 1.0, 0.22), 0.66, true)
+	_materials["sector4_grid_axis"] = Kit.make_emissive_material(Color(0.72, 0.96, 1.0, 0.24), 0.72, true)
 	_materials["sector4_border"] = Kit.make_emissive_material(Color(0.10, 0.68, 1.0, 0.64), 2.36, true)
 	_materials["sector4_shape"] = Kit.make_emissive_material(Color(0.60, 0.92, 1.0, 0.62), 3.00, true)
 	_materials["sector4_shape_core"] = Kit.make_emissive_material(Color(1.0, 1.0, 1.0, 0.88), 6.1, true)
@@ -3622,12 +3622,12 @@ func _create_materials() -> void:
 	_materials["sector4_floor_haze"] = Kit.make_emissive_material(Color(0.42, 0.86, 1.0, 0.062), 0.36, true)
 	_materials["sector4_far_structure"] = Kit.make_emissive_material(Color(0.62, 0.94, 1.0, 0.34), 1.28, true)
 	_materials["sector4_dark_glass"] = Kit.make_neon_body_material(Color(0.010, 0.035, 0.070, 1.0), 0.36)
-	_materials["sector4_floor_grid"] = Kit.make_emissive_material(Color(0.0, 0.76, 1.0, 0.26), 0.86, true)
-	_materials["sector4_floor_secondary"] = Kit.make_emissive_material(Color(0.78, 0.96, 1.0, 0.20), 0.70, true)
-	_materials["sector4_floor_path"] = Kit.make_emissive_material(Color(0.52, 0.94, 1.0, 0.48), 1.54, true)
-	_materials["sector4_floor_core"] = Kit.make_emissive_material(Color(1.0, 1.0, 1.0, 0.74), 3.45, true)
-	_materials["sector4_floor_edge"] = Kit.make_emissive_material(Color(0.32, 0.84, 1.0, 0.46), 1.60, true)
-	_materials["sector4_floor_atmosphere"] = Kit.make_emissive_material(Color(0.0, 0.28, 0.72, 0.042), 0.24, true)
+	_materials["sector4_floor_grid"] = Kit.make_emissive_material(Color(0.0, 0.76, 1.0, 0.18), 0.58, true)
+	_materials["sector4_floor_secondary"] = Kit.make_emissive_material(Color(0.78, 0.96, 1.0, 0.14), 0.46, true)
+	_materials["sector4_floor_path"] = Kit.make_emissive_material(Color(0.52, 0.94, 1.0, 0.30), 0.92, true)
+	_materials["sector4_floor_core"] = Kit.make_emissive_material(Color(0.88, 0.98, 1.0, 0.32), 1.34, true)
+	_materials["sector4_floor_edge"] = Kit.make_emissive_material(Color(0.32, 0.84, 1.0, 0.38), 1.22, true)
+	_materials["sector4_floor_atmosphere"] = Kit.make_emissive_material(Color(0.0, 0.28, 0.72, 0.034), 0.18, true)
 	_materials["sector_transition_scan"] = Kit.make_emissive_material(Color(0.82, 1.0, 1.0, 0.62), 3.2, true)
 	_materials["enemy_projectile"] = Kit.make_emissive_material(Color(1.0, 0.12, 0.04, 0.90), 6.2, true)
 	_materials["enemy_projectile_core"] = Kit.make_emissive_material(Color(1.0, 0.99, 0.76, 1.0), 8.2, false)
@@ -3982,10 +3982,10 @@ func _sector_hd_background_design(index: int) -> Dictionary:
 				"secondary_shape": "rail",
 				"composition": "HD cyan/white rail and stretched-diamond hyperlane floor",
 				"runners": [
-					{"name": "HyperGridHDRailLaneA", "center": Vector3(-17.0, 0.150, 12.0), "direction": Vector3(0.10, 0.0, -1.0), "length": 9.8, "speed": 11.5, "wrap": 52.0, "radius": 0.024, "phase": 0.0},
-					{"name": "HyperGridHDRailLaneB", "center": Vector3(-6.0, 0.153, 10.0), "direction": Vector3(-0.06, 0.0, -1.0), "length": 10.6, "speed": 13.2, "wrap": 54.0, "radius": 0.026, "phase": 8.0},
-					{"name": "HyperGridHDRailLaneC", "center": Vector3(7.0, 0.153, 11.0), "direction": Vector3(0.06, 0.0, -1.0), "length": 10.6, "speed": 12.6, "wrap": 54.0, "radius": 0.026, "phase": 15.0},
-					{"name": "HyperGridHDRailLaneD", "center": Vector3(18.0, 0.150, 12.0), "direction": Vector3(-0.10, 0.0, -1.0), "length": 9.8, "speed": 11.5, "wrap": 52.0, "radius": 0.024, "phase": 22.0}
+					{"name": "HyperGridHDRailLaneA", "center": Vector3(-17.0, 0.150, 12.0), "direction": Vector3(0.10, 0.0, -1.0), "length": 7.6, "speed": 8.6, "wrap": 52.0, "radius": 0.017, "phase": 0.0, "pulse_amount": 0.032},
+					{"name": "HyperGridHDRailLaneB", "center": Vector3(-6.0, 0.153, 10.0), "direction": Vector3(-0.06, 0.0, -1.0), "length": 8.2, "speed": 9.2, "wrap": 54.0, "radius": 0.018, "phase": 8.0, "pulse_amount": 0.032},
+					{"name": "HyperGridHDRailLaneC", "center": Vector3(7.0, 0.153, 11.0), "direction": Vector3(0.06, 0.0, -1.0), "length": 8.2, "speed": 9.0, "wrap": 54.0, "radius": 0.018, "phase": 15.0, "pulse_amount": 0.032},
+					{"name": "HyperGridHDRailLaneD", "center": Vector3(18.0, 0.150, 12.0), "direction": Vector3(-0.10, 0.0, -1.0), "length": 7.6, "speed": 8.6, "wrap": 52.0, "radius": 0.017, "phase": 22.0, "pulse_amount": 0.032}
 				]
 			}, true)
 	return base
@@ -4006,7 +4006,8 @@ func _build_hd_sector_background(index: int) -> void:
 	material.blend_mode = BaseMaterial3D.BLEND_MODE_MIX
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	material.albedo_texture = texture
-	material.albedo_color = Color(1.0, 1.0, 1.0, _hd_sector_background_alpha())
+	var plate_tint := _hd_sector_background_tint(index)
+	material.albedo_color = Color(plate_tint.r, plate_tint.g, plate_tint.b, _hd_sector_background_alpha(index))
 	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 	var plate := MeshInstance3D.new()
 	plate.name = "HDArtSectorBackgroundPlate_%s" % str(design["name"]).replace(" ", "")
@@ -4571,7 +4572,16 @@ func _add_weapon_blender_model(parent: Node3D, definition_id: String, scale_valu
 	)
 
 
-func _hd_sector_background_alpha() -> float:
+func _hd_sector_background_alpha(index: int = -1) -> float:
+	var sector_index := _sector_index if index < 0 else index
+	if sector_index >= 3:
+		match _vfx_intensity:
+			0:
+				return 0.26
+			2:
+				return 0.40
+			_:
+				return 0.33
 	match _vfx_intensity:
 		0:
 			return 0.50
@@ -4581,11 +4591,22 @@ func _hd_sector_background_alpha() -> float:
 			return 0.62
 
 
+func _hd_sector_background_tint(index: int = -1) -> Color:
+	var sector_index := _sector_index if index < 0 else index
+	if sector_index >= 3:
+		return Color(0.66, 0.84, 0.95, 1.0)
+	return Color.WHITE
+
+
 func _update_hd_sector_background_intensity() -> void:
 	if _sector_hd_background_material == null:
 		return
-	var reaction_boost := clampf(_sector_background_reaction * 0.05, 0.0, 0.06)
-	_sector_hd_background_material.albedo_color.a = clampf(_hd_sector_background_alpha() + reaction_boost, 0.42, 0.78)
+	var reaction_scale := 0.020 if _sector_index >= 3 else 0.05
+	var reaction_max := 0.024 if _sector_index >= 3 else 0.06
+	var min_alpha := 0.22 if _sector_index >= 3 else 0.42
+	var max_alpha := 0.46 if _sector_index >= 3 else 0.78
+	var reaction_boost := clampf(_sector_background_reaction * reaction_scale, 0.0, reaction_max)
+	_sector_hd_background_material.albedo_color.a = clampf(_hd_sector_background_alpha(_sector_index) + reaction_boost, min_alpha, max_alpha)
 
 
 func _add_hd_background_light_runner(runner: Dictionary, material_key: String, core_material_key: String) -> void:
@@ -4607,7 +4628,7 @@ func _add_hd_background_light_runner(runner: Dictionary, material_key: String, c
 		core_material_key,
 		float(runner.get("phase", 0.0)),
 		0.72,
-		0.055
+		float(runner.get("pulse_amount", 0.055))
 	)
 
 
@@ -5411,9 +5432,14 @@ func _sector_floor_design(index: int) -> Dictionary:
 				"secondary_shape": "rail",
 				"grid_pattern": "hyper_rail_lattice",
 				"grid_spacing": 7.0,
-				"runner_speed": 11.8,
-				"depth_scroll_speed": 8.4,
-				"pulse_speed": 1.85
+				"runner_speed": 8.8,
+				"runner_length": 7.2,
+				"runner_radius": 0.018,
+				"runner_pulse_amount": 0.045,
+				"depth_scroll_speed": 5.6,
+				"depth_radius": 0.007,
+				"depth_pulse_amount": 0.030,
+				"pulse_speed": 1.25
 			}, true)
 	return base
 
@@ -5605,10 +5631,10 @@ func _build_hyper_grid_floor(design: Dictionary) -> void:
 			_add_sector_grid_diamond_cell("HyperGridRailDiamond%d%d" % [row, column], center, Vector2(5.8, 2.2), path_material if row == 2 else secondary_material, 0.011)
 	for i in range(9):
 		var x := -22.0 + float(i) * 5.5
-		_add_sector_grid_light_runner("HyperGridLaneLightRunner%d" % i, Vector3(x, float(design["runner_y"]), 5.0 - float(i % 3) * 5.0), Vector3(0.08, 0.0, -1.0), 8.8, float(design["runner_speed"]), ARENA_HALF_SIZE * 2.0, 0.026, path_material, core_material, float(i) * 2.6, float(design["pulse_speed"]), 0.09)
+		_add_sector_grid_light_runner("HyperGridLaneLightRunner%d" % i, Vector3(x, float(design["runner_y"]), 5.0 - float(i % 3) * 5.0), Vector3(0.08, 0.0, -1.0), float(design.get("runner_length", 8.8)), float(design["runner_speed"]), ARENA_HALF_SIZE * 2.0, float(design.get("runner_radius", 0.026)), path_material, core_material, float(i) * 2.6, float(design["pulse_speed"]), float(design.get("runner_pulse_amount", 0.09)))
 	for row in range(8):
 		var z := -30.0 + float(row) * 8.0
-		_add_dynamic_flow_line("HyperGridDepthRailBand%d" % row, Vector3(-ARENA_HALF_SIZE, 0.084, z), Vector3(ARENA_HALF_SIZE, 0.084, z + 3.4), Vector3(0.0, 0.0, -1.0), float(design["depth_scroll_speed"]), ARENA_HALF_SIZE * 2.0, 0.011, secondary_material, core_material, float(row) * 3.6, 0.75, 0.05)
+		_add_dynamic_flow_line("HyperGridDepthRailBand%d" % row, Vector3(-ARENA_HALF_SIZE, 0.084, z), Vector3(ARENA_HALF_SIZE, 0.084, z + 3.4), Vector3(0.0, 0.0, -1.0), float(design["depth_scroll_speed"]), ARENA_HALF_SIZE * 2.0, float(design.get("depth_radius", 0.011)), secondary_material, core_material, float(row) * 3.6, 0.56, float(design.get("depth_pulse_amount", 0.05)))
 
 
 func _build_sector_floor_edge_system(design: Dictionary) -> void:
