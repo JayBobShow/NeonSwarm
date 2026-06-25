@@ -679,6 +679,7 @@ const RUN_EVENT_SHRINE_OVERLOAD_DURATION := 11.0
 const RUN_EVENT_INTERACTION_RADIUS := 4.1
 const RUN_EVENT_AUTO_REWARD_POSITION := Vector3(99999.0, 99999.0, 99999.0)
 const RUN_EVENT_TEST_TYPES := ["data_cache", "rift_surge", "elite_hunt", "overload_shrine"]
+const DEV_TEST_ACTIVE_SECTOR_INDICES := [0, 1, 2, 3]
 const WAVE_DIRECTOR_ELITE_MIN_TIME := [38.0, 28.0, 22.0, 18.0]
 const WAVE_DIRECTOR_ELITE_COOLDOWN := [18.0, 15.0, 13.0, 11.0]
 const WAVE_DIRECTOR_MAX_ELITES := [1, 2, 2, 3]
@@ -1266,12 +1267,30 @@ func _input(event: InputEvent) -> void:
 
 
 func _handle_run_event_test_input(event: InputEvent) -> bool:
+	if not _dev_test_navigation_available():
+		return false
 	if not event is InputEventKey:
 		return false
 	var key_event := event as InputEventKey
 	if not key_event.pressed or key_event.echo:
 		return false
 	match key_event.keycode:
+		KEY_F1:
+			if not _run_event_test_enabled or not _run_event_test_input_allowed():
+				return false
+			_jump_to_dev_test_sector(0)
+		KEY_F2:
+			if not _run_event_test_enabled or not _run_event_test_input_allowed():
+				return false
+			_jump_to_dev_test_sector(1)
+		KEY_F3:
+			if not _run_event_test_enabled or not _run_event_test_input_allowed():
+				return false
+			_jump_to_dev_test_sector(2)
+		KEY_F4:
+			if not _run_event_test_enabled or not _run_event_test_input_allowed():
+				return false
+			_jump_to_dev_test_sector(3)
 		KEY_F6:
 			if not _run_event_test_input_allowed():
 				return false
@@ -1291,19 +1310,26 @@ func _handle_run_event_test_input(event: InputEvent) -> bool:
 		KEY_F10:
 			if not _run_event_test_enabled or not _run_event_test_input_allowed():
 				return false
-			_jump_to_sector4_test_state()
+			_jump_to_hollow_warden_test_gate()
 		KEY_F11:
 			if not _run_event_test_enabled or not _run_event_test_input_allowed():
 				return false
-			_force_advance_campaign_node_test()
+			if key_event.shift_pressed:
+				_jump_current_sector_to_boss_gate_test_state()
+			else:
+				_force_advance_campaign_node_test()
 		KEY_F12:
 			if not _run_event_test_enabled or not _run_event_test_input_allowed():
 				return false
-			_jump_to_sector3_foundation_test_state()
+			_restart_run()
 		_:
 			return false
 	get_viewport().set_input_as_handled()
 	return true
+
+
+func _dev_test_navigation_available() -> bool:
+	return OS.is_debug_build()
 
 
 func _run_event_test_input_allowed() -> bool:
@@ -1318,7 +1344,7 @@ func _run_event_test_input_allowed() -> bool:
 
 func _toggle_run_event_test_mode() -> void:
 	_run_event_test_enabled = not _run_event_test_enabled
-	_show_combat_notice("EVENT TEST MODE %s" % ("ON" if _run_event_test_enabled else "OFF"), Color(1.0, 0.94, 0.18), 1.10)
+	_show_combat_notice("DEV TEST MODE %s" % ("ON" if _run_event_test_enabled else "OFF"), Color(1.0, 0.94, 0.18), 1.10)
 	_update_run_event_test_hud()
 
 
@@ -1358,7 +1384,54 @@ func _jump_to_sector4_test_state() -> void:
 	_jump_to_sector_test_state(SECTOR_COUNT - 1, "SECTOR 4 HYPER GRID", Color(0.72, 0.96, 1.0))
 
 
-func _jump_to_sector_test_state(target_sector_index: int, notice_label: String, notice_color: Color) -> void:
+func _jump_to_dev_test_sector(target_sector_index: int) -> void:
+	if not _dev_test_sector_index_allowed(target_sector_index):
+		_show_combat_notice("DEV TEST BLOCKED // ACTIVE SECTORS ONLY", Color(1.0, 0.58, 0.04), 1.20)
+		return
+	_jump_to_sector_test_state(target_sector_index, _sector_display_title(target_sector_index), _sector_color_for_index(target_sector_index))
+
+
+func _jump_to_hollow_warden_test_gate() -> void:
+	var hollow_warden_sector := 3
+	if not _dev_test_sector_index_allowed(hollow_warden_sector):
+		_show_combat_notice("DEV TEST BLOCKED // HOLLOW WARDEN LOCKED", Color(1.0, 0.58, 0.04), 1.20)
+		return
+	_jump_to_sector_test_state(hollow_warden_sector, "HOLLOW WARDEN TEST", _sector_color_for_index(hollow_warden_sector), false)
+	_jump_current_sector_to_boss_gate_test_state("HOLLOW WARDEN TEST")
+
+
+func _jump_current_sector_to_boss_gate_test_state(notice_prefix := "CURRENT SECTOR") -> void:
+	if not _dev_test_sector_index_allowed(_sector_index):
+		_show_combat_notice("DEV TEST BLOCKED // ACTIVE SECTORS ONLY", Color(1.0, 0.58, 0.04), 1.20)
+		return
+	if not CAMPAIGN_RUNTIME_SUBSECTORS_ENABLED:
+		_show_combat_notice("DEV TEST BLOCKED // SUBSECTORS DISABLED", Color(1.0, 0.58, 0.04), 1.20)
+		return
+	if _campaign_is_boss_step:
+		_show_combat_notice("DEV TEST // ALREADY AT BOSS GATE", Color(1.0, 0.94, 0.18), 1.20)
+		_update_run_event_test_hud()
+		return
+	_enter_campaign_boss_gate_node()
+	_show_combat_notice("DEV TEST MODE // %s BOSS GATE" % notice_prefix.to_upper(), _sector_color_for_index(_sector_index), 1.50)
+	_update_run_event_test_hud()
+
+
+func _dev_test_sector_index_allowed(index: int) -> bool:
+	if not DEV_TEST_ACTIVE_SECTOR_INDICES.has(index):
+		return false
+	if index < 0 or index >= SECTOR_COUNT:
+		return false
+	if index >= ContentCatalog.sector_count():
+		return false
+	if index >= CAMPAIGN_ACTIVE_SECTOR_DATA.size():
+		return false
+	return true
+
+
+func _jump_to_sector_test_state(target_sector_index: int, notice_label: String, notice_color: Color, show_entry := true) -> void:
+	if not _dev_test_sector_index_allowed(target_sector_index):
+		_show_combat_notice("DEV TEST BLOCKED // ACTIVE SECTORS ONLY", Color(1.0, 0.58, 0.04), 1.20)
+		return
 	_clear_transition_combat_state()
 	for i in range(_enemies.size() - 1, -1, -1):
 		var enemy := _enemies[i]
@@ -1366,7 +1439,7 @@ func _jump_to_sector_test_state(target_sector_index: int, notice_label: String, 
 		if is_instance_valid(node):
 			node.queue_free()
 		_enemies.remove_at(i)
-	_sector_index = clampi(target_sector_index, 0, SECTOR_COUNT - 1)
+	_sector_index = target_sector_index
 	_sector_elapsed = 0.0
 	_reset_campaign_for_sector()
 	_sector_boss_spawned = false
@@ -1386,11 +1459,13 @@ func _jump_to_sector_test_state(target_sector_index: int, notice_label: String, 
 	_reset_run_event_director_for_sector()
 	_apply_sector_visual_identity()
 	_trigger_sector_transition_scan()
-	_spawn_sector_opening_wave()
+	if show_entry:
+		_spawn_sector_opening_wave()
 	_update_hud()
 	_set_music_state("gameplay")
-	_show_combat_notice("EVENT TEST MODE // %s" % notice_label, notice_color, 1.50)
-	_show_current_subsector_title()
+	_show_combat_notice("DEV TEST MODE // %s" % notice_label, notice_color, 1.50)
+	if show_entry:
+		_show_current_subsector_title()
 	_update_run_event_test_hud()
 
 
@@ -1403,14 +1478,15 @@ func _run_event_test_selected_type() -> String:
 func _update_run_event_test_hud() -> void:
 	if not is_instance_valid(_run_event_test_panel) or not is_instance_valid(_run_event_test_label):
 		return
-	var visible := _run_event_test_enabled and _run_event_test_input_allowed()
+	var visible := _dev_test_navigation_available() and _run_event_test_enabled and _run_event_test_input_allowed()
 	_run_event_test_panel.visible = visible
 	if not visible:
 		return
 	var active_text := "NONE"
 	if _run_event_active:
 		active_text = "%s // %s // %.0fs" % [_run_event_display_name(_run_event_type).to_upper(), _run_event_stage.to_upper(), _run_event_timer]
-	_run_event_test_label.text = "EVENT TEST MODE  //  SELECTED: %s\nF7 CYCLE  |  F8 SPAWN  |  F9 CLEAR  |  F10 S4  |  F11 CAMPAIGN  |  F12 S3  //  ACTIVE: %s" % [
+	_run_event_test_label.text = "DEV TEST MODE  //  SECTOR %d  //  EVENT: %s\nF1-F4 SECTOR  |  F10 HOLLOW  |  F11 ADV  |  SHIFT+F11 BOSS  |  F12 RESET\nF7 CYCLE  |  F8 SPAWN  |  F9 CLEAR  //  ACTIVE: %s" % [
+		_sector_index + 1,
 		_run_event_display_name(_run_event_test_selected_type()).to_upper(),
 		active_text
 	]
@@ -6725,13 +6801,15 @@ func _create_hud() -> void:
 	_run_event_objective_label.add_theme_color_override("font_color", Color(0.88, 1.0, 1.0))
 	_run_event_objective_panel.add_child(_run_event_objective_label)
 
-	_run_event_test_panel = _make_frame(NeonFramePanel.FrameKind.ALERT_RAIL, Rect2(640, 230, 640, 60), Color(1.0, 0.94, 0.18, 0.90), Color(0.0, 0.95, 1.0, 0.70), 18.0, 1.8, Vector4(18, 8, 18, 8))
-	_run_event_test_panel.name = "Phase34RunEventTestModeRail"
+	_run_event_test_panel = _make_frame(NeonFramePanel.FrameKind.ALERT_RAIL, Rect2(500, 230, 920, 86), Color(1.0, 0.94, 0.18, 0.90), Color(0.0, 0.95, 1.0, 0.70), 18.0, 1.8, Vector4(18, 8, 18, 8))
+	_run_event_test_panel.name = "DevTestNavigationModeRail"
 	_run_event_test_panel.visible = false
 	_gameplay_hud_root.add_child(_run_event_test_panel)
-	_run_event_test_label = _make_hud_label("EVENT TEST MODE")
+	_run_event_test_label = _make_hud_label("DEV TEST MODE")
 	_run_event_test_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_run_event_test_label.add_theme_font_size_override("font_size", 14)
+	_run_event_test_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_run_event_test_label.custom_minimum_size = Vector2(880, 66)
+	_run_event_test_label.add_theme_font_size_override("font_size", 12)
 	_run_event_test_label.add_theme_color_override("font_color", Color(1.0, 0.94, 0.18))
 	_run_event_test_panel.add_child(_run_event_test_label)
 
