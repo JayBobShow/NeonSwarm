@@ -629,6 +629,10 @@ const NEON_DUST_RARITY_VALUES := {
 	"Legendary": 95,
 	"Anomaly": 150
 }
+const SECTOR_CLEAR_WEAPON_REWARD_MIN_RARITY := "Uncommon"
+const SECTOR_CLEAR_WEAPON_REWARD_MIN_POWER := 1.25
+const SECTOR_CLEAR_WEAPON_REWARD_MAX_ROLLS := 10
+const SECTOR_CLEAR_WEAPON_REWARD_MAX_SECTOR_INDEX := 2
 const NEON_DUST_SECTOR_CLEAR_BASE := 10
 const NEON_DUST_SECTOR_CLEAR_STEP := 4
 const NEON_DUST_RUN_COMPLETE_BONUS := 70
@@ -2276,6 +2280,10 @@ func _weapon_choice_action(instance: Dictionary) -> String:
 
 func _make_weapon_reward_choice() -> Dictionary:
 	var instance := WeaponCatalog.roll_weapon_instance(_weapon_loot_rng, _sector_index, _generate_weapon_instance_id())
+	return _make_weapon_reward_choice_from_instance(instance)
+
+
+func _make_weapon_reward_choice_from_instance(instance: Dictionary) -> Dictionary:
 	var action := _weapon_choice_action(instance)
 	var equipped_index := _equipped_weapon_index_for_definition(str(instance.get("definition_id", "")))
 	var current := _equipment_slot_instance(equipped_index) if equipped_index >= 0 else {}
@@ -2290,6 +2298,43 @@ func _make_weapon_reward_choice() -> Dictionary:
 		"comparison": WeaponCatalog.comparison_data(instance, current),
 		"weapon_action": action
 	}
+
+
+func _make_sector_clear_weapon_reward_choice() -> Dictionary:
+	var best_choice: Dictionary = {}
+	var best_score := -INF
+	for _roll_index in range(SECTOR_CLEAR_WEAPON_REWARD_MAX_ROLLS):
+		var choice := _make_weapon_reward_choice()
+		var score := _sector_clear_weapon_reward_score(choice)
+		if best_choice.is_empty() or score > best_score:
+			best_choice = choice
+			best_score = score
+		if _sector_clear_weapon_reward_meets_floor(choice):
+			return choice
+	return best_choice if not best_choice.is_empty() else _make_weapon_reward_choice()
+
+
+func _sector_clear_weapon_reward_floor_enabled() -> bool:
+	return _sector_index >= 0 and _sector_index <= SECTOR_CLEAR_WEAPON_REWARD_MAX_SECTOR_INDEX
+
+
+func _sector_clear_weapon_reward_meets_floor(choice: Dictionary) -> bool:
+	var instance: Dictionary = choice.get("weapon_instance", {})
+	var rarity_rank := _weapon_rarity_rank(str(instance.get("rarity", "Common")))
+	var minimum_rank := _weapon_rarity_rank(SECTOR_CLEAR_WEAPON_REWARD_MIN_RARITY)
+	var power := float(instance.get("power_score", WeaponCatalog.estimate_power(instance)))
+	return rarity_rank >= minimum_rank and power >= SECTOR_CLEAR_WEAPON_REWARD_MIN_POWER
+
+
+func _sector_clear_weapon_reward_score(choice: Dictionary) -> float:
+	var instance: Dictionary = choice.get("weapon_instance", {})
+	return float(_weapon_rarity_rank(str(instance.get("rarity", "Common")))) * 100.0 + float(instance.get("power_score", WeaponCatalog.estimate_power(instance)))
+
+
+func _weapon_rarity_rank(rarity: String) -> int:
+	var order := WeaponCatalog.rarity_order()
+	var index := order.find(rarity)
+	return index if index >= 0 else 0
 
 
 func _weapon_reward_description(instance: Dictionary, action: String) -> String:
@@ -15892,7 +15937,7 @@ func _roll_sector_reward_choices(amount: int) -> Array[Dictionary]:
 	var pool := _sector_reward_pool()
 	var choices: Array[Dictionary] = []
 	if amount > 0:
-		choices.append(_make_weapon_reward_choice())
+		choices.append(_make_sector_clear_weapon_reward_choice() if _sector_clear_weapon_reward_floor_enabled() else _make_weapon_reward_choice())
 	while choices.size() < amount and pool.size() > 0:
 		var index := _upgrade_rng.randi_range(0, pool.size() - 1)
 		choices.append(pool[index])
