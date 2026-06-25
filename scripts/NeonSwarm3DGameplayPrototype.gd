@@ -5180,9 +5180,9 @@ func _apply_sector3_arena_material_visibility(material: StandardMaterial3D, mate
 	elif lower_name.find("dark_forge_clamp") >= 0:
 		_set_sector3_visible_arena_material(material, Color(0.122, 0.086, 0.066, 1.0), 0.74, 0.38, Color(0.044, 0.016, 0.003, 1.0), 0.052)
 	elif lower_name.find("ember_neon_channel") >= 0:
-		_set_sector3_visible_arena_material(material, Color(0.920, 0.285, 0.045, 1.0), 0.02, 0.28, Color(1.000, 0.300, 0.035, 1.0), 0.92)
+		_set_sector3_visible_arena_material(material, Color(0.760, 0.225, 0.040, 1.0), 0.02, 0.30, Color(0.880, 0.230, 0.032, 1.0), 0.58)
 	elif lower_name.find("yellow_white_molten_core") >= 0:
-		_set_sector3_visible_arena_material(material, Color(1.000, 0.740, 0.170, 1.0), 0.00, 0.22, Color(1.000, 0.800, 0.180, 1.0), 1.18)
+		_set_sector3_visible_arena_material(material, Color(0.850, 0.560, 0.125, 1.0), 0.00, 0.24, Color(0.920, 0.620, 0.140, 1.0), 0.62)
 	elif lower_name.find("dim_cobalt_memory_accent") >= 0:
 		_set_sector3_visible_arena_material(material, Color(0.095, 0.350, 0.520, 1.0), 0.04, 0.36, Color(0.048, 0.400, 0.620, 1.0), 0.34)
 	elif lower_name.find("smoked_heat_glass") >= 0:
